@@ -4,3 +4,4 @@ internal/web/dist/
 data/*
 config.toml
 qbitweb
+.DS_Store

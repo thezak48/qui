@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedInstancesRouteImport } from './routes/_authenticated/instances'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedInstancesIndexRouteImport } from './routes/_authenticated/instances.index'
 import { Route as AuthenticatedInstancesInstanceIdRouteImport } from './routes/_authenticated/instances.$instanceId'
 
 const SetupRoute = SetupRouteImport.update({
@@ -52,6 +53,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedInstancesIndexRoute =
+  AuthenticatedInstancesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedInstancesRoute,
+  } as any)
 const AuthenticatedInstancesInstanceIdRoute =
   AuthenticatedInstancesInstanceIdRouteImport.update({
     id: '/$instanceId',
@@ -67,15 +74,16 @@ export interface FileRoutesByFullPath {
   '/instances': typeof AuthenticatedInstancesRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/instances/$instanceId': typeof AuthenticatedInstancesInstanceIdRoute
+  '/instances/': typeof AuthenticatedInstancesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/instances': typeof AuthenticatedInstancesRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/instances/$instanceId': typeof AuthenticatedInstancesInstanceIdRoute
+  '/instances': typeof AuthenticatedInstancesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/instances': typeof AuthenticatedInstancesRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/instances/$instanceId': typeof AuthenticatedInstancesInstanceIdRoute
+  '/_authenticated/instances/': typeof AuthenticatedInstancesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,15 +107,16 @@ export interface FileRouteTypes {
     | '/instances'
     | '/settings'
     | '/instances/$instanceId'
+    | '/instances/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/setup'
     | '/dashboard'
-    | '/instances'
     | '/settings'
     | '/instances/$instanceId'
+    | '/instances'
   id:
     | '__root__'
     | '/'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/_authenticated/instances'
     | '/_authenticated/settings'
     | '/_authenticated/instances/$instanceId'
+    | '/_authenticated/instances/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -177,6 +188,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/instances/': {
+      id: '/_authenticated/instances/'
+      path: '/'
+      fullPath: '/instances/'
+      preLoaderRoute: typeof AuthenticatedInstancesIndexRouteImport
+      parentRoute: typeof AuthenticatedInstancesRoute
+    }
     '/_authenticated/instances/$instanceId': {
       id: '/_authenticated/instances/$instanceId'
       path: '/$instanceId'
@@ -189,12 +207,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedInstancesRouteChildren {
   AuthenticatedInstancesInstanceIdRoute: typeof AuthenticatedInstancesInstanceIdRoute
+  AuthenticatedInstancesIndexRoute: typeof AuthenticatedInstancesIndexRoute
 }
 
 const AuthenticatedInstancesRouteChildren: AuthenticatedInstancesRouteChildren =
   {
     AuthenticatedInstancesInstanceIdRoute:
       AuthenticatedInstancesInstanceIdRoute,
+    AuthenticatedInstancesIndexRoute: AuthenticatedInstancesIndexRoute,
   }
 
 const AuthenticatedInstancesRouteWithChildren =

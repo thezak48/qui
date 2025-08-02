@@ -11,13 +11,20 @@ function InstanceTorrents() {
   const { instances, isLoading } = useInstances()
   
   if (isLoading) {
-    return <div>Loading...</div>
+    return <div>Loading instances...</div>
   }
   
   const instance = instances?.find(i => i.id === parseInt(instanceId))
   
   if (!instance) {
-    return <Navigate to="/instances" />
+    return (
+      <div className="p-6">
+        <h1>Instance not found</h1>
+        <p>Instance ID: {instanceId}</p>
+        <p>Available instances: {instances?.map(i => i.id).join(', ')}</p>
+        <Navigate to="/instances" />
+      </div>
+    )
   }
   
   return <Torrents instanceId={parseInt(instanceId)} instanceName={instance.name} />

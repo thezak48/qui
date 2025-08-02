@@ -32,8 +32,11 @@ func (h *TorrentsHandler) ListTorrents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse query parameters
-	limit := 100
-	offset := 0
+	limit := 50
+	page := 0
+	sort := "added_on"
+	order := "desc"
+	search := ""
 	
 	if l := r.URL.Query().Get("limit"); l != "" {
 		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 1000 {
@@ -41,14 +44,29 @@ func (h *TorrentsHandler) ListTorrents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	if o := r.URL.Query().Get("offset"); o != "" {
-		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
-			offset = parsed
+	if p := r.URL.Query().Get("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed >= 0 {
+			page = parsed
 		}
 	}
+	
+	if s := r.URL.Query().Get("sort"); s != "" {
+		sort = s
+	}
+	
+	if o := r.URL.Query().Get("order"); o != "" {
+		order = o
+	}
+	
+	if q := r.URL.Query().Get("search"); q != "" {
+		search = q
+	}
 
-	// Get torrents
-	response, err := h.syncManager.InitialLoad(r.Context(), instanceID, limit, offset)
+	// Calculate offset from page
+	offset := page * limit
+
+	// Get torrents with search and sorting
+	response, err := h.syncManager.GetTorrentsWithSearch(r.Context(), instanceID, limit, offset, sort, order, search)
 	if err != nil {
 		log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to get torrents")
 		RespondError(w, http.StatusInternalServerError, "Failed to get torrents")

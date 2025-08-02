@@ -1,4 +1,4 @@
-import { TorrentTableSync } from '@/components/torrents/TorrentTableSync'
+import { TorrentTableOptimized } from '@/components/torrents/TorrentTableOptimized'
 
 interface TorrentsProps {
   instanceId: number
@@ -14,7 +14,7 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
           Manage torrents for this qBittorrent instance
         </p>
       </div>
-      <TorrentTableSync instanceId={instanceId} />
+      <TorrentTableOptimized instanceId={instanceId} />
     </div>
   )
 }

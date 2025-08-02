@@ -3,6 +3,7 @@ package qbittorrent
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,10 +12,20 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// TorrentResponse represents a response containing torrents
+// TorrentResponse represents a response containing torrents with stats
 type TorrentResponse struct {
 	Torrents []qbt.Torrent `json:"torrents"`
 	Total    int           `json:"total"`
+	Stats    *TorrentStats `json:"stats,omitempty"`
+}
+
+// TorrentStats represents aggregated torrent statistics
+type TorrentStats struct {
+	Total       int `json:"total"`
+	Downloading int `json:"downloading"`
+	Seeding     int `json:"seeding"`
+	Paused      int `json:"paused"`
+	Error       int `json:"error"`
 }
 
 // SyncManager manages SyncMainData for efficient torrent updates
@@ -81,6 +92,63 @@ func (sm *SyncManager) InitialLoad(ctx context.Context, instanceID int, limit, o
 		Int("count", len(torrents)).
 		Int("total", total).
 		Msg("Initial torrent load completed")
+
+	return response, nil
+}
+
+// GetTorrentsWithSearch gets torrents with search, sorting, and pagination with stats
+func (sm *SyncManager) GetTorrentsWithSearch(ctx context.Context, instanceID int, limit, offset int, sort, order, search string) (*TorrentResponse, error) {
+	// Build cache key
+	cacheKey := fmt.Sprintf("torrents:search:%d:%d:%d:%s:%s:%s", instanceID, offset, limit, sort, order, search)
+	if cached, found := sm.cache.Get(cacheKey); found {
+		if response, ok := cached.(*TorrentResponse); ok {
+			return response, nil
+		}
+	}
+
+	// Get all torrents for stats calculation (cached separately)
+	allTorrents, err := sm.getAllTorrentsForStats(ctx, instanceID, search)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all torrents for stats: %w", err)
+	}
+
+	// Filter torrents by search if provided
+	var filteredTorrents []qbt.Torrent
+	if search != "" {
+		filteredTorrents = sm.filterTorrentsBySearch(allTorrents, search)
+	} else {
+		filteredTorrents = allTorrents
+	}
+
+	// Calculate stats from filtered torrents
+	stats := sm.calculateStats(filteredTorrents)
+
+	// Apply pagination to filtered results
+	var paginatedTorrents []qbt.Torrent
+	start := offset
+	end := offset + limit
+	if start < len(filteredTorrents) {
+		if end > len(filteredTorrents) {
+			end = len(filteredTorrents)
+		}
+		paginatedTorrents = filteredTorrents[start:end]
+	}
+
+	response := &TorrentResponse{
+		Torrents: paginatedTorrents,
+		Total:    len(filteredTorrents),
+		Stats:    stats,
+	}
+
+	// Cache the response
+	sm.cache.SetWithTTL(cacheKey, response, 1, 10*time.Second)
+
+	log.Debug().
+		Int("instanceID", instanceID).
+		Int("count", len(paginatedTorrents)).
+		Int("total", len(filteredTorrents)).
+		Str("search", search).
+		Msg("Torrent search completed")
 
 	return response, nil
 }
@@ -336,4 +404,79 @@ func (sm *SyncManager) ResetRID(instanceID int) {
 	defer sm.mu.Unlock()
 	delete(sm.ridTracker, instanceID)
 	delete(sm.mainData, instanceID)
+}
+
+// getAllTorrentsForStats gets all torrents for stats calculation (cached)
+func (sm *SyncManager) getAllTorrentsForStats(ctx context.Context, instanceID int, search string) ([]qbt.Torrent, error) {
+	// Use different cache key for search vs no search
+	cacheKey := fmt.Sprintf("all_torrents:%d:%s", instanceID, search)
+	if cached, found := sm.cache.Get(cacheKey); found {
+		if torrents, ok := cached.([]qbt.Torrent); ok {
+			return torrents, nil
+		}
+	}
+
+	// Get client
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client: %w", err)
+	}
+
+	// Get all torrents
+	torrents, err := client.GetTorrentsCtx(ctx, qbt.TorrentFilterOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all torrents: %w", err)
+	}
+
+	// Cache for 30 seconds
+	sm.cache.SetWithTTL(cacheKey, torrents, 1, 30*time.Second)
+
+	return torrents, nil
+}
+
+// filterTorrentsBySearch filters torrents by search string
+func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search string) []qbt.Torrent {
+	if search == "" {
+		return torrents
+	}
+
+	var filtered []qbt.Torrent
+	searchLower := strings.ToLower(search)
+
+	for _, torrent := range torrents {
+		// Search in name, category, and tags
+		nameMatch := strings.Contains(strings.ToLower(torrent.Name), searchLower)
+		categoryMatch := strings.Contains(strings.ToLower(torrent.Category), searchLower)
+		
+		// Search in tags (Tags is a comma-separated string)
+		tagsMatch := strings.Contains(strings.ToLower(torrent.Tags), searchLower)
+
+		if nameMatch || categoryMatch || tagsMatch {
+			filtered = append(filtered, torrent)
+		}
+	}
+
+	return filtered
+}
+
+// calculateStats calculates torrent statistics from a list of torrents
+func (sm *SyncManager) calculateStats(torrents []qbt.Torrent) *TorrentStats {
+	stats := &TorrentStats{
+		Total: len(torrents),
+	}
+
+	for _, torrent := range torrents {
+		switch torrent.State {
+		case qbt.TorrentStateDownloading, qbt.TorrentStateStalledDl, qbt.TorrentStateMetaDl, qbt.TorrentStateQueuedDl, qbt.TorrentStateForcedDl:
+			stats.Downloading++
+		case qbt.TorrentStateUploading, qbt.TorrentStateStalledUp, qbt.TorrentStateQueuedUp, qbt.TorrentStateForcedUp:
+			stats.Seeding++
+		case qbt.TorrentStatePausedDl, qbt.TorrentStatePausedUp:
+			stats.Paused++
+		case qbt.TorrentStateError, qbt.TorrentStateMissingFiles:
+			stats.Error++
+		}
+	}
+
+	return stats
 }

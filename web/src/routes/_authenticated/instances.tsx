@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Instances } from '@/pages/Instances'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_authenticated/instances')({
-  component: Instances,
+  component: () => <Outlet />,
 })

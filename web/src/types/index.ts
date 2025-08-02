@@ -60,9 +60,18 @@ export interface Torrent {
   seedingTimeLimit: number
 }
 
+export interface TorrentStats {
+  total: number
+  downloading: number
+  seeding: number
+  paused: number
+  error: number
+}
+
 export interface TorrentResponse {
   torrents: Torrent[]
   total: number
+  stats?: TorrentStats
 }
 
 export interface MainData {
