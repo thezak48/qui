@@ -1,0 +1,137 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+qBittorrent Alternative WebUI - a self-hosted, single-user web interface for managing multiple qBittorrent instances. Built with Go backend and React frontend, optimized for handling 10k+ torrents.
+
+**Important**: This project is currently in the planning phase. See `prd_final.md` for the complete implementation plan, architecture details, and technical specifications.
+
+## Development Commands
+
+### Backend (Go)
+```bash
+# Install dependencies
+go mod download
+
+# Build backend
+go build -ldflags "-X main.Version=$(git describe --tags --always)" -o qbitweb ./cmd/server
+
+# Run backend in development
+air -c .air.toml  # Hot reload
+
+# Run tests
+go test ./...
+
+# Run with coverage
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+```
+
+### Frontend (React/TypeScript)
+```bash
+# Install dependencies
+cd web && pnpm install
+
+# Run frontend in development
+cd web && pnpm dev
+
+# Build frontend for production
+cd web && pnpm build
+
+# Run frontend tests
+cd web && pnpm test
+
+# Type check
+cd web && pnpm type-check
+```
+
+### Full Build
+```bash
+# Build both frontend and backend into single binary
+make build
+
+# Development mode (run both frontend and backend)
+make dev
+
+# Clean build artifacts
+make clean
+```
+
+## Architecture
+
+### Backend Architecture
+- **Framework**: Chi router (github.com/go-chi/chi/v5)
+- **Database**: SQLite via modernc.org/sqlite (CGO-free)
+- **qBittorrent Client**: github.com/autobrr/go-qbittorrent
+- **Session Management**: gorilla/sessions with secure cookies
+- **Configuration**: Viper with TOML config and environment overrides
+- **Performance**: Ristretto cache, ants/v2 goroutine pool
+
+Key patterns:
+- Frontend assets embedded using `go:embed` 
+- Single user authentication (no multi-tenancy)
+- Connection pooling for multiple qBittorrent instances
+- SyncMainData for efficient updates with 10k+ torrents
+
+### Frontend Architecture
+- **Build**: Vite with React 19 and TypeScript
+- **Routing**: TanStack Router for type-safe routes
+- **Data**: TanStack Query for server state, TanStack Form for forms
+- **UI**: shadcn/ui components exclusively (no custom modifications)
+- **Tables**: TanStack Table v8 with TanStack Virtual for performance
+- **Styling**: Tailwind CSS v4 with CSS-first configuration
+
+Key patterns:
+- Server-side operations for large datasets
+- Virtual scrolling for performance
+- Incremental sync updates via SyncMainData
+- Progressive loading for initial render
+
+## Performance Considerations
+
+When handling 10k+ torrents:
+1. Use SyncMainData API for incremental updates (2-second polling)
+2. Initial load limited to 100-200 torrents with pagination
+3. Virtual scrolling with progressive loading
+4. Server-side filtering/sorting/pagination
+5. Aggressive caching with Ristretto
+
+## Configuration
+
+Environment variables use `QBITWEB__` prefix:
+- `QBITWEB__HOST` (default: localhost or 0.0.0.0 in containers)
+- `QBITWEB__PORT` (default: 8080)
+- `QBITWEB__SESSION_SECRET` (auto-generated if not set)
+- `QBITWEB__DATABASE_PATH` (default: ./data/qbitweb.db)
+- `QBITWEB__LOG_LEVEL` (ERROR, DEBUG, INFO, WARN, TRACE)
+
+Config file: `config.toml` (auto-created on first run)
+
+## API Endpoints
+
+Protected routes require authentication via session cookie or API key header (`X-API-Key`).
+
+- `POST /api/auth/setup` - Initial user setup
+- `POST /api/auth/login` - User login
+- `GET /api/instances` - List all instances
+- `POST /api/instances` - Add new instance
+- `GET /api/instances/{id}/torrents` - Get torrents (paginated)
+- `GET /api/instances/{id}/torrents/sync` - SyncMainData endpoint
+- `POST /api/instances/{id}/torrents` - Add torrent
+- `POST /api/instances/{id}/torrents/bulk-action` - Bulk operations
+
+## Database Schema
+
+Single-user design with encrypted instance credentials:
+- `user` table - Single record enforced
+- `api_keys` table - For automation/scripts
+- `instances` table - qBittorrent instance connections
+
+## Testing Strategy
+
+- Backend: Table-driven tests for handlers
+- Frontend: React Testing Library for components
+- E2E: Playwright for critical user flows
+- Load testing: Simulate 10k+ torrents scenario
