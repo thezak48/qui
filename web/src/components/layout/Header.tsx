@@ -16,7 +16,7 @@ export function Header() {
   return (
     <header className="flex h-16 items-center justify-between border-b px-6">
       <div className="flex items-center gap-4">
-        <h1 className="text-xl font-semibold">qBittorrent Alternative WebUI</h1>
+        <h1 className="text-xl font-semibold">qBit WebUI by <a href="https://github.com/autobrr" target="_blank" rel="noopener noreferrer">autobrr</a></h1>
       </div>
       
       <div className="flex items-center gap-4">

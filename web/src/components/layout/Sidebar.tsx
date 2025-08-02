@@ -49,7 +49,7 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col border-r bg-muted/50">
       <div className="p-6">
-        <h2 className="text-lg font-semibold">qBittorrent WebUI</h2>
+        <h2 className="text-lg font-semibold">autobrr/qbitwebui</h2>
       </div>
       
       <nav className="flex-1 space-y-1 px-3">

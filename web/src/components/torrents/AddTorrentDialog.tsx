@@ -57,7 +57,7 @@ export function AddTorrentDialog({ instanceId }: AddTorrentDialogProps) {
       const submitData: Parameters<typeof api.addTorrent>[1] = {
         startPaused: data.startPaused,
         savePath: data.savePath || undefined,
-        category: data.category || undefined,
+        category: data.category === '__none__' ? undefined : data.category || undefined,
         tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
       }
 
@@ -213,7 +213,7 @@ export function AddTorrentDialog({ instanceId }: AddTorrentDialogProps) {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No category</SelectItem>
+                    <SelectItem value="__none__">No category</SelectItem>
                     {categories && Object.entries(categories).map(([key, cat]) => (
                       <SelectItem key={key} value={cat.name}>
                         {cat.name}
