@@ -159,6 +159,21 @@ Phase 6 is complete! Performance optimization has been successfully implemented:
 - E2E tests
 - Documentation
 
+### Post-Phase 6 Fixes ✅
+
+### Completed Tasks
+- [x] Fixed instance status showing as "Inactive" when actually running
+- [x] Fixed dashboard showing incorrect torrent statistics
+- [x] Corrected field mapping from snake_case to camelCase in backend responses
+- [x] Added real-time polling for instance status updates
+- [x] Created dedicated useInstanceStats hook for dashboard statistics
+
+### Key Fixes
+- **Instance Status**: Now correctly reflects actual connection state with 10-second polling
+- **Dashboard Stats**: Displays accurate torrent counts matching instance view
+- **Field Mapping**: Backend now returns consistent camelCase JSON responses
+- **Performance**: Efficient stats endpoint with proper caching for dashboard
+
 ## Notes
 - Following the PRD exactly as specified in `prd_final.md`
 - Using s0up4200 as the GitHub username as specified
