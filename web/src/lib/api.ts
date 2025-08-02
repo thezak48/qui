@@ -91,12 +91,13 @@ class ApiClient {
 
   // Torrent endpoints
   async getTorrents(
-    instanceId: string,
+    instanceId: number,
     params: {
       page?: number
       limit?: number
       sort?: string
       order?: 'asc' | 'desc'
+      search?: string
       filters?: any
     }
   ): Promise<TorrentResponse> {
@@ -105,6 +106,7 @@ class ApiClient {
     if (params.limit !== undefined) searchParams.set('limit', params.limit.toString())
     if (params.sort) searchParams.set('sort', params.sort)
     if (params.order) searchParams.set('order', params.order)
+    if (params.search) searchParams.set('search', params.search)
     if (params.filters) searchParams.set('filters', JSON.stringify(params.filters))
 
     return this.request<TorrentResponse>(
@@ -112,12 +114,12 @@ class ApiClient {
     )
   }
 
-  async syncMainData(instanceId: string, rid: number): Promise<MainData> {
+  async syncMainData(instanceId: number, rid: number): Promise<MainData> {
     return this.request<MainData>(`/instances/${instanceId}/torrents/sync?rid=${rid}`)
   }
 
   async addTorrent(
-    instanceId: string,
+    instanceId: number,
     data: {
       torrentFile?: File
       urls?: string[]
@@ -149,20 +151,20 @@ class ApiClient {
     return response.json()
   }
 
-  async pauseTorrent(instanceId: string, hash: string): Promise<void> {
+  async pauseTorrent(instanceId: number, hash: string): Promise<void> {
     return this.request(`/instances/${instanceId}/torrents/${hash}/pause`, {
       method: 'PUT',
     })
   }
 
-  async resumeTorrent(instanceId: string, hash: string): Promise<void> {
+  async resumeTorrent(instanceId: number, hash: string): Promise<void> {
     return this.request(`/instances/${instanceId}/torrents/${hash}/resume`, {
       method: 'PUT',
     })
   }
 
   async deleteTorrent(
-    instanceId: string,
+    instanceId: number,
     hash: string,
     deleteFiles: boolean = false
   ): Promise<void> {
@@ -173,7 +175,7 @@ class ApiClient {
   }
 
   async bulkAction(
-    instanceId: string,
+    instanceId: number,
     data: {
       hashes: string[]
       action: 'pause' | 'resume' | 'delete' | 'recheck' | 'setCategory' | 'addTags' | 'removeTags'
@@ -189,12 +191,36 @@ class ApiClient {
   }
 
   // Categories & Tags
-  async getCategories(instanceId: string): Promise<Record<string, { name: string; savePath: string }>> {
+  async getCategories(instanceId: number): Promise<Record<string, { name: string; savePath: string }>> {
     return this.request(`/instances/${instanceId}/categories`)
   }
 
-  async getTags(instanceId: string): Promise<string[]> {
+  async getTags(instanceId: number): Promise<string[]> {
     return this.request(`/instances/${instanceId}/tags`)
+  }
+
+  // User endpoints
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    return this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    })
+  }
+
+  // API Key endpoints
+  async getApiKeys(): Promise<any[]> {
+    return this.request('/api-keys')
+  }
+
+  async createApiKey(name: string): Promise<{ id: number; key: string; name: string }> {
+    return this.request('/api-keys', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    })
+  }
+
+  async deleteApiKey(id: number): Promise<void> {
+    return this.request(`/api-keys/${id}`, { method: 'DELETE' })
   }
 }
 

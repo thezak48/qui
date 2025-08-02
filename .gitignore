@@ -1,2 +1,6 @@
 tmp/*
 .env
+internal/web/dist/*
+data/*
+config.toml
+qbitweb

@@ -51,7 +51,7 @@ export function useInstances() {
   })
 
   return {
-    instances,
+    instances: instances as Instance[] | undefined,
     isLoading,
     error,
     createInstance: createMutation.mutate,

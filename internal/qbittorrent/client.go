@@ -3,7 +3,6 @@ package qbittorrent
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
@@ -23,14 +22,12 @@ type Client struct {
 func NewClient(instanceID int, host string, port int, username, password string) (*Client, error) {
 	// Create the base client
 	cfg := qbt.Config{
-		Host:     fmt.Sprintf("%s:%d", host, port),
-		Username: username,
-		Password: password,
+		Host:      fmt.Sprintf("%s:%d", host, port),
+		Username:  username,
+		Password:  password,
 		BasicUser: username,
 		BasicPass: password,
-		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		Timeout:   30, // timeout in seconds
 	}
 
 	qbtClient := qbt.NewClient(cfg)

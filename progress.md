@@ -65,29 +65,43 @@ Phase 2 is complete! The backend is fully implemented with all core features:
 - qBittorrent client pool & sync manager
 - RESTful API implementation
 
-### Phase 3: Frontend Implementation (Days 8-12) 🚧
+### Phase 3: Frontend Implementation (Days 8-12) ✅
 
 ### Completed Tasks
 - [x] Set up Tailwind CSS v4 with Vite plugin and CSS-first configuration
 - [x] Configure TanStack Router with type-safe routes
 - [x] Initialize shadcn/ui and install required components
 - [x] Create authentication pages (Login, Setup)
-- [x] Implement TanStack Query for API integration (basic setup)
+- [x] Implement TanStack Query for API integration
 - [x] Create API client with all endpoints
 - [x] Implement useAuth hook for authentication
-
 - [x] Create layout components (Sidebar, Header)
 - [x] Create instance management components (InstanceCard, InstanceForm)
 - [x] Fix shadcn/ui component location issue (moved from @ directory)
-- [x] Add routing for instance selection in sidebar
-- [x] Install missing dependencies (lucide-react, class-variance-authority)
-- [x] Fix TypeScript type imports for verbatimModuleSyntax
+- [x] Add routing for instance selection in sidebar with dynamic routes
+- [x] Implement TorrentTable with virtual scrolling and TanStack Table v8
+- [x] Create AddTorrentDialog with TanStack Form for file/URL uploads
+- [x] Implement useTorrentsSync hook for SyncMainData real-time updates
+- [x] Create TorrentActions component for bulk operations
+- [x] Add Dashboard page with instance statistics and real-time updates
+- [x] Implement Settings page with account, security, and API key management
 - [x] Fix build configuration issues
 
-### In Progress
-- [ ] Implement TorrentTable with virtual scrolling
-- [ ] Create torrent management forms with TanStack Form
-- [ ] Implement SyncMainData hook for real-time updates
+### Key Features Implemented
+- **Torrent Management**: Full-featured torrent table with virtual scrolling, sorting, filtering, and selection
+- **Real-time Updates**: SyncMainData integration for efficient updates with 10k+ torrents
+- **Bulk Operations**: Pause, resume, delete, and recheck multiple torrents
+- **Add Torrents**: Support for both file uploads and magnet/URL links
+- **Dashboard**: Overview of all instances with real-time stats
+- **Settings**: Password change, API key management, account information
+
+### Current Status
+Phase 3 is complete! The frontend is fully implemented with all core features:
+- Dynamic routing for instance selection
+- High-performance torrent table with virtual scrolling
+- Real-time updates using SyncMainData
+- Complete torrent management capabilities
+- User settings and API key management
 
 ### Phase 4: Frontend Embedding (Days 13-14)
 - Web handler implementation

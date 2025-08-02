@@ -6,7 +6,6 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/s0up4200/qbitweb/internal/auth"
-	"github.com/s0up4200/qbitweb/internal/models"
 )
 
 // IsAuthenticated middleware checks if the user is authenticated

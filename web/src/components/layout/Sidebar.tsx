@@ -80,28 +80,33 @@ export function Sidebar() {
           <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Instances
           </p>
-          {instances?.map((instance) => (
-            <Link
-              key={instance.id}
-              to="/dashboard"
-              params={{ instanceId: instance.id.toString() }}
-              className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                location.pathname === `/dashboard?instanceId=${instance.id}`
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
-              )}
-            >
-              <HardDrive className="h-4 w-4" />
-              <span className="truncate">{instance.name}</span>
-              <span
+          {instances?.map((instance) => {
+            const instancePath = `/instances/${instance.id}`
+            const isActive = location.pathname === instancePath
+            
+            return (
+              <Link
+                key={instance.id}
+                to="/instances/$instanceId"
+                params={{ instanceId: instance.id.toString() }}
                 className={cn(
-                  'ml-auto h-2 w-2 rounded-full',
-                  instance.isActive ? 'bg-green-500' : 'bg-red-500'
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
                 )}
-              />
-            </Link>
-          ))}
+              >
+                <HardDrive className="h-4 w-4" />
+                <span className="truncate">{instance.name}</span>
+                <span
+                  className={cn(
+                    'ml-auto h-2 w-2 rounded-full',
+                    instance.isActive ? 'bg-green-500' : 'bg-red-500'
+                  )}
+                />
+              </Link>
+            )
+          })}
           {(!instances || instances.length === 0) && (
             <p className="px-3 py-2 text-sm text-muted-foreground">
               No instances configured

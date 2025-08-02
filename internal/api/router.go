@@ -65,17 +65,15 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 			r.Use(apimiddleware.IsAuthenticated(deps.AuthService))
 
 			// Auth routes
-			r.Route("/auth", func(r chi.Router) {
-				r.Post("/logout", authHandler.Logout)
-				r.Get("/me", authHandler.GetCurrentUser)
-				r.Put("/password", authHandler.ChangePassword)
-				
-				// API key management
-				r.Route("/api-keys", func(r chi.Router) {
-					r.Get("/", authHandler.ListAPIKeys)
-					r.Post("/", authHandler.CreateAPIKey)
-					r.Delete("/{id}", authHandler.DeleteAPIKey)
-				})
+			r.Post("/auth/logout", authHandler.Logout)
+			r.Get("/auth/me", authHandler.GetCurrentUser)
+			r.Put("/auth/change-password", authHandler.ChangePassword)
+			
+			// API key management
+			r.Route("/api-keys", func(r chi.Router) {
+				r.Get("/", authHandler.ListAPIKeys)
+				r.Post("/", authHandler.CreateAPIKey)
+				r.Delete("/{id}", authHandler.DeleteAPIKey)
 			})
 
 			// Instance management

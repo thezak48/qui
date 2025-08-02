@@ -83,6 +83,13 @@ Key patterns:
 - **Tables**: TanStack Table v8 with TanStack Virtual for performance
 - **Styling**: Tailwind CSS v4 with CSS-first configuration
 
+#### Important: shadcn/ui Component Installation
+When installing shadcn/ui components, they MUST be installed in the correct location:
+- **Correct**: `web/src/components/ui/`
+- **Wrong**: `web/@/components/ui/`
+
+The components.json file should have been configured during setup to use `src/components/ui` as the component path. If components are installed in the wrong location, move them to `web/src/components/ui/`.
+
 Key patterns:
 - Server-side operations for large datasets
 - Virtual scrolling for performance
