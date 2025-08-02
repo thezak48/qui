@@ -173,3 +173,7 @@ Follow Conventional Commit format:
 - `chore:` Build process or auxiliary tool changes
 
 **CRITICAL**: Never reference Claude or Claude Code in any commit messages
+
+## Commit Co-Authors
+
+- **Important**: Never add co-authors to commits at all
