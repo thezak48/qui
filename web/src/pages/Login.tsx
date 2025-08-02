@@ -10,7 +10,7 @@ import { api } from '@/lib/api'
 
 export function Login() {
   const navigate = useNavigate()
-  const { login, isLoggingIn, loginError, user } = useAuth()
+  const { login, isLoggingIn, loginError } = useAuth()
 
   useEffect(() => {
     // Check if setup is needed

@@ -23,8 +23,6 @@ import { Route as AuthenticatedDashboardImport } from './routes/_authenticated/d
 
 // Create Virtual Routes
 
-const AuthenticatedLazyImport = createFileRoute('/_authenticated')()
-
 // Create/Update Routes
 
 const SetupRoute = SetupImport.update({
@@ -46,11 +44,6 @@ const AuthenticatedRoute = AuthenticatedImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRoute,
 } as any)
-
-const AuthenticatedLazyRoute = AuthenticatedLazyImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRoute,
-} as any).lazy(() => import('./routes/_authenticated.lazy').then((d) => d.Route))
 
 const AuthenticatedSettingsRoute = AuthenticatedSettingsImport.update({
   path: '/settings',

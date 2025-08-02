@@ -1,4 +1,4 @@
-import { AuthResponse, Instance, TorrentResponse, MainData, User } from '@/types'
+import type { AuthResponse, Instance, TorrentResponse, MainData, User } from '@/types'
 
 const API_BASE = '/api'
 

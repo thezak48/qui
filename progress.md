@@ -76,12 +76,18 @@ Phase 2 is complete! The backend is fully implemented with all core features:
 - [x] Create API client with all endpoints
 - [x] Implement useAuth hook for authentication
 
+- [x] Create layout components (Sidebar, Header)
+- [x] Create instance management components (InstanceCard, InstanceForm)
+- [x] Fix shadcn/ui component location issue (moved from @ directory)
+- [x] Add routing for instance selection in sidebar
+- [x] Install missing dependencies (lucide-react, class-variance-authority)
+- [x] Fix TypeScript type imports for verbatimModuleSyntax
+- [x] Fix build configuration issues
+
 ### In Progress
-- [ ] Create instance management components
 - [ ] Implement TorrentTable with virtual scrolling
 - [ ] Create torrent management forms with TanStack Form
 - [ ] Implement SyncMainData hook for real-time updates
-- [ ] Create layout components (Sidebar, Header)
 
 ### Phase 4: Frontend Embedding (Days 13-14)
 - Web handler implementation

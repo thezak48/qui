@@ -1,5 +1,6 @@
-import { createFileRoute, Navigate, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { useAuth } from '@/hooks/useAuth'
+import { AppLayout } from '@/layouts/AppLayout'
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthLayout,
@@ -16,5 +17,5 @@ function AuthLayout() {
     return <Navigate to="/login" />
   }
 
-  return <Outlet />
+  return <AppLayout />
 }
