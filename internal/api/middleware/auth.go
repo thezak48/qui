@@ -1,0 +1,72 @@
+package middleware
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/rs/zerolog/log"
+	"github.com/s0up4200/qbitweb/internal/auth"
+	"github.com/s0up4200/qbitweb/internal/models"
+)
+
+// IsAuthenticated middleware checks if the user is authenticated
+func IsAuthenticated(authService *auth.Service) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Check for API key first
+			if apiKey := r.Header.Get("X-API-Key"); apiKey != "" {
+				// Validate API key
+				apiKeyModel, err := authService.ValidateAPIKey(apiKey)
+				if err != nil {
+					log.Warn().Err(err).Msg("Invalid API key")
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+
+				// Set API key info in context (optional, for logging)
+				log.Debug().Int("apiKeyID", apiKeyModel.ID).Str("name", apiKeyModel.Name).Msg("API key authenticated")
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Check session
+			session, _ := authService.GetSessionStore().Get(r, "user_session")
+			if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// RequireSetup middleware ensures initial setup is complete
+func RequireSetup(authService *auth.Service) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Allow setup endpoint
+			if strings.HasSuffix(r.URL.Path, "/auth/setup") {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Check if setup is complete
+			complete, err := authService.IsSetupComplete()
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to check setup status")
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+
+			if !complete {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusPreconditionRequired)
+				w.Write([]byte(`{"error":"Initial setup required","setup_required":true}`))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
