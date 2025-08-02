@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 qBittorrent Alternative WebUI - a self-hosted, single-user web interface for managing multiple qBittorrent instances. Built with Go backend and React frontend, optimized for handling 10k+ torrents.
 
-**Important**: This project is currently in the planning phase. See `prd_final.md` for the complete implementation plan, architecture details, and technical specifications.
+**Important**: See `prd_final.md` for the complete implementation plan, architecture details, and technical specifications.
 
 ## Development Commands
 
@@ -24,6 +24,9 @@ air -c .air.toml  # Hot reload
 # Run tests
 go test ./...
 
+# Run specific test
+go test -v -run TestFunctionName ./path/to/package
+
 # Run with coverage
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
@@ -40,11 +43,11 @@ cd web && pnpm dev
 # Build frontend for production
 cd web && pnpm build
 
-# Run frontend tests
-cd web && pnpm test
+# Lint frontend code
+cd web && pnpm lint
 
-# Type check
-cd web && pnpm type-check
+# Type check (no test script defined yet)
+cd web && pnpm tsc -b
 ```
 
 ### Full Build
@@ -54,6 +57,21 @@ make build
 
 # Development mode (run both frontend and backend)
 make dev
+
+# Run backend with hot reload
+make dev-backend
+
+# Run frontend development server
+make dev-frontend
+
+# Format code
+make fmt
+
+# Lint code
+make lint
+
+# Install all dependencies
+make deps
 
 # Clean build artifacts
 make clean
@@ -145,5 +163,13 @@ Single-user design with encrypted instance credentials:
 
 ## Commit Guidelines
 
-- Never mention Claude or Claude Code in the commits
-- CRITICAL REMINDER: Do not reference Claude or Claude Code in any commit messages
+Follow Conventional Commit format:
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation only
+- `style:` Code style changes
+- `refactor:` Code refactoring
+- `test:` Test changes
+- `chore:` Build process or auxiliary tool changes
+
+**CRITICAL**: Never reference Claude or Claude Code in any commit messages
