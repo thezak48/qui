@@ -135,3 +135,7 @@ Single-user design with encrypted instance credentials:
 - Frontend: React Testing Library for components
 - E2E: Playwright for critical user flows
 - Load testing: Simulate 10k+ torrents scenario
+
+## Commit Guidelines
+
+- Never mention Claude or Claude Code in the commits
