@@ -103,17 +103,34 @@ Phase 3 is complete! The frontend is fully implemented with all core features:
 - Complete torrent management capabilities
 - User settings and API key management
 
-### Phase 4: Frontend Embedding (Days 13-14)
+### Phase 4: Authentication & Integration Fixes ✅
+
+### Completed Tasks
+- [x] Fixed authentication redirect flow for initial setup
+- [x] Implemented proper setup detection and routing
+- [x] Added Vite proxy configuration for API calls during development
+- [x] Fixed RequireSetup middleware to allow setup check endpoint
+- [x] Resolved database is_active flag synchronization with client health status
+- [x] Fixed qBittorrent instance connection status tracking
+- [x] Updated gitignore patterns for proper build artifact exclusion
+
+### Key Features Implemented
+- **Setup Flow**: Automatic redirect to setup page when no user exists
+- **Authentication**: Seamless login/logout with proper session management
+- **Instance Management**: Real-time connection status tracking and health monitoring
+- **Development Setup**: Proper API proxying between frontend and backend during development
+
+### Phase 5: Frontend Embedding (Days 13-14)
 - Web handler implementation
 - Build process integration
 - Single binary distribution
 
-### Phase 5: Performance Optimization (Days 15-16)
+### Phase 6: Performance Optimization (Days 15-16)
 - Backend optimizations for 10k+ torrents
 - Frontend optimizations
 - SyncMainData implementation
 
-### Phase 6: Testing and Documentation (Days 17-18)
+### Phase 7: Testing and Documentation (Days 17-18)
 - Backend tests
 - Frontend tests
 - E2E tests

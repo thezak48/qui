@@ -14,8 +14,8 @@ export function Login() {
 
   useEffect(() => {
     // Check if setup is needed
-    api.checkAuth().catch((error) => {
-      if (error.message.includes('no user exists')) {
+    api.checkSetupRequired().then(setupRequired => {
+      if (setupRequired) {
         navigate({ to: '/setup' })
       }
     })

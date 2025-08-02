@@ -29,6 +29,19 @@ class ApiClient {
     return this.request<User>('/auth/me')
   }
 
+  async checkSetupRequired(): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE}/auth/check-setup`, {
+        method: 'GET',
+        credentials: 'include',
+      })
+      const data = await response.json()
+      return data.setupRequired || false
+    } catch {
+      return false
+    }
+  }
+
   async setup(username: string, password: string): Promise<AuthResponse> {
     return this.request<AuthResponse>('/auth/setup', {
       method: 'POST',

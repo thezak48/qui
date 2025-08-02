@@ -58,6 +58,7 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/setup", authHandler.Setup)
 			r.Post("/login", authHandler.Login)
+			r.Get("/check-setup", authHandler.CheckSetupRequired)
 		})
 
 		// Protected routes

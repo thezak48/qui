@@ -44,8 +44,8 @@ func IsAuthenticated(authService *auth.Service) func(http.Handler) http.Handler 
 func RequireSetup(authService *auth.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Allow setup endpoint
-			if strings.HasSuffix(r.URL.Path, "/auth/setup") {
+			// Allow setup-related endpoints
+			if strings.HasSuffix(r.URL.Path, "/auth/setup") || strings.HasSuffix(r.URL.Path, "/auth/check-setup") {
 				next.ServeHTTP(w, r)
 				return
 			}

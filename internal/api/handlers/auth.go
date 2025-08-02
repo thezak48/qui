@@ -200,6 +200,20 @@ func (h *AuthHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// CheckSetupRequired checks if initial setup is required
+func (h *AuthHandler) CheckSetupRequired(w http.ResponseWriter, r *http.Request) {
+	complete, err := h.authService.IsSetupComplete()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to check setup status")
+		RespondError(w, http.StatusInternalServerError, "Failed to check setup status")
+		return
+	}
+
+	RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"setupRequired": !complete,
+	})
+}
+
 // ChangePassword handles password change requests
 func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	var req ChangePasswordRequest

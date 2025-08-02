@@ -113,10 +113,13 @@ func (cp *ClientPool) createClient(instanceID int) (*Client, error) {
 	// Store in pool
 	cp.clients[instanceID] = client
 
-	// Update last connected timestamp
+	// Update last connected timestamp and mark as active
 	go func() {
 		if err := cp.instanceStore.UpdateLastConnected(instanceID); err != nil {
 			log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to update last connected timestamp")
+		}
+		if err := cp.instanceStore.UpdateActive(instanceID, true); err != nil {
+			log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to update active status")
 		}
 	}()
 
@@ -169,9 +172,19 @@ func (cp *ClientPool) performHealthChecks() {
 			if err := client.HealthCheck(ctx); err != nil {
 				log.Warn().Err(err).Int("instanceID", instanceID).Msg("Health check failed")
 				
+				// Mark as inactive in database
+				if err := cp.instanceStore.UpdateActive(instanceID, false); err != nil {
+					log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to update inactive status")
+				}
+				
 				// Try to recreate the client
 				if _, err := cp.createClient(instanceID); err != nil {
 					log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to recreate client")
+				}
+			} else {
+				// Health check succeeded, ensure marked as active
+				if err := cp.instanceStore.UpdateActive(instanceID, true); err != nil {
+					log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to update active status")
 				}
 			}
 		})
