@@ -64,8 +64,8 @@ export function Sidebar() {
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
               <Icon className="h-4 w-4" />
@@ -92,8 +92,8 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
                 <HardDrive className="h-4 w-4" />
@@ -101,7 +101,7 @@ export function Sidebar() {
                 <span
                   className={cn(
                     'ml-auto h-2 w-2 rounded-full',
-                    instance.isActive ? 'bg-green-500' : 'bg-red-500'
+                    instance.isActive ? 'bg-chart-3' : 'bg-destructive'
                   )}
                 />
               </Link>
