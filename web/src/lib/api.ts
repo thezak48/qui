@@ -102,6 +102,32 @@ class ApiClient {
     return this.request(`/instances/${id}/test`, { method: 'POST' })
   }
 
+  async getInstanceStats(id: number): Promise<{
+    instanceId: number
+    connected: boolean
+    torrents: {
+      total: number
+      downloading: number
+      seeding: number
+      paused: number
+      error: number
+      completed: number
+    }
+    speeds: {
+      download: number
+      upload: number
+    }
+    serverState?: {
+      downloadSpeed: number
+      uploadSpeed: number
+      downloaded: number
+      uploaded: number
+      freeSpace: number
+    }
+  }> {
+    return this.request(`/instances/${id}/stats`)
+  }
+
   // Torrent endpoints
   async getTorrents(
     instanceId: number,

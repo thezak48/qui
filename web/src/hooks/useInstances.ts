@@ -8,6 +8,7 @@ export function useInstances() {
   const { data: instances, isLoading, error } = useQuery({
     queryKey: ['instances'],
     queryFn: () => api.getInstances(),
+    refetchInterval: 10000, // Refetch every 10 seconds to update status
   })
 
   const createMutation = useMutation({

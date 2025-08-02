@@ -6,18 +6,19 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/autobrr/go-qbittorrent"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
 	"github.com/s0up4200/qbitweb/internal/models"
-	"github.com/s0up4200/qbitweb/internal/qbittorrent"
+	internalqbittorrent "github.com/s0up4200/qbitweb/internal/qbittorrent"
 )
 
 type InstancesHandler struct {
 	instanceStore *models.InstanceStore
-	clientPool    *qbittorrent.ClientPool
+	clientPool    *internalqbittorrent.ClientPool
 }
 
-func NewInstancesHandler(instanceStore *models.InstanceStore, clientPool *qbittorrent.ClientPool) *InstancesHandler {
+func NewInstancesHandler(instanceStore *models.InstanceStore, clientPool *internalqbittorrent.ClientPool) *InstancesHandler {
 	return &InstancesHandler{
 		instanceStore: instanceStore,
 		clientPool:    clientPool,
@@ -63,10 +64,10 @@ func (h *InstancesHandler) ListInstances(w http.ResponseWriter, r *http.Request)
 			"host":              instance.Host,
 			"port":              instance.Port,
 			"username":          instance.Username,
-			"is_active":         instance.IsActive,
-			"last_connected_at": instance.LastConnectedAt,
-			"created_at":        instance.CreatedAt,
-			"updated_at":        instance.UpdatedAt,
+			"isActive":          instance.IsActive,
+			"lastConnectedAt":   instance.LastConnectedAt,
+			"createdAt":         instance.CreatedAt,
+			"updatedAt":         instance.UpdatedAt,
 		}
 	}
 
@@ -111,10 +112,10 @@ func (h *InstancesHandler) CreateInstance(w http.ResponseWriter, r *http.Request
 		"host":              instance.Host,
 		"port":              instance.Port,
 		"username":          instance.Username,
-		"is_active":         instance.IsActive,
-		"last_connected_at": instance.LastConnectedAt,
-		"created_at":        instance.CreatedAt,
-		"updated_at":        instance.UpdatedAt,
+		"isActive":          instance.IsActive,
+		"lastConnectedAt":   instance.LastConnectedAt,
+		"createdAt":         instance.CreatedAt,
+		"updatedAt":         instance.UpdatedAt,
 	})
 }
 
@@ -160,10 +161,10 @@ func (h *InstancesHandler) UpdateInstance(w http.ResponseWriter, r *http.Request
 		"host":              instance.Host,
 		"port":              instance.Port,
 		"username":          instance.Username,
-		"is_active":         instance.IsActive,
-		"last_connected_at": instance.LastConnectedAt,
-		"created_at":        instance.CreatedAt,
-		"updated_at":        instance.UpdatedAt,
+		"isActive":          instance.IsActive,
+		"lastConnectedAt":   instance.LastConnectedAt,
+		"createdAt":         instance.CreatedAt,
+		"updatedAt":         instance.UpdatedAt,
 	})
 }
 
@@ -238,34 +239,102 @@ func (h *InstancesHandler) GetInstanceStats(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Default stats for when connection fails
+	stats := map[string]interface{}{
+		"instanceId": instanceID,
+		"connected":  false,
+		"torrents": map[string]interface{}{
+			"total":       0,
+			"downloading": 0,
+			"seeding":     0,
+			"paused":      0,
+			"error":       0,
+			"completed":   0,
+		},
+		"speeds": map[string]interface{}{
+			"download": 0,
+			"upload":   0,
+		},
+	}
+
 	// Get client
 	client, err := h.clientPool.GetClient(instanceID)
 	if err != nil {
 		log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to get client")
-		RespondError(w, http.StatusInternalServerError, "Failed to connect to instance")
+		// Return default stats instead of error
+		RespondJSON(w, http.StatusOK, stats)
 		return
 	}
 
-	// Get stats from qBittorrent
-	// This is a simplified version - you can expand with more stats
+	// Update connected status
+	stats["connected"] = client.IsHealthy()
+
+	// Get stats from qBittorrent using full torrent list for accurate counts
+	torrents, err := client.GetTorrentsCtx(r.Context(), qbittorrent.TorrentFilterOptions{})
+	if err != nil {
+		log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to get torrents")
+		// Return default stats instead of error
+		RespondJSON(w, http.StatusOK, stats)
+		return
+	}
+
+	// Calculate torrent statistics
+	var downloading, seeding, paused, error, completed int
+	var totalDownloadSpeed, totalUploadSpeed int64
+
+	for _, torrent := range torrents {
+		// Count by state
+		switch torrent.State {
+		case "downloading", "stalledDL", "metaDL", "queuedDL", "allocating", "checkingDL":
+			downloading++
+		case "uploading", "stalledUP", "queuedUP", "checkingUP":
+			seeding++
+		case "pausedDL", "pausedUP":
+			paused++
+		case "error", "missingFiles":
+			error++
+		}
+
+		// Count completed
+		if torrent.Progress == 1 {
+			completed++
+		}
+
+		// Sum speeds
+		totalDownloadSpeed += torrent.DlSpeed
+		totalUploadSpeed += torrent.UpSpeed
+	}
+
+	// Update stats with actual values
+	stats["torrents"] = map[string]interface{}{
+		"total":       len(torrents),
+		"downloading": downloading,
+		"seeding":     seeding,
+		"paused":      paused,
+		"error":       error,
+		"completed":   completed,
+	}
+	stats["speeds"] = map[string]interface{}{
+		"download": totalDownloadSpeed,
+		"upload":   totalUploadSpeed,
+	}
+
+	// Get server state for additional info
 	mainData, err := client.SyncMainDataCtx(r.Context(), 0)
 	if err != nil {
-		log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to get stats")
-		RespondError(w, http.StatusInternalServerError, "Failed to get instance stats")
-		return
+		log.Warn().Err(err).Int("instanceID", instanceID).Msg("Failed to get server state")
+		// Don't fail the request, just log the warning
 	}
 
-	stats := map[string]interface{}{
-		"instance_id": instanceID,
-		"connected":   client.IsHealthy(),
-		"server_state": map[string]interface{}{
-			"download_speed": mainData.ServerState.DlInfoSpeed,
-			"upload_speed":   mainData.ServerState.UpInfoSpeed,
-			"downloaded":     mainData.ServerState.DlInfoData,
-			"uploaded":       mainData.ServerState.UpInfoData,
-			"free_space":     mainData.ServerState.FreeSpaceOnDisk,
-		},
-		"torrents_count": len(mainData.Torrents),
+	// Add server state if available
+	if mainData != nil {
+		stats["serverState"] = map[string]interface{}{
+			"downloadSpeed": mainData.ServerState.DlInfoSpeed,
+			"uploadSpeed":   mainData.ServerState.UpInfoSpeed,
+			"downloaded":    mainData.ServerState.DlInfoData,
+			"uploaded":      mainData.ServerState.UpInfoData,
+			"freeSpace":     mainData.ServerState.FreeSpaceOnDisk,
+		}
 	}
 
 	RespondJSON(w, http.StatusOK, stats)

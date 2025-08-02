@@ -1,5 +1,5 @@
 import { useInstances } from '@/hooks/useInstances'
-import { useTorrentsSync } from '@/hooks/useTorrentsSync'
+import { useInstanceStats } from '@/hooks/useInstanceStats'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { HardDrive, Download, Upload, AlertCircle } from 'lucide-react'
@@ -19,12 +19,88 @@ function formatSpeed(bytesPerSecond: number): string {
 }
 
 function InstanceCard({ instance }: { instance: any }) {
-  const { stats } = useTorrentsSync(instance.id, { 
+  const { data: stats, isLoading, error } = useInstanceStats(instance.id, { 
+    enabled: true, // Always fetch stats, regardless of isActive status
     pollingInterval: 5000 // Slower polling for dashboard
   })
   
-  const downloadSpeed = stats.totalDownloadSpeed
-  const uploadSpeed = stats.totalUploadSpeed
+  // Show loading only on first load
+  if (isLoading && !stats) {
+    return (
+      <Link to="/instances/$instanceId" params={{ instanceId: instance.id.toString() }}>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-60">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">{instance.name}</CardTitle>
+              <Badge variant={instance.isActive ? 'default' : 'destructive'}>
+                {instance.isActive ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
+            <CardDescription>{instance.host}:{instance.port}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Loading stats...</p>
+          </CardContent>
+        </Card>
+      </Link>
+    )
+  }
+  
+  // If we have stats but instance is not connected, show with zero values
+  if (stats && !stats.connected) {
+    return (
+      <Link to="/instances/$instanceId" params={{ instanceId: instance.id.toString() }}>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">{instance.name}</CardTitle>
+              <Badge variant="destructive">Disconnected</Badge>
+            </div>
+            <CardDescription>{instance.host}:{instance.port}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Total</p>
+                  <p className="font-semibold">0</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Active</p>
+                  <p className="font-semibold">0</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground text-center">
+                Instance is disconnected
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+    )
+  }
+  
+  // If we have an error or no stats data, show error state
+  if (error || !stats || !stats.torrents) {
+    return (
+      <Link to="/instances/$instanceId" params={{ instanceId: instance.id.toString() }}>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer opacity-60">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">{instance.name}</CardTitle>
+              <Badge variant="destructive">Error</Badge>
+            </div>
+            <CardDescription>{instance.host}:{instance.port}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Failed to load stats
+            </p>
+          </CardContent>
+        </Card>
+      </Link>
+    )
+  }
   
   return (
     <Link to="/instances/$instanceId" params={{ instanceId: instance.id.toString() }}>
@@ -32,8 +108,8 @@ function InstanceCard({ instance }: { instance: any }) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">{instance.name}</CardTitle>
-            <Badge variant={instance.isActive ? 'default' : 'destructive'}>
-              {instance.isActive ? 'Active' : 'Inactive'}
+            <Badge variant={instance.isActive && stats.connected ? 'default' : 'destructive'}>
+              {instance.isActive && stats.connected ? 'Active' : 'Inactive'}
             </Badge>
           </div>
           <CardDescription>{instance.host}:{instance.port}</CardDescription>
@@ -43,11 +119,11 @@ function InstanceCard({ instance }: { instance: any }) {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Total</p>
-                <p className="font-semibold">{stats.total}</p>
+                <p className="font-semibold">{stats.torrents.total}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Active</p>
-                <p className="font-semibold">{stats.downloading + stats.seeding}</p>
+                <p className="font-semibold">{stats.torrents.downloading + stats.torrents.seeding}</p>
               </div>
             </div>
             
@@ -57,21 +133,21 @@ function InstanceCard({ instance }: { instance: any }) {
                   <Download className="h-3 w-3" />
                   Download
                 </span>
-                <span className="font-mono">{formatSpeed(downloadSpeed)}</span>
+                <span className="font-mono">{formatSpeed(stats.speeds.download)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-1">
                   <Upload className="h-3 w-3" />
                   Upload
                 </span>
-                <span className="font-mono">{formatSpeed(uploadSpeed)}</span>
+                <span className="font-mono">{formatSpeed(stats.speeds.upload)}</span>
               </div>
             </div>
             
-            {stats.error > 0 && (
+            {stats.torrents.error > 0 && (
               <div className="flex items-center gap-2 text-destructive text-sm">
                 <AlertCircle className="h-4 w-4" />
-                {stats.error} torrents with errors
+                {stats.torrents.error} torrents with errors
               </div>
             )}
           </div>
@@ -88,8 +164,8 @@ export function Dashboard() {
     return <div className="p-6">Loading...</div>
   }
   
-  const activeInstances = instances?.filter(i => i.isActive) || []
-  const inactiveInstances = instances?.filter(i => !i.isActive) || []
+  // Don't filter by isActive anymore - let the stats determine the actual status
+  const allInstances = instances || []
   
   return (
     <div className="container mx-auto p-6">
@@ -112,30 +188,18 @@ export function Dashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{instances.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  {activeInstances.length} active, {inactiveInstances.length} inactive
+                  Manage your qBittorrent instances
                 </p>
               </CardContent>
             </Card>
           </div>
           
-          {/* Active Instances */}
-          {activeInstances.length > 0 && (
+          {/* All Instances */}
+          {allInstances.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Active Instances</h2>
+              <h2 className="text-xl font-semibold mb-4">Instances</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {activeInstances.map(instance => (
-                  <InstanceCard key={instance.id} instance={instance} />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Inactive Instances */}
-          {inactiveInstances.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4 text-muted-foreground">Inactive Instances</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 opacity-60">
-                {inactiveInstances.map(instance => (
+                {allInstances.map(instance => (
                   <InstanceCard key={instance.id} instance={instance} />
                 ))}
               </div>
