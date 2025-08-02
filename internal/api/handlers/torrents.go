@@ -34,7 +34,7 @@ func (h *TorrentsHandler) ListTorrents(w http.ResponseWriter, r *http.Request) {
 	// Parse query parameters
 	limit := 50
 	page := 0
-	sort := "added_on"
+	sort := "addedOn"
 	order := "desc"
 	search := ""
 	
@@ -61,6 +61,15 @@ func (h *TorrentsHandler) ListTorrents(w http.ResponseWriter, r *http.Request) {
 	if q := r.URL.Query().Get("search"); q != "" {
 		search = q
 	}
+	
+	// Debug logging
+	log.Debug().
+		Str("sort", sort).
+		Str("order", order).
+		Int("page", page).
+		Int("limit", limit).
+		Str("search", search).
+		Msg("Torrent list request parameters")
 
 	// Calculate offset from page
 	offset := page * limit

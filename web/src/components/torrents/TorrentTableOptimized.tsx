@@ -152,6 +152,30 @@ const columns: ColumnDef<Torrent>[] = [
     size: 80,
   },
   {
+    accessorKey: 'addedOn',
+    header: 'Added',
+    cell: ({ row }) => {
+      const addedOn = row.original.addedOn
+      if (!addedOn || addedOn === 0) {
+        return '-'
+      }
+      const date = new Date(addedOn * 1000) // Convert from Unix timestamp
+      
+      // Format: M/D/YYYY, h:mm:ss AM/PM
+      const month = date.getMonth() + 1 // getMonth() returns 0-11
+      const day = date.getDate()
+      const year = date.getFullYear()
+      const hours = date.getHours()
+      const minutes = date.getMinutes()
+      const seconds = date.getSeconds()
+      const ampm = hours >= 12 ? 'PM' : 'AM'
+      const displayHours = hours % 12 || 12 // Convert to 12-hour format
+      
+      return `${month}/${day}/${year}, ${displayHours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} ${ampm}`
+    },
+    size: 150,
+  },
+  {
     accessorKey: 'category',
     header: 'Category',
     cell: ({ row }) => row.original.category || '-',

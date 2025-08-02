@@ -3,6 +3,7 @@ package qbittorrent
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -10,13 +11,14 @@ import (
 	qbt "github.com/autobrr/go-qbittorrent"
 	"github.com/dgraph-io/ristretto"
 	"github.com/rs/zerolog/log"
+	"github.com/s0up4200/qbitweb/internal/api/converters"
 )
 
 // TorrentResponse represents a response containing torrents with stats
 type TorrentResponse struct {
-	Torrents []qbt.Torrent `json:"torrents"`
-	Total    int           `json:"total"`
-	Stats    *TorrentStats `json:"stats,omitempty"`
+	Torrents []converters.Torrent `json:"torrents"`
+	Total    int                  `json:"total"`
+	Stats    *TorrentStats        `json:"stats,omitempty"`
 }
 
 // TorrentStats represents aggregated torrent statistics
@@ -80,7 +82,7 @@ func (sm *SyncManager) InitialLoad(ctx context.Context, instanceID int, limit, o
 	total := sm.getTotalCount(ctx, instanceID)
 
 	response := &TorrentResponse{
-		Torrents: torrents,
+		Torrents: converters.ConvertTorrents(torrents),
 		Total:    total,
 	}
 
@@ -123,6 +125,9 @@ func (sm *SyncManager) GetTorrentsWithSearch(ctx context.Context, instanceID int
 	// Calculate stats from filtered torrents
 	stats := sm.calculateStats(filteredTorrents)
 
+	// Sort torrents before pagination
+	sm.sortTorrents(filteredTorrents, sort, order)
+
 	// Apply pagination to filtered results
 	var paginatedTorrents []qbt.Torrent
 	start := offset
@@ -135,7 +140,7 @@ func (sm *SyncManager) GetTorrentsWithSearch(ctx context.Context, instanceID int
 	}
 
 	response := &TorrentResponse{
-		Torrents: paginatedTorrents,
+		Torrents: converters.ConvertTorrents(paginatedTorrents),
 		Total:    len(filteredTorrents),
 		Stats:    stats,
 	}
@@ -224,7 +229,7 @@ func (sm *SyncManager) GetFilteredTorrents(ctx context.Context, instanceID int, 
 	}
 
 	response := &TorrentResponse{
-		Torrents: torrents,
+		Torrents: converters.ConvertTorrents(torrents),
 		Total:    total,
 	}
 
@@ -479,4 +484,56 @@ func (sm *SyncManager) calculateStats(torrents []qbt.Torrent) *TorrentStats {
 	}
 
 	return stats
+}
+
+// sortTorrents sorts torrents in-place based on the given field and order
+func (sm *SyncManager) sortTorrents(torrents []qbt.Torrent, sortField, order string) {
+	// Default to descending order if not specified
+	if order != "asc" && order != "desc" {
+		order = "desc"
+	}
+	
+	log.Debug().
+		Str("sortField", sortField).
+		Str("order", order).
+		Int("torrentCount", len(torrents)).
+		Msg("Sorting torrents")
+
+	sort.Slice(torrents, func(i, j int) bool {
+		var less bool
+		
+		switch sortField {
+		case "name":
+			less = strings.ToLower(torrents[i].Name) < strings.ToLower(torrents[j].Name)
+		case "size":
+			less = torrents[i].Size < torrents[j].Size
+		case "progress":
+			less = torrents[i].Progress < torrents[j].Progress
+		case "dlspeed":
+			less = torrents[i].DlSpeed < torrents[j].DlSpeed
+		case "upspeed":
+			less = torrents[i].UpSpeed < torrents[j].UpSpeed
+		case "eta":
+			less = torrents[i].ETA < torrents[j].ETA
+		case "ratio":
+			less = torrents[i].Ratio < torrents[j].Ratio
+		case "category":
+			less = strings.ToLower(torrents[i].Category) < strings.ToLower(torrents[j].Category)
+		case "tags":
+			less = strings.ToLower(torrents[i].Tags) < strings.ToLower(torrents[j].Tags)
+		case "added_on", "addedOn":
+			less = torrents[i].AddedOn < torrents[j].AddedOn
+		case "state":
+			less = torrents[i].State < torrents[j].State
+		default:
+			// Default to sorting by added date (newest first)
+			less = torrents[i].AddedOn < torrents[j].AddedOn
+		}
+		
+		// Reverse for descending order
+		if order == "desc" {
+			return !less
+		}
+		return less
+	})
 }
