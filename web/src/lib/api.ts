@@ -1,0 +1,201 @@
+import { AuthResponse, Instance, TorrentResponse, MainData, User } from '@/types'
+
+const API_BASE = '/api'
+
+class ApiClient {
+  private async request<T>(
+    endpoint: string,
+    options?: RequestInit
+  ): Promise<T> {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(error || `HTTP error! status: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  // Auth endpoints
+  async checkAuth(): Promise<User> {
+    return this.request<User>('/auth/me')
+  }
+
+  async setup(username: string, password: string): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/auth/setup', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    })
+  }
+
+  async login(username: string, password: string): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    })
+  }
+
+  async logout(): Promise<void> {
+    return this.request('/auth/logout', { method: 'POST' })
+  }
+
+  // Instance endpoints
+  async getInstances(): Promise<Instance[]> {
+    return this.request<Instance[]>('/instances')
+  }
+
+  async createInstance(data: {
+    name: string
+    host: string
+    port: number
+    username: string
+    password: string
+  }): Promise<Instance> {
+    return this.request<Instance>('/instances', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateInstance(
+    id: number,
+    data: Partial<{
+      name: string
+      host: string
+      port: number
+      username: string
+      password: string
+    }>
+  ): Promise<Instance> {
+    return this.request<Instance>(`/instances/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteInstance(id: number): Promise<void> {
+    return this.request(`/instances/${id}`, { method: 'DELETE' })
+  }
+
+  async testConnection(id: number): Promise<{ success: boolean; message: string }> {
+    return this.request(`/instances/${id}/test`, { method: 'POST' })
+  }
+
+  // Torrent endpoints
+  async getTorrents(
+    instanceId: string,
+    params: {
+      page?: number
+      limit?: number
+      sort?: string
+      order?: 'asc' | 'desc'
+      filters?: any
+    }
+  ): Promise<TorrentResponse> {
+    const searchParams = new URLSearchParams()
+    if (params.page !== undefined) searchParams.set('page', params.page.toString())
+    if (params.limit !== undefined) searchParams.set('limit', params.limit.toString())
+    if (params.sort) searchParams.set('sort', params.sort)
+    if (params.order) searchParams.set('order', params.order)
+    if (params.filters) searchParams.set('filters', JSON.stringify(params.filters))
+
+    return this.request<TorrentResponse>(
+      `/instances/${instanceId}/torrents?${searchParams}`
+    )
+  }
+
+  async syncMainData(instanceId: string, rid: number): Promise<MainData> {
+    return this.request<MainData>(`/instances/${instanceId}/torrents/sync?rid=${rid}`)
+  }
+
+  async addTorrent(
+    instanceId: string,
+    data: {
+      torrentFile?: File
+      urls?: string[]
+      category?: string
+      tags?: string[]
+      startPaused?: boolean
+      savePath?: string
+    }
+  ): Promise<{ success: boolean; message?: string }> {
+    const formData = new FormData()
+    if (data.torrentFile) formData.append('torrent', data.torrentFile)
+    if (data.urls) formData.append('urls', data.urls.join('\n'))
+    if (data.category) formData.append('category', data.category)
+    if (data.tags) formData.append('tags', data.tags.join(','))
+    if (data.startPaused !== undefined) formData.append('paused', data.startPaused.toString())
+    if (data.savePath) formData.append('savepath', data.savePath)
+
+    const response = await fetch(`${API_BASE}/instances/${instanceId}/torrents`, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(error || `HTTP error! status: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  async pauseTorrent(instanceId: string, hash: string): Promise<void> {
+    return this.request(`/instances/${instanceId}/torrents/${hash}/pause`, {
+      method: 'PUT',
+    })
+  }
+
+  async resumeTorrent(instanceId: string, hash: string): Promise<void> {
+    return this.request(`/instances/${instanceId}/torrents/${hash}/resume`, {
+      method: 'PUT',
+    })
+  }
+
+  async deleteTorrent(
+    instanceId: string,
+    hash: string,
+    deleteFiles: boolean = false
+  ): Promise<void> {
+    return this.request(
+      `/instances/${instanceId}/torrents/${hash}?deleteFiles=${deleteFiles}`,
+      { method: 'DELETE' }
+    )
+  }
+
+  async bulkAction(
+    instanceId: string,
+    data: {
+      hashes: string[]
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'setCategory' | 'addTags' | 'removeTags'
+      deleteFiles?: boolean
+      category?: string
+      tags?: string[]
+    }
+  ): Promise<void> {
+    return this.request(`/instances/${instanceId}/torrents/bulk-action`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  // Categories & Tags
+  async getCategories(instanceId: string): Promise<Record<string, { name: string; savePath: string }>> {
+    return this.request(`/instances/${instanceId}/categories`)
+  }
+
+  async getTags(instanceId: string): Promise<string[]> {
+    return this.request(`/instances/${instanceId}/tags`)
+  }
+}
+
+export const api = new ApiClient()

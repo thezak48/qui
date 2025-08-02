@@ -1,0 +1,20 @@
+import { createFileRoute, Navigate, Outlet } from '@tanstack/react-router'
+import { useAuth } from '@/hooks/useAuth'
+
+export const Route = createFileRoute('/_authenticated')({
+  component: AuthLayout,
+})
+
+function AuthLayout() {
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />
+  }
+
+  return <Outlet />
+}

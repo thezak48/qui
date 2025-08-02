@@ -139,3 +139,4 @@ Single-user design with encrypted instance credentials:
 ## Commit Guidelines
 
 - Never mention Claude or Claude Code in the commits
+- CRITICAL REMINDER: Do not reference Claude or Claude Code in any commit messages
