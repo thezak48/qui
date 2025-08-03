@@ -4,15 +4,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Loader2, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { Torrent } from '@/types'
 
 interface TorrentDetailsPanelProps {
   instanceId: number
   torrent: Torrent | null
-  onClose: () => void
 }
 
 // Helper functions
@@ -67,7 +65,7 @@ function getTrackerStatusBadge(status: number) {
   }
 }
 
-export function TorrentDetailsPanel({ instanceId, torrent, onClose }: TorrentDetailsPanelProps) {
+export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanelProps) {
   const [activeTab, setActiveTab] = useState('general')
 
   // Reset tab when torrent changes
@@ -101,12 +99,9 @@ export function TorrentDetailsPanel({ instanceId, torrent, onClose }: TorrentDet
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between p-3 border-b">
-        <h3 className="text-sm font-medium truncate flex-1 mr-2" title={torrent.name}>
+        <h3 className="text-sm font-medium truncate flex-1" title={torrent.name}>
           {torrent.name}
         </h3>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">

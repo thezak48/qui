@@ -668,12 +668,11 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
       </div>
       
       <Sheet open={!!selectedTorrent} onOpenChange={(open) => !open && setSelectedTorrent(null)}>
-        <SheetContent className="w-full sm:w-[540px] md:w-[720px] lg:w-[800px] p-0">
+        <SheetContent className="w-full sm:w-[480px] md:w-[540px] lg:w-[600px] xl:w-[640px] sm:max-w-[480px] md:max-w-[540px] lg:max-w-[600px] xl:max-w-[640px] p-0">
           {selectedTorrent && (
             <TorrentDetailsPanel
               instanceId={instanceId}
               torrent={selectedTorrent}
-              onClose={() => setSelectedTorrent(null)}
             />
           )}
         </SheetContent>
