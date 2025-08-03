@@ -366,8 +366,21 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       else if (sortedTorrents.length < loadedRows) {
         setLoadedRows(sortedTorrents.length)
       }
+      // If data increased significantly, reset to show more rows
+      else if (sortedTorrents.length > loadedRows && loadedRows < 100) {
+        setLoadedRows(Math.min(100, sortedTorrents.length))
+      }
     }
   }, [sortedTorrents.length, loadedRows])
+
+  // Reset loaded rows when filters change
+  useEffect(() => {
+    setLoadedRows(Math.min(100, sortedTorrents.length))
+    // Scroll to top and force virtualizer recalculation
+    if (parentRef.current) {
+      parentRef.current.scrollTop = 0
+    }
+  }, [filters])
 
   // Debug logging
   useEffect(() => {
