@@ -24,7 +24,7 @@ export function AppLayout() {
       </div>
       
       <div className="flex flex-1 flex-col min-w-0">
-        <Header>
+        <Header sidebarCollapsed={sidebarCollapsed}>
           {/* Desktop toggle button */}
           <Button
             variant="ghost"

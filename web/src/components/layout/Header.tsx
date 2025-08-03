@@ -10,19 +10,25 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { User, LogOut, Key } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { cn } from '@/lib/utils'
 
 interface HeaderProps {
   children?: React.ReactNode
+  sidebarCollapsed?: boolean
 }
 
-export function Header({ children }: HeaderProps) {
+export function Header({ children, sidebarCollapsed = false }: HeaderProps) {
   const { user, logout } = useAuth()
 
   return (
     <header className="flex h-16 items-center justify-between border-b px-6">
       <div className="flex items-center gap-4">
         {children}
-        <h1 className="text-xl font-semibold">qbitwebui</h1>
+        <h1 className={cn(
+          "text-xl font-semibold transition-opacity duration-300",
+          "lg:opacity-0 lg:pointer-events-none", // Hidden on desktop by default
+          sidebarCollapsed && "lg:opacity-100 lg:pointer-events-auto" // Visible on desktop when sidebar collapsed
+        )}>qbitwebui</h1>
       </div>
       
       <div className="flex items-center gap-4">
