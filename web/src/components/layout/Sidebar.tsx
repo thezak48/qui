@@ -37,7 +37,11 @@ const navigation: NavItem[] = [
   },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void
+}
+
+export function Sidebar({ onNavigate }: SidebarProps) {
   const location = useLocation()
   const { logout } = useAuth()
   
@@ -45,6 +49,10 @@ export function Sidebar() {
     queryKey: ['instances'],
     queryFn: () => api.getInstances(),
   })
+
+  const handleNavigation = () => {
+    onNavigate?.()
+  }
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-muted/50">
@@ -61,6 +69,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               to={item.href}
+              onClick={handleNavigation}
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
@@ -89,6 +98,7 @@ export function Sidebar() {
                 key={instance.id}
                 to="/instances/$instanceId"
                 params={{ instanceId: instance.id.toString() }}
+                onClick={handleNavigation}
                 className={cn(
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                   isActive

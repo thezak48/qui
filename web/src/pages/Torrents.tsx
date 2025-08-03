@@ -17,19 +17,21 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
 
   return (
     <div className="flex h-full">
-      {/* Sidebar */}
-      <FilterSidebar
-        instanceId={instanceId}
-        selectedFilters={filters}
-        onFilterChange={setFilters}
-      />
+      {/* Sidebar - hidden on mobile */}
+      <div className="hidden xl:block">
+        <FilterSidebar
+          instanceId={instanceId}
+          selectedFilters={filters}
+          onFilterChange={setFilters}
+        />
+      </div>
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="p-6 flex flex-col h-full">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold">{instanceName}</h1>
-            <p className="text-muted-foreground mt-2">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div className="p-3 sm:p-4 lg:p-6 flex flex-col h-full">
+          <div className="mb-4 lg:mb-6">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{instanceName}</h1>
+            <p className="text-muted-foreground mt-1 lg:mt-2 text-sm lg:text-base">
               Manage torrents for this qBittorrent instance
             </p>
           </div>

@@ -318,6 +318,11 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
 
   const virtualRows = virtualizer.getVirtualItems()
 
+  // Calculate total table width
+  const tableMinWidth = useMemo(() => {
+    return columns.reduce((acc, col) => acc + (col.size || 100), 0)
+  }, [])
+
   // Reset loaded rows when data changes
   useEffect(() => {
     if (sortedTorrents.length > 0) {
@@ -357,26 +362,26 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
   return (
     <div className="flex flex-col h-full gap-4">
       {/* Stats bar */}
-      <div className="flex gap-4 text-sm">
+      <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
         <div>Total: <strong>{stats.total}</strong></div>
-        <div>Downloading: <strong className="text-chart-1">{stats.downloading}</strong></div>
-        <div>Seeding: <strong className="text-chart-3">{stats.seeding}</strong></div>
-        <div>Paused: <strong className="text-chart-4">{stats.paused}</strong></div>
-        <div>Error: <strong className="text-destructive">{stats.error}</strong></div>
-        <div className="ml-auto">
+        <div className="hidden sm:block">Downloading: <strong className="text-chart-1">{stats.downloading}</strong></div>
+        <div className="hidden sm:block">Seeding: <strong className="text-chart-3">{stats.seeding}</strong></div>
+        <div className="hidden sm:block">Paused: <strong className="text-chart-4">{stats.paused}</strong></div>
+        <div className="hidden sm:block">Error: <strong className="text-destructive">{stats.error}</strong></div>
+        <div className="ml-auto text-xs sm:text-sm">
           ↓ {formatSpeed(stats.totalDownloadSpeed || 0)} | ↑ {formatSpeed(stats.totalUploadSpeed || 0)}
         </div>
       </div>
 
       {/* Search and Actions */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
         <Input
           placeholder="Search torrents..."
           value={globalFilter ?? ''}
           onChange={event => setGlobalFilter(event.target.value)}
-          className="max-w-sm"
+          className="w-full sm:max-w-sm"
         />
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           {selectedHashes.length > 0 && (
             <TorrentActions 
               instanceId={instanceId} 
@@ -391,93 +396,102 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
       {/* Table */}
       <div className="rounded-md border flex-1 flex flex-col min-h-0">
         <div className="relative flex-1 overflow-auto" ref={parentRef}>
-          {/* Header */}
-          <div className="sticky top-0 bg-background z-10 border-b">
-            {table.getHeaderGroups().map(headerGroup => (
-              <div key={headerGroup.id} className="flex">
-                {headerGroup.headers.map(header => (
-                  <div
-                    key={header.id}
-                    style={{ 
-                      width: header.getSize(),
-                      position: 'relative'
-                    }}
-                    className="group"
-                  >
+          <div style={{ minWidth: `${tableMinWidth}px` }}>
+            {/* Header */}
+            <div className="sticky top-0 bg-background z-10 border-b">
+              {table.getHeaderGroups().map(headerGroup => (
+                <div key={headerGroup.id} className="flex">
+                  {headerGroup.headers.map(header => (
                     <div
-                      className={`px-3 py-2 text-left font-medium text-muted-foreground overflow-hidden ${
-                        header.column.getCanSort() ? 'cursor-pointer select-none hover:text-foreground' : ''
-                      }`}
-                      onClick={header.column.getToggleSortingHandler()}
+                      key={header.id}
+                      style={{ 
+                        width: header.getSize(),
+                        minWidth: header.getSize(),
+                        position: 'relative',
+                        flexShrink: 0
+                      }}
+                      className="group"
                     >
-                      <div className="flex items-center gap-1 truncate">
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                        {{
-                          asc: ' ↑',
-                          desc: ' ↓',
-                        }[header.column.getIsSorted() as string] ?? null}
-                      </div>
-                    </div>
-                    {header.column.getCanResize() && (
                       <div
-                        onMouseDown={header.getResizeHandler()}
-                        onTouchStart={header.getResizeHandler()}
-                        className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none ${
-                          header.column.getIsResizing() 
-                            ? 'bg-primary opacity-100' 
-                            : 'bg-border hover:bg-primary/50 opacity-0 group-hover:opacity-100'
+                        className={`px-3 py-2 text-left font-medium text-muted-foreground overflow-hidden ${
+                          header.column.getCanSort() ? 'cursor-pointer select-none hover:text-foreground' : ''
                         }`}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-          
-          {/* Body */}
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {virtualRows.map(virtualRow => {
-              const row = rows[virtualRow.index]
-              return (
-                <div
-                  key={row.id}
-                  className={`flex border-b ${row.getIsSelected() ? 'bg-muted/50' : ''}`}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  {row.getVisibleCells().map(cell => (
-                    <div
-                      key={cell.id}
-                      style={{ width: cell.column.getSize() }}
-                      className="px-3 py-2 flex items-center overflow-hidden"
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        <div className="flex items-center gap-1 truncate">
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                          {{
+                            asc: ' ↑',
+                            desc: ' ↓',
+                          }[header.column.getIsSorted() as string] ?? null}
+                        </div>
+                      </div>
+                      {header.column.getCanResize() && (
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none ${
+                            header.column.getIsResizing() 
+                              ? 'bg-primary opacity-100' 
+                              : 'bg-border hover:bg-primary/50 opacity-0 group-hover:opacity-100'
+                          }`}
+                        />
                       )}
                     </div>
                   ))}
                 </div>
-              )
-            })}
+              ))}
+            </div>
+            
+            {/* Body */}
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {virtualRows.map(virtualRow => {
+                const row = rows[virtualRow.index]
+                return (
+                  <div
+                    key={row.id}
+                    className={`flex border-b ${row.getIsSelected() ? 'bg-muted/50' : ''}`}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      minWidth: `${tableMinWidth}px`,
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    {row.getVisibleCells().map(cell => (
+                      <div
+                        key={cell.id}
+                        style={{ 
+                          width: cell.column.getSize(),
+                          minWidth: cell.column.getSize(),
+                          flexShrink: 0
+                        }}
+                        className="px-3 py-2 flex items-center overflow-hidden"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
