@@ -164,7 +164,7 @@ export function FilterSidebar({
                   {TORRENT_STATES.map((state) => (
                     <label
                       key={state.value}
-                      className="flex items-center space-x-2 py-1 hover:bg-muted rounded cursor-pointer"
+                      className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer"
                     >
                       <Checkbox
                         checked={selectedFilters.status.includes(state.value)}
@@ -200,7 +200,7 @@ export function FilterSidebar({
               <AccordionContent className="px-3 pb-2">
                 <div className="space-y-1">
                   {/* Uncategorized option */}
-                  <label className="flex items-center space-x-2 py-1 hover:bg-muted rounded cursor-pointer">
+                  <label className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer">
                     <Checkbox
                       checked={selectedFilters.categories.includes('')}
                       onCheckedChange={() => handleCategoryToggle('')}
@@ -219,7 +219,7 @@ export function FilterSidebar({
                   {Object.entries(categories).map(([name]) => (
                     <label
                       key={name}
-                      className="flex items-center space-x-2 py-1 hover:bg-muted rounded cursor-pointer"
+                      className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer"
                     >
                       <Checkbox
                         checked={selectedFilters.categories.includes(name)}
@@ -273,7 +273,7 @@ export function FilterSidebar({
                   {tags.map((tag) => (
                     <label
                       key={tag}
-                      className="flex items-center space-x-2 py-1 hover:bg-muted rounded cursor-pointer"
+                      className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer"
                     >
                       <Checkbox
                         checked={selectedFilters.tags.includes(tag)}
