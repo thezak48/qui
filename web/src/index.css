@@ -157,6 +157,25 @@
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
+    font-family: var(--font-sans);
+  }
+  
+  /* Apply font families from theme */
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+  
+  .font-serif {
+    font-family: var(--font-serif);
+  }
+  
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+  
+  /* Ensure proper font inheritance */
+  code, pre, kbd, samp {
+    font-family: var(--font-mono);
   }
 }
 
