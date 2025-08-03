@@ -158,6 +158,67 @@ func (sm *SyncManager) GetTorrentsWithSearch(ctx context.Context, instanceID int
 	return response, nil
 }
 
+// GetTorrentsWithFilters gets torrents with filters, search, sorting, and pagination
+func (sm *SyncManager) GetTorrentsWithFilters(ctx context.Context, instanceID int, limit, offset int, sort, order, search string, filters FilterOptions) (*TorrentResponse, error) {
+	// Build cache key
+	cacheKey := fmt.Sprintf("torrents:filtered:%d:%d:%d:%s:%s:%s:%+v", instanceID, offset, limit, sort, order, search, filters)
+	if cached, found := sm.cache.Get(cacheKey); found {
+		if response, ok := cached.(*TorrentResponse); ok {
+			return response, nil
+		}
+	}
+
+	// Get all torrents for filtering and stats calculation
+	allTorrents, err := sm.getAllTorrentsForStats(ctx, instanceID, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all torrents: %w", err)
+	}
+
+	// Apply filters
+	filteredTorrents := sm.applyFilters(allTorrents, filters)
+
+	// Apply search filter if provided
+	if search != "" {
+		filteredTorrents = sm.filterTorrentsBySearch(filteredTorrents, search)
+	}
+
+	// Calculate stats from filtered torrents
+	stats := sm.calculateStats(filteredTorrents)
+
+	// Sort torrents before pagination
+	sm.sortTorrents(filteredTorrents, sort, order)
+
+	// Apply pagination to filtered results
+	var paginatedTorrents []qbt.Torrent
+	start := offset
+	end := offset + limit
+	if start < len(filteredTorrents) {
+		if end > len(filteredTorrents) {
+			end = len(filteredTorrents)
+		}
+		paginatedTorrents = filteredTorrents[start:end]
+	}
+
+	response := &TorrentResponse{
+		Torrents: converters.ConvertTorrents(paginatedTorrents),
+		Total:    len(filteredTorrents),
+		Stats:    stats,
+	}
+
+	// Cache the response
+	sm.cache.SetWithTTL(cacheKey, response, 1, 10*time.Second)
+
+	log.Debug().
+		Int("instanceID", instanceID).
+		Int("count", len(paginatedTorrents)).
+		Int("total", len(filteredTorrents)).
+		Str("search", search).
+		Interface("filters", filters).
+		Msg("Torrent filtering completed")
+
+	return response, nil
+}
+
 // GetUpdates gets real-time updates using SyncMainData
 func (sm *SyncManager) GetUpdates(ctx context.Context, instanceID int) (*qbt.MainData, error) {
 	sm.mu.Lock()
@@ -462,6 +523,114 @@ func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search str
 	}
 
 	return filtered
+}
+
+// applyFilters applies multiple filters to torrents
+func (sm *SyncManager) applyFilters(torrents []qbt.Torrent, filters FilterOptions) []qbt.Torrent {
+	// If no filters are applied, return all torrents
+	if len(filters.Status) == 0 && len(filters.Categories) == 0 && len(filters.Tags) == 0 && len(filters.Trackers) == 0 {
+		return torrents
+	}
+
+	var filtered []qbt.Torrent
+	for _, torrent := range torrents {
+		// Check status filter
+		if len(filters.Status) > 0 {
+			statusMatch := false
+			for _, status := range filters.Status {
+				if sm.matchTorrentStatus(torrent, status) {
+					statusMatch = true
+					break
+				}
+			}
+			if !statusMatch {
+				continue
+			}
+		}
+
+		// Check category filter
+		if len(filters.Categories) > 0 {
+			categoryMatch := false
+			for _, category := range filters.Categories {
+				if torrent.Category == category {
+					categoryMatch = true
+					break
+				}
+			}
+			if !categoryMatch {
+				continue
+			}
+		}
+
+		// Check tags filter
+		if len(filters.Tags) > 0 {
+			tagMatch := false
+			torrentTags := strings.Split(torrent.Tags, ", ")
+			for _, filterTag := range filters.Tags {
+				if filterTag == "" && torrent.Tags == "" {
+					// Handle "Untagged" filter
+					tagMatch = true
+					break
+				}
+				for _, torrentTag := range torrentTags {
+					if torrentTag == filterTag {
+						tagMatch = true
+						break
+					}
+				}
+				if tagMatch {
+					break
+				}
+			}
+			if !tagMatch {
+				continue
+			}
+		}
+
+		// Note: Tracker filtering would require additional API calls for each torrent
+		// which is expensive. Consider implementing this differently if needed.
+
+		filtered = append(filtered, torrent)
+	}
+
+	return filtered
+}
+
+// matchTorrentStatus checks if a torrent matches a specific status filter
+func (sm *SyncManager) matchTorrentStatus(torrent qbt.Torrent, status string) bool {
+	state := string(torrent.State)
+	switch status {
+	case "all":
+		return true
+	case "downloading":
+		return state == "downloading" || state == "stalledDL" || 
+			   state == "metaDL" || state == "queuedDL" || 
+			   state == "allocating" || state == "checkingDL"
+	case "seeding":
+		return state == "uploading" || state == "stalledUP" || 
+			   state == "queuedUP" || state == "checkingUP"
+	case "completed":
+		return torrent.Progress == 1
+	case "paused":
+		return state == "pausedDL" || state == "pausedUP"
+	case "active":
+		return state == "downloading" || state == "uploading"
+	case "inactive":
+		return state != "downloading" && state != "uploading"
+	case "resumed":
+		return state != "pausedDL" && state != "pausedUP"
+	case "stalled":
+		return state == "stalledDL" || state == "stalledUP"
+	case "stalled_uploading":
+		return state == "stalledUP"
+	case "stalled_downloading":
+		return state == "stalledDL"
+	case "errored":
+		return state == "error" || state == "missingFiles"
+	default:
+		// For specific states, match exactly
+		return state == status
+	}
 }
 
 // calculateStats calculates torrent statistics from a list of torrents

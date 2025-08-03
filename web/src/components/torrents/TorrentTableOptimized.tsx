@@ -28,6 +28,12 @@ import type { Torrent } from '@/types'
 
 interface TorrentTableOptimizedProps {
   instanceId: number
+  filters?: {
+    status: string[]
+    categories: string[]
+    tags: string[]
+    trackers: string[]
+  }
 }
 
 function formatBytes(bytes: number): string {
@@ -192,7 +198,7 @@ const columns: ColumnDef<Torrent>[] = [
   },
 ]
 
-export function TorrentTableOptimized({ instanceId }: TorrentTableOptimizedProps) {
+export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptimizedProps) {
   // Server-side state management
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -212,6 +218,13 @@ export function TorrentTableOptimized({ instanceId }: TorrentTableOptimizedProps
     setPagination(prev => ({ ...prev, pageIndex: 0 }))
   }
 
+  // Reset to first page when filters change
+  const [lastFilters, setLastFilters] = useState(filters)
+  if (JSON.stringify(filters) !== JSON.stringify(lastFilters)) {
+    setLastFilters(filters)
+    setPagination(prev => ({ ...prev, pageIndex: 0 }))
+  }
+
   // Server-side data fetching
   const { 
     torrents, 
@@ -226,6 +239,7 @@ export function TorrentTableOptimized({ instanceId }: TorrentTableOptimizedProps
     sort: sorting[0]?.id,
     order: sorting[0]?.desc ? 'desc' : 'asc',
     search: debouncedSearch,
+    filters,
   })
 
   const table = useReactTable({

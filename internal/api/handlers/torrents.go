@@ -62,6 +62,15 @@ func (h *TorrentsHandler) ListTorrents(w http.ResponseWriter, r *http.Request) {
 		search = q
 	}
 	
+	// Parse filters
+	var filters qbittorrent.FilterOptions
+	
+	if f := r.URL.Query().Get("filters"); f != "" {
+		if err := json.Unmarshal([]byte(f), &filters); err != nil {
+			log.Warn().Err(err).Msg("Failed to parse filters, ignoring")
+		}
+	}
+	
 	// Debug logging
 	log.Debug().
 		Str("sort", sort).
@@ -69,13 +78,14 @@ func (h *TorrentsHandler) ListTorrents(w http.ResponseWriter, r *http.Request) {
 		Int("page", page).
 		Int("limit", limit).
 		Str("search", search).
+		Interface("filters", filters).
 		Msg("Torrent list request parameters")
 
 	// Calculate offset from page
 	offset := page * limit
 
-	// Get torrents with search and sorting
-	response, err := h.syncManager.GetTorrentsWithSearch(r.Context(), instanceID, limit, offset, sort, order, search)
+	// Get torrents with search, sorting and filters
+	response, err := h.syncManager.GetTorrentsWithFilters(r.Context(), instanceID, limit, offset, sort, order, search, filters)
 	if err != nil {
 		log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to get torrents")
 		RespondError(w, http.StatusInternalServerError, "Failed to get torrents")

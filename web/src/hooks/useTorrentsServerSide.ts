@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { MainData, Torrent } from '@/types'
 
 interface UseTorrentsServerSideOptions {
   enabled?: boolean
-  pageSize?: number
   pollingInterval?: number
 }
 
@@ -15,6 +13,12 @@ interface TorrentQuery {
   sort?: string
   order?: 'asc' | 'desc'
   search?: string
+  filters?: {
+    status: string[]
+    categories: string[]
+    tags: string[]
+    trackers: string[]
+  }
 }
 
 export function useTorrentsServerSide(
@@ -22,7 +26,7 @@ export function useTorrentsServerSide(
   query: TorrentQuery,
   options: UseTorrentsServerSideOptions = {}
 ) {
-  const { enabled = true, pageSize = 50, pollingInterval = 5000 } = options
+  const { enabled = true, pollingInterval = 5000 } = options
   
   const [stats, setStats] = useState({
     total: 0,
@@ -50,6 +54,7 @@ export function useTorrentsServerSide(
       sort: query.sort,
       order: query.order,
       search: query.search,
+      filters: query.filters,
     }),
     staleTime: 2000,
     enabled,
@@ -60,11 +65,11 @@ export function useTorrentsServerSide(
     if (torrentPage?.stats) {
       setStats(prev => ({
         ...prev,
-        total: torrentPage.stats.total,
-        downloading: torrentPage.stats.downloading,
-        seeding: torrentPage.stats.seeding,
-        paused: torrentPage.stats.paused,
-        error: torrentPage.stats.error,
+        total: torrentPage.stats?.total || 0,
+        downloading: torrentPage.stats?.downloading || 0,
+        seeding: torrentPage.stats?.seeding || 0,
+        paused: torrentPage.stats?.paused || 0,
+        error: torrentPage.stats?.error || 0,
       }))
     }
   }, [torrentPage?.stats])
@@ -81,8 +86,8 @@ export function useTorrentsServerSide(
         if (updates.serverState) {
           setStats(prev => ({
             ...prev,
-            totalDownloadSpeed: updates.serverState.dlInfoSpeed || 0,
-            totalUploadSpeed: updates.serverState.upInfoSpeed || 0,
+            totalDownloadSpeed: updates.serverState?.dlInfoSpeed || 0,
+            totalUploadSpeed: updates.serverState?.upInfoSpeed || 0,
           }))
         }
         

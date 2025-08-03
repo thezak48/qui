@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
   --background: oklch(0.9578 0.0058 264.5321);
   --foreground: oklch(0.4355 0.0430 279.3250);
@@ -159,20 +161,20 @@
     letter-spacing: var(--tracking-normal);
     font-family: var(--font-sans);
   }
-  
+
   /* Apply font families from theme */
   .font-sans {
     font-family: var(--font-sans);
   }
-  
+
   .font-serif {
     font-family: var(--font-serif);
   }
-  
+
   .font-mono {
     font-family: var(--font-mono);
   }
-  
+
   /* Ensure proper font inheritance */
   code, pre, kbd, samp {
     font-family: var(--font-mono);
@@ -185,20 +187,20 @@
   .theme-transition [data-theme] {
     transition: opacity 200ms cubic-bezier(0.4, 0.0, 0.2, 1);
   }
-  
+
   /* Icon transitions */
   .theme-transition svg:not([class*="lucide"]) {
     transition: color 300ms cubic-bezier(0.4, 0.0, 0.2, 1), 
                 transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
   }
-  
+
   /* Interactive element hover states during transition */
   .theme-transition button:hover,
   .theme-transition a:hover,
   .theme-transition [role="button"]:hover {
     transition-duration: 150ms;
   }
-  
+
   /* Subtle spin animation for theme toggle */
   @keyframes spin-slow {
     from {
@@ -208,7 +210,7 @@
       transform: rotate(360deg);
     }
   }
-  
+
   .animate-spin-slow {
     animation: spin-slow 400ms cubic-bezier(0.4, 0.0, 0.2, 1);
   }
@@ -251,6 +253,15 @@
 
   .dark *::-webkit-scrollbar-thumb:hover {
     background-color: var(--muted-foreground);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
