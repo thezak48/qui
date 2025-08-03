@@ -100,6 +100,12 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 							r.Delete("/", torrentsHandler.DeleteTorrent)
 							r.Put("/pause", torrentsHandler.PauseTorrent)
 							r.Put("/resume", torrentsHandler.ResumeTorrent)
+							
+							// Torrent details
+							r.Get("/properties", torrentsHandler.GetTorrentProperties)
+							r.Get("/trackers", torrentsHandler.GetTorrentTrackers)
+							r.Get("/files", torrentsHandler.GetTorrentFiles)
+							r.Get("/webseeds", torrentsHandler.GetTorrentWebSeeds)
 						})
 					})
 

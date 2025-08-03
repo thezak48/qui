@@ -219,11 +219,16 @@ pnpm dlx shadcn@latest add <component-name>
   - UI state: React useState/useReducer
 - **Virtual Scrolling**: Progressive loading starting at 100 rows
 - **Column Resizing**: Persisted in component state (not localStorage)
+- **Torrent Details**: 
+  - Click torrent row to view details panel below table
+  - Tabs for General, Trackers, and Content (Files)
+  - Responsive split layout (side-by-side on desktop, stacked on mobile)
 
 ### Critical Files
 - `internal/qbittorrent/sync_manager.go` - Handles all torrent operations and caching
 - `web/src/hooks/useTorrentsList.ts` - Main hook for torrent data fetching
-- `web/src/components/torrents/TorrentTableOptimized.tsx` - Virtual scrolling implementation
+- `web/src/components/torrents/TorrentTableOptimized.tsx` - Virtual scrolling implementation with torrent details
+- `web/src/components/torrents/TorrentDetailsPanel.tsx` - Torrent details panel with tabs
 - `internal/api/handlers/torrents.go` - Backend filtering and pagination logic
 
 ## Known Issues and Workarounds

@@ -27,18 +27,20 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
       </div>
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col min-w-0">
         <div className="p-3 sm:p-4 lg:p-6 flex flex-col h-full">
-          <div className="mb-4 lg:mb-6">
+          <div className="flex-shrink-0 mb-4 lg:mb-6">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{instanceName}</h1>
             <p className="text-muted-foreground mt-1 lg:mt-2 text-sm lg:text-base">
               Manage torrents for this qBittorrent instance
             </p>
           </div>
-          <TorrentTableOptimized 
-            instanceId={instanceId} 
-            filters={filters}
-          />
+          <div className="flex-1 min-h-0">
+            <TorrentTableOptimized 
+              instanceId={instanceId} 
+              filters={filters}
+            />
+          </div>
         </div>
       </div>
     </div>

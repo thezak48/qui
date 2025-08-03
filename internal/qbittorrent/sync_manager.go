@@ -406,6 +406,118 @@ func (sm *SyncManager) GetTags(ctx context.Context, instanceID int) ([]string, e
 	return tags, nil
 }
 
+// GetTorrentProperties gets detailed properties for a specific torrent
+func (sm *SyncManager) GetTorrentProperties(ctx context.Context, instanceID int, hash string) (*qbt.TorrentProperties, error) {
+	// Check cache
+	cacheKey := fmt.Sprintf("torrent:properties:%d:%s", instanceID, hash)
+	if cached, found := sm.cache.Get(cacheKey); found {
+		if props, ok := cached.(*qbt.TorrentProperties); ok {
+			return props, nil
+		}
+	}
+
+	// Get client
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client: %w", err)
+	}
+
+	// Get properties
+	props, err := client.GetTorrentPropertiesCtx(ctx, hash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get torrent properties: %w", err)
+	}
+
+	// Cache for 30 seconds
+	sm.cache.SetWithTTL(cacheKey, &props, 1, 30*time.Second)
+
+	return &props, nil
+}
+
+// GetTorrentTrackers gets trackers for a specific torrent
+func (sm *SyncManager) GetTorrentTrackers(ctx context.Context, instanceID int, hash string) ([]qbt.TorrentTracker, error) {
+	// Check cache
+	cacheKey := fmt.Sprintf("torrent:trackers:%d:%s", instanceID, hash)
+	if cached, found := sm.cache.Get(cacheKey); found {
+		if trackers, ok := cached.([]qbt.TorrentTracker); ok {
+			return trackers, nil
+		}
+	}
+
+	// Get client
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client: %w", err)
+	}
+
+	// Get trackers
+	trackers, err := client.GetTorrentTrackersCtx(ctx, hash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get torrent trackers: %w", err)
+	}
+
+	// Cache for 30 seconds
+	sm.cache.SetWithTTL(cacheKey, trackers, 1, 30*time.Second)
+
+	return trackers, nil
+}
+
+// GetTorrentFiles gets files information for a specific torrent
+func (sm *SyncManager) GetTorrentFiles(ctx context.Context, instanceID int, hash string) (*qbt.TorrentFiles, error) {
+	// Check cache
+	cacheKey := fmt.Sprintf("torrent:files:%d:%s", instanceID, hash)
+	if cached, found := sm.cache.Get(cacheKey); found {
+		if files, ok := cached.(*qbt.TorrentFiles); ok {
+			return files, nil
+		}
+	}
+
+	// Get client
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client: %w", err)
+	}
+
+	// Get files
+	files, err := client.GetFilesInformationCtx(ctx, hash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get torrent files: %w", err)
+	}
+
+	// Cache for 30 seconds
+	sm.cache.SetWithTTL(cacheKey, files, 1, 30*time.Second)
+
+	return files, nil
+}
+
+// GetTorrentWebSeeds gets web seeds for a specific torrent
+func (sm *SyncManager) GetTorrentWebSeeds(ctx context.Context, instanceID int, hash string) ([]qbt.WebSeed, error) {
+	// Check cache
+	cacheKey := fmt.Sprintf("torrent:webseeds:%d:%s", instanceID, hash)
+	if cached, found := sm.cache.Get(cacheKey); found {
+		if seeds, ok := cached.([]qbt.WebSeed); ok {
+			return seeds, nil
+		}
+	}
+
+	// Get client
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client: %w", err)
+	}
+
+	// Get web seeds
+	seeds, err := client.GetTorrentsWebSeedsCtx(ctx, hash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get torrent web seeds: %w", err)
+	}
+
+	// Cache for 30 seconds
+	sm.cache.SetWithTTL(cacheKey, seeds, 1, 30*time.Second)
+
+	return seeds, nil
+}
+
 // Helper methods
 
 func (sm *SyncManager) getTotalCount(ctx context.Context, instanceID int) int {

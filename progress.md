@@ -194,8 +194,28 @@ Phase 6 is complete! Performance optimization has been successfully implemented:
 - **Server-Side Filtering**: Filters work on entire dataset, not just loaded torrents
 - **Improved Icons**: Professional Lucide React icons throughout the UI
 
+### Phase 9: Torrent Details Panel ✅
+
+### Completed Tasks
+- [x] Added backend API endpoints for torrent details in sync_manager.go
+- [x] Created GetTorrentProperties, GetTorrentTrackers, GetTorrentFiles, GetTorrentWebSeeds methods
+- [x] Added routes for torrent details endpoints in router.go
+- [x] Updated API client with torrent details methods
+- [x] Created TorrentDetailsPanel component with tabs (General, Trackers, Content)
+- [x] Updated TorrentTableOptimized to support row selection and show details panel
+- [x] Implemented responsive split layout for table + details view
+- [x] Fixed TypeScript errors and ensured both frontend and backend compile
+
+### Key Features Implemented
+- **Torrent Details**: Click on any torrent to view detailed information in a panel below
+- **Tabbed Interface**: General properties, Trackers list, and Files/Content tabs
+- **Responsive Design**: Details panel appears below table on mobile, side-by-side on desktop
+- **Performance**: Details are fetched on-demand with caching for 30 seconds
+- **User Experience**: Selected torrent is highlighted, easy close button on details panel
+
 ## Notes
 - Following the PRD exactly as specified in `prd_final.md`
 - Using s0up4200 as the GitHub username as specified
 - Implementing single-user authentication for self-hosted use case
 - Optimizing for 10k+ torrents using SyncMainData API
+- Torrent details panel inspired by qBittorrent's native UI design

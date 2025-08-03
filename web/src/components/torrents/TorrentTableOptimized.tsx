@@ -13,8 +13,10 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
+import { TorrentDetailsPanel } from './TorrentDetailsPanel'
 import { Loader2 } from 'lucide-react'
 import type { Torrent } from '@/types'
 
@@ -214,6 +216,7 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
   const [globalFilter, setGlobalFilter] = useState('')
   const [rowSelection, setRowSelection] = useState({})
   const [columnSizing, setColumnSizing] = useState({})
+  const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null)
   
   // Progressive loading state
   const [loadedRows, setLoadedRows] = useState(100)
@@ -360,9 +363,9 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
   }
 
   return (
-    <div className="flex flex-col h-full gap-4">
+    <div className="h-full flex flex-col">
       {/* Stats bar */}
-      <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
+      <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm flex-shrink-0">
         <div>Total: <strong>{stats.total}</strong></div>
         <div className="hidden sm:block">Downloading: <strong>{stats.downloading}</strong></div>
         <div className="hidden sm:block">Seeding: <strong>{stats.seeding}</strong></div>
@@ -374,7 +377,7 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
       </div>
 
       {/* Search and Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 flex-shrink-0 mt-3">
         <Input
           placeholder="Search torrents..."
           value={globalFilter ?? ''}
@@ -393,8 +396,8 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border flex-1 flex flex-col min-h-0">
+      {/* Table container */}
+      <div className="rounded-md border flex flex-col flex-1 min-h-0 mt-3">
         <div className="relative flex-1 overflow-auto" ref={parentRef}>
           <div style={{ minWidth: `${tableMinWidth}px` }}>
             {/* Header */}
@@ -450,77 +453,100 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
             
             {/* Body */}
             <div
-              style={{
-                height: `${virtualizer.getTotalSize()}px`,
-                width: '100%',
-                position: 'relative',
-              }}
-            >
-              {virtualRows.map(virtualRow => {
-                const row = rows[virtualRow.index]
-                return (
-                  <div
-                    key={row.id}
-                    className={`flex border-b ${row.getIsSelected() ? 'bg-muted/50' : ''}`}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      minWidth: `${tableMinWidth}px`,
-                      height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    {row.getVisibleCells().map(cell => (
-                      <div
-                        key={cell.id}
-                        style={{ 
-                          width: cell.column.getSize(),
-                          minWidth: cell.column.getSize(),
-                          flexShrink: 0
-                        }}
-                        className="px-3 py-2 flex items-center overflow-hidden"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )
-              })}
-            </div>
+                style={{
+                  height: `${virtualizer.getTotalSize()}px`,
+                  width: '100%',
+                  position: 'relative',
+                }}
+              >
+                {virtualRows.map(virtualRow => {
+                  const row = rows[virtualRow.index]
+                  const torrent = row.original
+                  const isSelected = selectedTorrent?.hash === torrent.hash
+                
+                  return (
+                    <div
+                      key={row.id}
+                      className={`flex border-b cursor-pointer hover:bg-muted/50 ${row.getIsSelected() ? 'bg-muted/50' : ''} ${isSelected ? 'bg-accent' : ''}`}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        minWidth: `${tableMinWidth}px`,
+                        height: `${virtualRow.size}px`,
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                      onClick={(e) => {
+                        // Don't select when clicking checkbox
+                        const target = e.target as HTMLElement
+                        const isCheckbox = (target as HTMLInputElement).type === 'checkbox' || target.closest('input[type="checkbox"]')
+                        if (!isCheckbox) {
+                          setSelectedTorrent(torrent)
+                        }
+                      }}
+                    >
+                      {row.getVisibleCells().map(cell => (
+                        <div
+                          key={cell.id}
+                          style={{ 
+                            width: cell.column.getSize(),
+                            minWidth: cell.column.getSize(),
+                            flexShrink: 0
+                          }}
+                          className="px-3 py-2 flex items-center overflow-hidden"
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
           </div>
         </div>
-      </div>
 
-      {/* Status bar */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {totalCount === 0 ? (
-            'No torrents found'
-          ) : (
-            <>
-              Showing {Math.min(loadedRows, totalCount)} of {totalCount} torrents
-              {loadedRows < totalCount && ' (scroll to load more)'}
-              {isLoadingMore && ' • Loading more...'}
-            </>
-          )}
-          {selectedHashes.length > 0 && (
-            <span className="ml-2">
-              ({selectedHashes.length} selected)
-            </span>
+        {/* Status bar */}
+        <div className="flex items-center justify-between p-2 border-t flex-shrink-0">
+          <div className="text-sm text-muted-foreground">
+            {totalCount === 0 ? (
+              'No torrents found'
+            ) : (
+              <>
+                Showing {Math.min(loadedRows, totalCount)} of {totalCount} torrents
+                {loadedRows < totalCount && ' (scroll to load more)'}
+                {isLoadingMore && ' • Loading more...'}
+              </>
+            )}
+            {selectedHashes.length > 0 && (
+              <span className="ml-2">
+                ({selectedHashes.length} selected)
+              </span>
+            )}
+          </div>
+          
+          {virtualRows.length > 0 && (
+            <div className="text-sm text-muted-foreground">
+              Rendering rows {virtualRows[0].index + 1} - {virtualRows[virtualRows.length - 1].index + 1}
+            </div>
           )}
         </div>
-        
-        {virtualRows.length > 0 && (
-          <div className="text-sm text-muted-foreground">
-            Rendering rows {virtualRows[0].index + 1} - {virtualRows[virtualRows.length - 1].index + 1}
-          </div>
-        )}
       </div>
+      
+      <Sheet open={!!selectedTorrent} onOpenChange={(open) => !open && setSelectedTorrent(null)}>
+        <SheetContent className="w-full sm:w-[540px] md:w-[720px] lg:w-[800px] p-0">
+          {selectedTorrent && (
+            <TorrentDetailsPanel
+              instanceId={instanceId}
+              torrent={selectedTorrent}
+              onClose={() => setSelectedTorrent(null)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

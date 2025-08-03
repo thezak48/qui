@@ -440,3 +440,107 @@ func (h *TorrentsHandler) GetTags(w http.ResponseWriter, r *http.Request) {
 
 	RespondJSON(w, http.StatusOK, tags)
 }
+
+// GetTorrentProperties returns detailed properties for a specific torrent
+func (h *TorrentsHandler) GetTorrentProperties(w http.ResponseWriter, r *http.Request) {
+	// Get instance ID and hash from URL
+	instanceID, err := strconv.Atoi(chi.URLParam(r, "instanceID"))
+	if err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid instance ID")
+		return
+	}
+
+	hash := chi.URLParam(r, "hash")
+	if hash == "" {
+		RespondError(w, http.StatusBadRequest, "Torrent hash is required")
+		return
+	}
+
+	// Get properties
+	properties, err := h.syncManager.GetTorrentProperties(r.Context(), instanceID, hash)
+	if err != nil {
+		log.Error().Err(err).Int("instanceID", instanceID).Str("hash", hash).Msg("Failed to get torrent properties")
+		RespondError(w, http.StatusInternalServerError, "Failed to get torrent properties")
+		return
+	}
+
+	RespondJSON(w, http.StatusOK, properties)
+}
+
+// GetTorrentTrackers returns trackers for a specific torrent
+func (h *TorrentsHandler) GetTorrentTrackers(w http.ResponseWriter, r *http.Request) {
+	// Get instance ID and hash from URL
+	instanceID, err := strconv.Atoi(chi.URLParam(r, "instanceID"))
+	if err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid instance ID")
+		return
+	}
+
+	hash := chi.URLParam(r, "hash")
+	if hash == "" {
+		RespondError(w, http.StatusBadRequest, "Torrent hash is required")
+		return
+	}
+
+	// Get trackers
+	trackers, err := h.syncManager.GetTorrentTrackers(r.Context(), instanceID, hash)
+	if err != nil {
+		log.Error().Err(err).Int("instanceID", instanceID).Str("hash", hash).Msg("Failed to get torrent trackers")
+		RespondError(w, http.StatusInternalServerError, "Failed to get torrent trackers")
+		return
+	}
+
+	RespondJSON(w, http.StatusOK, trackers)
+}
+
+// GetTorrentFiles returns files information for a specific torrent
+func (h *TorrentsHandler) GetTorrentFiles(w http.ResponseWriter, r *http.Request) {
+	// Get instance ID and hash from URL
+	instanceID, err := strconv.Atoi(chi.URLParam(r, "instanceID"))
+	if err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid instance ID")
+		return
+	}
+
+	hash := chi.URLParam(r, "hash")
+	if hash == "" {
+		RespondError(w, http.StatusBadRequest, "Torrent hash is required")
+		return
+	}
+
+	// Get files
+	files, err := h.syncManager.GetTorrentFiles(r.Context(), instanceID, hash)
+	if err != nil {
+		log.Error().Err(err).Int("instanceID", instanceID).Str("hash", hash).Msg("Failed to get torrent files")
+		RespondError(w, http.StatusInternalServerError, "Failed to get torrent files")
+		return
+	}
+
+	RespondJSON(w, http.StatusOK, files)
+}
+
+// GetTorrentWebSeeds returns web seeds for a specific torrent
+func (h *TorrentsHandler) GetTorrentWebSeeds(w http.ResponseWriter, r *http.Request) {
+	// Get instance ID and hash from URL
+	instanceID, err := strconv.Atoi(chi.URLParam(r, "instanceID"))
+	if err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid instance ID")
+		return
+	}
+
+	hash := chi.URLParam(r, "hash")
+	if hash == "" {
+		RespondError(w, http.StatusBadRequest, "Torrent hash is required")
+		return
+	}
+
+	// Get web seeds
+	webSeeds, err := h.syncManager.GetTorrentWebSeeds(r.Context(), instanceID, hash)
+	if err != nil {
+		log.Error().Err(err).Int("instanceID", instanceID).Str("hash", hash).Msg("Failed to get torrent web seeds")
+		RespondError(w, http.StatusInternalServerError, "Failed to get torrent web seeds")
+		return
+	}
+
+	RespondJSON(w, http.StatusOK, webSeeds)
+}

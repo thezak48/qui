@@ -73,8 +73,13 @@ export function useTorrentsList(
       // Update stats - use the total from the API response
       if (initialData.stats) {
         setStats({
-          ...initialData.stats,
-          total: initialData.total || initialData.stats.total
+          total: initialData.total || initialData.stats.total,
+          downloading: initialData.stats.downloading || 0,
+          seeding: initialData.stats.seeding || 0,
+          paused: initialData.stats.paused || 0,
+          error: initialData.stats.error || 0,
+          totalDownloadSpeed: initialData.stats.totalDownloadSpeed || 0,
+          totalUploadSpeed: initialData.stats.totalUploadSpeed || 0,
         })
       } else if (initialData.total) {
         setStats(prev => ({

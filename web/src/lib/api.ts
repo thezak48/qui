@@ -229,6 +229,23 @@ class ApiClient {
     })
   }
 
+  // Torrent Details
+  async getTorrentProperties(instanceId: number, hash: string): Promise<any> {
+    return this.request(`/instances/${instanceId}/torrents/${hash}/properties`)
+  }
+
+  async getTorrentTrackers(instanceId: number, hash: string): Promise<any[]> {
+    return this.request(`/instances/${instanceId}/torrents/${hash}/trackers`)
+  }
+
+  async getTorrentFiles(instanceId: number, hash: string): Promise<any[]> {
+    return this.request(`/instances/${instanceId}/torrents/${hash}/files`)
+  }
+
+  async getTorrentWebSeeds(instanceId: number, hash: string): Promise<any[]> {
+    return this.request(`/instances/${instanceId}/torrents/${hash}/webseeds`)
+  }
+
   // Categories & Tags
   async getCategories(instanceId: number): Promise<Record<string, { name: string; savePath: string }>> {
     return this.request(`/instances/${instanceId}/categories`)
