@@ -70,7 +70,13 @@ export function AddTorrentDialog({ instanceId }: AddTorrentDialogProps) {
       return api.addTorrent(instanceId, submitData)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['torrents', instanceId] })
+      // Add small delay to allow qBittorrent to process the new torrent
+      setTimeout(() => {
+        queryClient.invalidateQueries({ 
+          queryKey: ['torrents-list', instanceId],
+          exact: false 
+        })
+      }, 500) // Give qBittorrent time to process
       setOpen(false)
       form.reset()
     },

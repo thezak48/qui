@@ -45,7 +45,13 @@ export function TorrentActions({ instanceId, selectedHashes, onComplete }: Torre
       })
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['torrents', instanceId] })
+      // Add small delay to allow qBittorrent to process the change
+      setTimeout(() => {
+        queryClient.invalidateQueries({ 
+          queryKey: ['torrents-list', instanceId],
+          exact: false 
+        })
+      }, 1000) // Give qBittorrent time to process
       onComplete?.()
       
       // Show success toast

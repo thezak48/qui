@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { TorrentTableOptimized } from '@/components/torrents/TorrentTableOptimized'
 import { FilterSidebar } from '@/components/torrents/FilterSidebar'
 import { TorrentDetailsPanel } from '@/components/torrents/TorrentDetailsPanel'
@@ -19,22 +19,9 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
     trackers: [] as string[],
   })
   const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null)
-  const [isAnimating, setIsAnimating] = useState(false)
-  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   const handleTorrentSelect = (torrent: Torrent | null) => {
-    // Clear any existing timeout
-    if (animationTimeoutRef.current) {
-      clearTimeout(animationTimeoutRef.current)
-    }
-    
-    setIsAnimating(true)
     setSelectedTorrent(torrent)
-    
-    // Clear animation flag after animation duration (500ms + 100ms buffer)
-    animationTimeoutRef.current = setTimeout(() => {
-      setIsAnimating(false)
-    }, 600)
   }
 
   return (
@@ -84,7 +71,6 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
             <TorrentDetailsPanel
               instanceId={instanceId}
               torrent={selectedTorrent}
-              isAnimating={isAnimating}
             />
           )}
         </SheetContent>

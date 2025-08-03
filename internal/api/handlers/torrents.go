@@ -185,6 +185,10 @@ func (h *TorrentsHandler) AddTorrent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Immediately invalidate cache - the next request will get fresh data from qBittorrent
+	h.syncManager.InvalidateCache(instanceID)
+	log.Debug().Int("instanceID", instanceID).Msg("Cache invalidated after adding torrent")
+
 	RespondJSON(w, http.StatusCreated, map[string]string{
 		"message": "Torrent added successfully",
 	})
@@ -242,6 +246,10 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 		RespondError(w, http.StatusInternalServerError, "Failed to perform bulk action")
 		return
 	}
+
+	// Immediately invalidate cache - the next request will get fresh data from qBittorrent
+	h.syncManager.InvalidateCache(instanceID)
+	log.Debug().Int("instanceID", instanceID).Str("action", req.Action).Msg("Cache invalidated after bulk action")
 
 	RespondJSON(w, http.StatusOK, map[string]string{
 		"message": "Bulk action completed successfully",

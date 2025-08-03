@@ -11,7 +11,6 @@ import type { Torrent } from '@/types'
 interface TorrentDetailsPanelProps {
   instanceId: number
   torrent: Torrent | null
-  isAnimating?: boolean
 }
 
 // Helper functions
@@ -66,7 +65,7 @@ function getTrackerStatusBadge(status: number) {
   }
 }
 
-export function TorrentDetailsPanel({ instanceId, torrent, isAnimating }: TorrentDetailsPanelProps) {
+export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanelProps) {
   const [activeTab, setActiveTab] = useState('general')
 
   // Reset tab when torrent changes
@@ -74,25 +73,25 @@ export function TorrentDetailsPanel({ instanceId, torrent, isAnimating }: Torren
     setActiveTab('general')
   }, [torrent?.hash])
 
-  // Fetch torrent properties (delayed during animation)
+  // Fetch torrent properties
   const { data: properties, isLoading: loadingProperties } = useQuery({
     queryKey: ['torrent-properties', instanceId, torrent?.hash],
     queryFn: () => api.getTorrentProperties(instanceId, torrent!.hash),
-    enabled: !!torrent && !isAnimating,
+    enabled: !!torrent,
   })
 
-  // Fetch torrent trackers (delayed during animation)
+  // Fetch torrent trackers
   const { data: trackers, isLoading: loadingTrackers } = useQuery({
     queryKey: ['torrent-trackers', instanceId, torrent?.hash],
     queryFn: () => api.getTorrentTrackers(instanceId, torrent!.hash),
-    enabled: !!torrent && activeTab === 'trackers' && !isAnimating,
+    enabled: !!torrent && activeTab === 'trackers',
   })
 
-  // Fetch torrent files (delayed during animation)
+  // Fetch torrent files
   const { data: files, isLoading: loadingFiles } = useQuery({
     queryKey: ['torrent-files', instanceId, torrent?.hash],
     queryFn: () => api.getTorrentFiles(instanceId, torrent!.hash),
-    enabled: !!torrent && activeTab === 'content' && !isAnimating,
+    enabled: !!torrent && activeTab === 'content',
   })
 
   if (!torrent) return null

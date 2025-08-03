@@ -55,7 +55,9 @@ export function useTorrentsList(
       order: 'desc',
       filters
     }),
-    staleTime: 30000, // 30 seconds
+    staleTime: 2000, // 2 seconds - match backend cache TTL
+    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
+    refetchIntervalInBackground: false, // Don't poll when tab is not active
     enabled,
   })
   

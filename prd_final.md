@@ -1075,12 +1075,66 @@ cache, _ := ristretto.NewCache(&ristretto.Config{
     BufferItems: 64,
 })
 
-// Cache keys with TTL
+// Cache keys with TTL (optimized for real-time updates)
 // - Instance metadata: 5 minutes
 // - Categories/tags: 1 minute  
-// - Torrent list pages: 10 seconds
-// - Individual torrent details: 30 seconds
+// - Torrent list pages: 2 seconds (reduced for responsiveness)
+// - Individual torrent details: 2 seconds (reduced for responsiveness)
+// - Torrent count: 2 seconds (reduced for responsiveness)
 ```
+
+##### Critical: Cache Invalidation for Real-time Updates
+**Problem**: qBittorrent needs time to process actions (pause/resume/delete) before its API reflects changes.
+
+**Solution**: Coordinated cache invalidation between backend and frontend:
+
+```go
+// Backend: Immediate cache invalidation after actions
+func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
+    // Perform action
+    if err := h.syncManager.BulkAction(r.Context(), instanceID, req.Hashes, req.Action); err != nil {
+        // Handle error
+        return
+    }
+    
+    // Immediately clear cache - next request gets fresh data
+    h.syncManager.InvalidateCache(instanceID)
+    
+    // Return success immediately (good UX)
+    RespondJSON(w, http.StatusOK, map[string]string{
+        "message": "Bulk action completed successfully",
+    })
+}
+
+// Cache invalidation clears entire cache (Ristretto limitation)
+func (sm *SyncManager) InvalidateCache(instanceID int) {
+    log.Debug().Int("instanceID", instanceID).Msg("Invalidating cache for instance")
+    sm.cache.Clear() // Simple but effective approach
+}
+```
+
+```tsx
+// Frontend: Delayed invalidation to allow qBittorrent processing
+const mutation = useMutation({
+    mutationFn: (data) => api.bulkAction(instanceId, data),
+    onSuccess: () => {
+        // Wait for qBittorrent to process the change
+        setTimeout(() => {
+            queryClient.invalidateQueries({ 
+                queryKey: ['torrents-list', instanceId],
+                exact: false // Match all related queries
+            })
+        }, 1000) // 1 second for actions, 500ms for adding torrents
+    },
+})
+```
+
+**Key Timings**:
+- Backend cache TTL: 2 seconds (reduced from 10-30 seconds)
+- Frontend invalidation delay: 1000ms for actions, 500ms for adding torrents
+- React Query stale time: 5 seconds (reduced from 30 seconds)
+
+This ensures immediate UI feedback while guaranteeing data consistency.
 
 #### 2. Frontend Optimizations
 

@@ -11,6 +11,7 @@ import (
 	qbt "github.com/autobrr/go-qbittorrent"
 	"github.com/dgraph-io/ristretto"
 	"github.com/rs/zerolog/log"
+
 	"github.com/s0up4200/qbitweb/internal/api/converters"
 )
 
@@ -34,11 +35,11 @@ type TorrentStats struct {
 
 // SyncManager manages SyncMainData for efficient torrent updates
 type SyncManager struct {
-	clientPool  *ClientPool
-	mainData    map[int]*qbt.MainData
-	ridTracker  map[int]int64
-	mu          sync.RWMutex
-	cache       *ristretto.Cache
+	clientPool *ClientPool
+	mainData   map[int]*qbt.MainData
+	ridTracker map[int]int64
+	mu         sync.RWMutex
+	cache      *ristretto.Cache
 }
 
 // NewSyncManager creates a new sync manager
@@ -88,8 +89,8 @@ func (sm *SyncManager) InitialLoad(ctx context.Context, instanceID int, limit, o
 		Total:    total,
 	}
 
-	// Cache the response
-	sm.cache.SetWithTTL(cacheKey, response, 1, 10*time.Second)
+	// Cache the response with shorter TTL for more responsive updates
+	sm.cache.SetWithTTL(cacheKey, response, 1, 2*time.Second)
 
 	log.Debug().
 		Int("instanceID", instanceID).
@@ -147,8 +148,8 @@ func (sm *SyncManager) GetTorrentsWithSearch(ctx context.Context, instanceID int
 		Stats:    stats,
 	}
 
-	// Cache the response
-	sm.cache.SetWithTTL(cacheKey, response, 1, 10*time.Second)
+	// Cache the response with shorter TTL for more responsive updates
+	sm.cache.SetWithTTL(cacheKey, response, 1, 2*time.Second)
 
 	log.Debug().
 		Int("instanceID", instanceID).
@@ -207,8 +208,8 @@ func (sm *SyncManager) GetTorrentsWithFilters(ctx context.Context, instanceID in
 		Stats:    stats,
 	}
 
-	// Cache the response
-	sm.cache.SetWithTTL(cacheKey, response, 1, 10*time.Second)
+	// Cache the response with shorter TTL for more responsive updates
+	sm.cache.SetWithTTL(cacheKey, response, 1, 2*time.Second)
 
 	log.Debug().
 		Int("instanceID", instanceID).
@@ -544,8 +545,8 @@ func (sm *SyncManager) getTotalCount(ctx context.Context, instanceID int) int {
 
 	count := len(torrents)
 
-	// Cache for 30 seconds
-	sm.cache.SetWithTTL(cacheKey, count, 1, 30*time.Second)
+	// Cache for shorter time for more responsive updates
+	sm.cache.SetWithTTL(cacheKey, count, 1, 2*time.Second)
 
 	return count
 }
@@ -586,6 +587,16 @@ func (sm *SyncManager) ResetRID(instanceID int) {
 	delete(sm.mainData, instanceID)
 }
 
+// InvalidateCache clears all cached data for a specific instance
+func (sm *SyncManager) InvalidateCache(instanceID int) {
+	log.Debug().Int("instanceID", instanceID).Msg("Invalidating cache for instance")
+
+	// Ristretto doesn't support pattern deletion, so we use a simpler approach:
+	// Just clear the entire cache. This is not ideal for multi-instance setups,
+	// but ensures consistency and is simple to implement.
+	sm.cache.Clear()
+}
+
 // getAllTorrentsForStats gets all torrents for stats calculation (cached)
 func (sm *SyncManager) getAllTorrentsForStats(ctx context.Context, instanceID int, search string) ([]qbt.Torrent, error) {
 	// Use different cache key for search vs no search
@@ -608,8 +619,8 @@ func (sm *SyncManager) getAllTorrentsForStats(ctx context.Context, instanceID in
 		return nil, fmt.Errorf("failed to get all torrents: %w", err)
 	}
 
-	// Cache for 30 seconds
-	sm.cache.SetWithTTL(cacheKey, torrents, 1, 30*time.Second)
+	// Cache for shorter time for more responsive updates
+	sm.cache.SetWithTTL(cacheKey, torrents, 1, 2*time.Second)
 
 	return torrents, nil
 }
@@ -627,7 +638,7 @@ func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search str
 		// Search in name, category, and tags
 		nameMatch := strings.Contains(strings.ToLower(torrent.Name), searchLower)
 		categoryMatch := strings.Contains(strings.ToLower(torrent.Category), searchLower)
-		
+
 		// Search in tags (Tags is a comma-separated string)
 		tagsMatch := strings.Contains(strings.ToLower(torrent.Tags), searchLower)
 
@@ -717,12 +728,12 @@ func (sm *SyncManager) matchTorrentStatus(torrent qbt.Torrent, status string) bo
 	case "all":
 		return true
 	case "downloading":
-		return state == "downloading" || state == "stalledDL" || 
-			   state == "metaDL" || state == "queuedDL" || 
-			   state == "allocating" || state == "checkingDL"
+		return state == "downloading" || state == "stalledDL" ||
+			state == "metaDL" || state == "queuedDL" ||
+			state == "allocating" || state == "checkingDL"
 	case "seeding":
-		return state == "uploading" || state == "stalledUP" || 
-			   state == "queuedUP" || state == "checkingUP"
+		return state == "uploading" || state == "stalledUP" ||
+			state == "queuedUP" || state == "checkingUP"
 	case "completed":
 		return torrent.Progress == 1
 	case "paused":
@@ -757,7 +768,7 @@ func (sm *SyncManager) calculateStats(torrents []qbt.Torrent) *TorrentStats {
 		// Add speeds
 		stats.TotalDownloadSpeed += int(torrent.DlSpeed)
 		stats.TotalUploadSpeed += int(torrent.UpSpeed)
-		
+
 		// Count states
 		switch torrent.State {
 		case qbt.TorrentStateDownloading, qbt.TorrentStateStalledDl, qbt.TorrentStateMetaDl, qbt.TorrentStateQueuedDl, qbt.TorrentStateForcedDl:
@@ -780,8 +791,8 @@ func (sm *SyncManager) sortTorrents(torrents []qbt.Torrent, sortField, order str
 	if order != "asc" && order != "desc" {
 		order = "desc"
 	}
-	
-	log.Debug().
+
+	log.Trace().
 		Str("sortField", sortField).
 		Str("order", order).
 		Int("torrentCount", len(torrents)).
@@ -789,7 +800,7 @@ func (sm *SyncManager) sortTorrents(torrents []qbt.Torrent, sortField, order str
 
 	sort.Slice(torrents, func(i, j int) bool {
 		var less bool
-		
+
 		switch sortField {
 		case "name":
 			less = strings.ToLower(torrents[i].Name) < strings.ToLower(torrents[j].Name)
@@ -817,7 +828,7 @@ func (sm *SyncManager) sortTorrents(torrents []qbt.Torrent, sortField, order str
 			// Default to sorting by added date (newest first)
 			less = torrents[i].AddedOn < torrents[j].AddedOn
 		}
-		
+
 		// Reverse for descending order
 		if order == "desc" {
 			return !less

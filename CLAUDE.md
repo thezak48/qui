@@ -235,3 +235,40 @@ pnpm dlx shadcn@latest add <component-name>
 - SyncMainData implementation exists but is currently unused due to complexity
 - Tags can be either string[] or comma-separated string from API
 - Instance status requires periodic health checks due to connection drops
+
+## Cache Management and Real-time Updates
+
+### Backend Cache Strategy
+The backend uses Ristretto cache with **2-second TTL** for torrent data to ensure responsive updates after user actions. Key considerations:
+
+- **Cache Invalidation**: Immediately clear cache after bulk actions (pause/resume/delete) and adding torrents
+- **qBittorrent Processing Time**: qBittorrent needs time to process actions before its API reflects changes
+- **Cache TTL**: Reduced from 10-30 seconds to 2 seconds for better responsiveness
+
+### Frontend Update Strategy
+Frontend uses coordinated timing with backend for optimal user experience:
+
+- **TorrentActions**: 1-second delay before React Query invalidation
+- **AddTorrentDialog**: 500ms delay before React Query invalidation  
+- **React Query**: 5-second stale time with `exact: false` invalidation to match all related queries
+
+### Implementation Pattern
+```go
+// Backend: Immediate cache clear after action
+h.syncManager.BulkAction(ctx, instanceID, hashes, action)
+h.syncManager.InvalidateCache(instanceID) // Clear entire cache
+
+// Frontend: Delayed invalidation to allow qBittorrent processing
+setTimeout(() => {
+  queryClient.invalidateQueries({ 
+    queryKey: ['torrents-list', instanceId],
+    exact: false 
+  })
+}, 1000) // 1 second for actions, 500ms for adding torrents
+```
+
+This approach ensures:
+1. Actions return immediately (good UX)  
+2. Backend cache is cleared immediately
+3. Frontend waits for qBittorrent to process changes
+4. Next API call gets fresh data with updated torrent states
