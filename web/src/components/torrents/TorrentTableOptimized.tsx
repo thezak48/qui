@@ -15,7 +15,6 @@ import { api } from '@/lib/api'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -35,7 +34,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { TorrentDetailsPanel } from './TorrentDetailsPanel'
 import { Loader2, Play, Pause, Trash2, CheckCircle, Copy } from 'lucide-react'
 import type { Torrent } from '@/types'
 
@@ -47,6 +45,8 @@ interface TorrentTableOptimizedProps {
     tags: string[]
     trackers: string[]
   }
+  selectedTorrent?: Torrent | null
+  onTorrentSelect?: (torrent: Torrent | null) => void
 }
 
 function formatBytes(bytes: number): string {
@@ -229,13 +229,12 @@ const columns: ColumnDef<Torrent>[] = [
   },
 ]
 
-export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptimizedProps) {
+export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, onTorrentSelect }: TorrentTableOptimizedProps) {
   // State management
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [rowSelection, setRowSelection] = useState({})
   const [columnSizing, setColumnSizing] = useState({})
-  const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [contextMenuHashes, setContextMenuHashes] = useState<string[]>([])
@@ -547,7 +546,7 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
                             const target = e.target as HTMLElement
                             const isCheckbox = (target as HTMLInputElement).type === 'checkbox' || target.closest('input[type="checkbox"]')
                             if (!isCheckbox) {
-                              setSelectedTorrent(torrent)
+                              onTorrentSelect?.(torrent)
                             }
                           }}
                           onContextMenu={() => {
@@ -576,7 +575,7 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
                         </div>
                       </ContextMenuTrigger>
                       <ContextMenuContent>
-                        <ContextMenuItem onClick={() => setSelectedTorrent(torrent)}>
+                        <ContextMenuItem onClick={() => onTorrentSelect?.(torrent)}>
                           View Details
                         </ContextMenuItem>
                         <ContextMenuSeparator />
@@ -666,17 +665,6 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
           )}
         </div>
       </div>
-      
-      <Sheet open={!!selectedTorrent} onOpenChange={(open) => !open && setSelectedTorrent(null)}>
-        <SheetContent className="w-full sm:w-[480px] md:w-[540px] lg:w-[600px] xl:w-[640px] sm:max-w-[480px] md:max-w-[540px] lg:max-w-[600px] xl:max-w-[640px] p-0">
-          {selectedTorrent && (
-            <TorrentDetailsPanel
-              instanceId={instanceId}
-              torrent={selectedTorrent}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
       
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

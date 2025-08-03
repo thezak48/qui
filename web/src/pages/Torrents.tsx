@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { TorrentTableOptimized } from '@/components/torrents/TorrentTableOptimized'
 import { FilterSidebar } from '@/components/torrents/FilterSidebar'
+import { TorrentDetailsPanel } from '@/components/torrents/TorrentDetailsPanel'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
+import type { Torrent } from '@/types'
 
 interface TorrentsProps {
   instanceId: number
@@ -14,6 +17,24 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
     tags: [] as string[],
     trackers: [] as string[],
   })
+  const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  const handleTorrentSelect = (torrent: Torrent | null) => {
+    // Clear any existing timeout
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current)
+    }
+    
+    setIsAnimating(true)
+    setSelectedTorrent(torrent)
+    
+    // Clear animation flag after animation duration (500ms + 100ms buffer)
+    animationTimeoutRef.current = setTimeout(() => {
+      setIsAnimating(false)
+    }, 600)
+  }
 
   return (
     <div className="flex h-full">
@@ -39,10 +60,27 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
             <TorrentTableOptimized 
               instanceId={instanceId} 
               filters={filters}
+              selectedTorrent={selectedTorrent}
+              onTorrentSelect={handleTorrentSelect}
             />
           </div>
         </div>
       </div>
+      
+      <Sheet open={!!selectedTorrent} onOpenChange={(open) => !open && setSelectedTorrent(null)}>
+        <SheetContent 
+          side="right"
+          className="w-full sm:w-[480px] md:w-[540px] lg:w-[600px] xl:w-[640px] sm:max-w-[480px] md:max-w-[540px] lg:max-w-[600px] xl:max-w-[640px] p-0"
+        >
+          {selectedTorrent && (
+            <TorrentDetailsPanel
+              instanceId={instanceId}
+              torrent={selectedTorrent}
+              isAnimating={isAnimating}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
