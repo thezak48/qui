@@ -38,14 +38,22 @@ export function useTorrentsList(
     totalUploadSpeed: 0,
   })
   
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(0)
+    setAllTorrents([])
+    setHasLoadedAll(false)
+  }, [filters])
+  
   // Initial load
   const { data: initialData, isLoading: initialLoading } = useQuery({
-    queryKey: ['torrents-list', instanceId, currentPage],
+    queryKey: ['torrents-list', instanceId, currentPage, filters],
     queryFn: () => api.getTorrents(instanceId, { 
       page: currentPage, 
       limit: pageSize,
       sort: 'addedOn',
-      order: 'desc'
+      order: 'desc',
+      filters
     }),
     staleTime: 30000, // 30 seconds
     enabled,
@@ -93,65 +101,31 @@ export function useTorrentsList(
     }
   }
   
-  // Client-side filtering
+  // Apply client-side search filter only
   const filteredTorrents = useMemo(() => {
-    let result = [...allTorrents]
+    if (!search) return allTorrents
     
-    // Search filter
-    if (search) {
-      const searchLower = search.toLowerCase()
-      result = result.filter(t => {
-        const nameMatch = t.name.toLowerCase().includes(searchLower)
-        const categoryMatch = t.category?.toLowerCase().includes(searchLower)
-        
-        // Handle tags which could be string[] or string from API
-        let tagsMatch = false
-        if (Array.isArray(t.tags)) {
-          tagsMatch = t.tags.some(tag => tag.toLowerCase().includes(searchLower))
-        } else if (typeof t.tags === 'string') {
-          tagsMatch = (t.tags as any).toLowerCase().includes(searchLower)
-        }
-        
-        return nameMatch || categoryMatch || tagsMatch
-      })
-    }
-    
-    // Status filter
-    if (filters?.status?.length) {
-      result = result.filter(t => filters.status.includes(t.state))
-    }
-    
-    // Category filter
-    if (filters?.categories?.length) {
-      result = result.filter(t => t.category && filters.categories.includes(t.category))
-    }
-    
-    // Tags filter
-    if (filters?.tags?.length) {
-      result = result.filter(t => {
-        if (!t.tags) return false
-        
-        // Handle tags which could be string[] or comma-separated string from API
-        let torrentTags: string[] = []
-        if (Array.isArray(t.tags)) {
-          torrentTags = t.tags
-        } else if (typeof t.tags === 'string') {
-          torrentTags = (t.tags as any).split(',').map((tag: string) => tag.trim())
-        }
-        
-        return filters.tags.some(tag => torrentTags.includes(tag))
-      })
-    }
-    
-    // Sort by added date (newest first) - already sorted from API
-    
-    return result
-  }, [allTorrents, search, filters])
+    const searchLower = search.toLowerCase()
+    return allTorrents.filter(t => {
+      const nameMatch = t.name.toLowerCase().includes(searchLower)
+      const categoryMatch = t.category?.toLowerCase().includes(searchLower)
+      
+      // Handle tags which could be string[] or string from API
+      let tagsMatch = false
+      if (Array.isArray(t.tags)) {
+        tagsMatch = t.tags.some(tag => tag.toLowerCase().includes(searchLower))
+      } else if (typeof t.tags === 'string') {
+        tagsMatch = (t.tags as any).toLowerCase().includes(searchLower)
+      }
+      
+      return nameMatch || categoryMatch || tagsMatch
+    })
+  }, [allTorrents, search])
   
   // Update filtered stats
   const filteredStats = useMemo(() => {
-    // If we have filters/search active, recalculate counts from filtered results
-    if (search || filters?.status?.length || filters?.categories?.length || filters?.tags?.length) {
+    // If we have client-side search, recalculate counts from filtered results
+    if (search) {
       const filtered = {
         total: filteredTorrents.length,
         downloading: filteredTorrents.filter(t => t.state === 'downloading' || t.state === 'stalledDL').length,
@@ -164,9 +138,9 @@ export function useTorrentsList(
       return filtered
     }
     
-    // Otherwise use the stats from the API which includes ALL torrents
+    // Otherwise use the stats from the API which already accounts for server-side filters
     return stats
-  }, [filteredTorrents, stats, search, filters])
+  }, [filteredTorrents, stats, search])
   
   return {
     torrents: filteredTorrents,
