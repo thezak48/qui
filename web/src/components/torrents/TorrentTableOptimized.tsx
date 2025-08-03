@@ -10,14 +10,33 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTorrentsList } from '@/hooks/useTorrentsList'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from '@/lib/api'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
 import { TorrentDetailsPanel } from './TorrentDetailsPanel'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Play, Pause, Trash2, CheckCircle, Copy } from 'lucide-react'
 import type { Torrent } from '@/types'
 
 interface TorrentTableOptimizedProps {
@@ -217,9 +236,15 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
   const [rowSelection, setRowSelection] = useState({})
   const [columnSizing, setColumnSizing] = useState({})
   const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deleteFiles, setDeleteFiles] = useState(false)
+  const [contextMenuHashes, setContextMenuHashes] = useState<string[]>([])
   
   // Progressive loading state
   const [loadedRows, setLoadedRows] = useState(100)
+  
+  // Query client for invalidating queries
+  const queryClient = useQueryClient()
 
   // Debounce search to prevent excessive filtering
   const debouncedSearch = useDebounce(globalFilter, 300)
@@ -353,6 +378,45 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
     })
   }, [torrents, sortedTorrents, rows, loadedRows, virtualRows, virtualizer])
 
+  // Mutation for bulk actions
+  const mutation = useMutation({
+    mutationFn: (data: {
+      action: 'pause' | 'resume' | 'delete' | 'recheck'
+      deleteFiles?: boolean
+      hashes: string[]
+    }) => {
+      return api.bulkAction(instanceId, {
+        hashes: data.hashes,
+        action: data.action,
+        deleteFiles: data.deleteFiles,
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['torrents', instanceId] })
+      setContextMenuHashes([])
+    },
+  })
+
+  const handleDelete = async () => {
+    await mutation.mutateAsync({ 
+      action: 'delete', 
+      deleteFiles,
+      hashes: contextMenuHashes 
+    })
+    setShowDeleteDialog(false)
+    setDeleteFiles(false)
+    setContextMenuHashes([])
+  }
+
+  const handleContextMenuAction = (action: 'pause' | 'resume' | 'recheck', hashes: string[]) => {
+    setContextMenuHashes(hashes)
+    mutation.mutate({ action, hashes })
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -465,44 +529,111 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
                   const isSelected = selectedTorrent?.hash === torrent.hash
                 
                   return (
-                    <div
-                      key={row.id}
-                      className={`flex border-b cursor-pointer hover:bg-muted/50 ${row.getIsSelected() ? 'bg-muted/50' : ''} ${isSelected ? 'bg-accent' : ''}`}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        minWidth: `${tableMinWidth}px`,
-                        height: `${virtualRow.size}px`,
-                        transform: `translateY(${virtualRow.start}px)`,
-                      }}
-                      onClick={(e) => {
-                        // Don't select when clicking checkbox
-                        const target = e.target as HTMLElement
-                        const isCheckbox = (target as HTMLInputElement).type === 'checkbox' || target.closest('input[type="checkbox"]')
-                        if (!isCheckbox) {
-                          setSelectedTorrent(torrent)
-                        }
-                      }}
-                    >
-                      {row.getVisibleCells().map(cell => (
+                    <ContextMenu key={row.id}>
+                      <ContextMenuTrigger asChild>
                         <div
-                          key={cell.id}
-                          style={{ 
-                            width: cell.column.getSize(),
-                            minWidth: cell.column.getSize(),
-                            flexShrink: 0
+                          className={`flex border-b cursor-pointer hover:bg-muted/50 ${row.getIsSelected() ? 'bg-muted/50' : ''} ${isSelected ? 'bg-accent' : ''}`}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            minWidth: `${tableMinWidth}px`,
+                            height: `${virtualRow.size}px`,
+                            transform: `translateY(${virtualRow.start}px)`,
                           }}
-                          className="px-3 py-2 flex items-center overflow-hidden"
+                          onClick={(e) => {
+                            // Don't select when clicking checkbox
+                            const target = e.target as HTMLElement
+                            const isCheckbox = (target as HTMLInputElement).type === 'checkbox' || target.closest('input[type="checkbox"]')
+                            if (!isCheckbox) {
+                              setSelectedTorrent(torrent)
+                            }
+                          }}
+                          onContextMenu={() => {
+                            // Select this row if not already selected
+                            if (!row.getIsSelected()) {
+                              setRowSelection({ [row.id]: true })
+                            }
+                          }}
                         >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
+                          {row.getVisibleCells().map(cell => (
+                            <div
+                              key={cell.id}
+                              style={{ 
+                                width: cell.column.getSize(),
+                                minWidth: cell.column.getSize(),
+                                flexShrink: 0
+                              }}
+                              className="px-3 py-2 flex items-center overflow-hidden"
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem onClick={() => setSelectedTorrent(torrent)}>
+                          View Details
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            handleContextMenuAction('resume', hashes)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <Play className="mr-2 h-4 w-4" />
+                          Resume {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            handleContextMenuAction('pause', hashes)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <Pause className="mr-2 h-4 w-4" />
+                          Pause {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            handleContextMenuAction('recheck', hashes)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Force Recheck {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem onClick={() => copyToClipboard(torrent.name)}>
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy Name
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => copyToClipboard(torrent.hash)}>
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy Hash
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            setContextMenuHashes(hashes)
+                            setShowDeleteDialog(true)
+                          }}
+                          disabled={mutation.isPending}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   )
                 })}
               </div>
@@ -547,6 +678,38 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
           )}
         </SheetContent>
       </Sheet>
+      
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {contextMenuHashes.length} torrent(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The torrents will be removed from qBittorrent.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-4">
+            <input
+              type="checkbox"
+              id="deleteFiles"
+              checked={deleteFiles}
+              onChange={(e) => setDeleteFiles(e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            <label htmlFor="deleteFiles" className="text-sm font-medium">
+              Also delete files from disk
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
