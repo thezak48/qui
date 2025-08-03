@@ -98,7 +98,7 @@ class ApiClient {
     return this.request(`/instances/${id}`, { method: 'DELETE' })
   }
 
-  async testConnection(id: number): Promise<{ success: boolean; message: string }> {
+  async testConnection(id: number): Promise<{ connected: boolean; message: string }> {
     return this.request(`/instances/${id}/test`, { method: 'POST' })
   }
 

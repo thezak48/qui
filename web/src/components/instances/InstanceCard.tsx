@@ -35,10 +35,12 @@ export function InstanceCard({ instance, onEdit }: InstanceCardProps) {
     setTestResult(null)
     try {
       const result = await testConnection(instance.id)
-      setTestResult(result)
+      // Convert connected to success for consistency with component state
+      const testResult = { success: result.connected, message: result.message }
+      setTestResult(testResult)
       
-      if (result.success) {
-        toast.success('Test Connection', {
+      if (result.connected) {
+        toast.success('Test Connection Successful', {
           description: result.message || 'Successfully connected to qBittorrent instance'
         })
       } else {
