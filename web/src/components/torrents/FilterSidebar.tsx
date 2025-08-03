@@ -174,11 +174,9 @@ export function FilterSidebar({
                         <state.icon className="h-4 w-4" />
                         <span>{state.label}</span>
                       </span>
-                      {torrentCounts[`status:${state.value}`] !== undefined && (
-                        <span className="text-xs text-muted-foreground">
-                          {torrentCounts[`status:${state.value}`]}
-                        </span>
-                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {torrentCounts[`status:${state.value}`] || 0}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -208,11 +206,9 @@ export function FilterSidebar({
                     <span className="text-sm flex-1 italic text-muted-foreground">
                       Uncategorized
                     </span>
-                    {torrentCounts['category:'] !== undefined && (
-                      <span className="text-xs text-muted-foreground">
-                        {torrentCounts['category:']}
-                      </span>
-                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {torrentCounts['category:'] || 0}
+                    </span>
                   </label>
                   
                   {/* Category list */}
@@ -228,11 +224,9 @@ export function FilterSidebar({
                       <span className="text-sm flex-1 truncate" title={name}>
                         {name}
                       </span>
-                      {torrentCounts[`category:${name}`] !== undefined && (
-                        <span className="text-xs text-muted-foreground">
-                          {torrentCounts[`category:${name}`]}
-                        </span>
-                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {torrentCounts[`category:${name}`] || 0}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -262,11 +256,9 @@ export function FilterSidebar({
                     <span className="text-sm flex-1 italic text-muted-foreground">
                       Untagged
                     </span>
-                    {torrentCounts['tag:'] !== undefined && (
-                      <span className="text-xs text-muted-foreground">
-                        {torrentCounts['tag:']}
-                      </span>
-                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {torrentCounts['tag:'] || 0}
+                    </span>
                   </label>
                   
                   {/* Tag list */}
@@ -282,11 +274,9 @@ export function FilterSidebar({
                       <span className="text-sm flex-1 truncate" title={tag}>
                         {tag}
                       </span>
-                      {torrentCounts[`tag:${tag}`] !== undefined && (
-                        <span className="text-xs text-muted-foreground">
-                          {torrentCounts[`tag:${tag}`]}
-                        </span>
-                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {torrentCounts[`tag:${tag}`] || 0}
+                      </span>
                     </label>
                   ))}
                 </div>

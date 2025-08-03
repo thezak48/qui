@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { TorrentTableOptimized } from '@/components/torrents/TorrentTableOptimized'
 import { FilterSidebar } from '@/components/torrents/FilterSidebar'
 import { TorrentDetailsPanel } from '@/components/torrents/TorrentDetailsPanel'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { VisuallyHidden } from '@/components/ui/visually-hidden'
+import { useTorrentCounts } from '@/hooks/useTorrentCounts'
+import { api } from '@/lib/api'
 import type { Torrent } from '@/types'
 
 interface TorrentsProps {
@@ -20,6 +23,59 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
   })
   const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null)
   
+  // Get all torrents for accurate counting (separate from table's progressive loading)
+  const { data: allTorrentsForCounts } = useQuery({
+    queryKey: ['all-torrents-for-counts', instanceId],
+    queryFn: async () => {
+      // Load torrents in batches until we get them all
+      let allTorrents: any[] = []
+      let page = 0
+      const pageSize = 1000
+      let hasMore = true
+      
+      while (hasMore) {
+        const response = await api.getTorrents(instanceId, { 
+          page,
+          limit: pageSize,
+          sort: 'addedOn',
+          order: 'desc'
+        })
+        
+        allTorrents = [...allTorrents, ...response.torrents]
+        hasMore = response.torrents.length === pageSize && allTorrents.length < response.total
+        page++
+        
+        // Safety break to prevent infinite loops
+        if (page > 10) break
+      }
+      
+      console.log(`Loaded ${allTorrents.length} torrents for counting in ${page} batches`)
+      return allTorrents
+    },
+    staleTime: 30000, // Cache for 30 seconds
+    refetchInterval: 60000, // Refresh every minute
+  })
+
+  // Fetch categories and tags for count calculation
+  const { data: categories = {} } = useQuery({
+    queryKey: ['categories', instanceId],
+    queryFn: () => api.getCategories(instanceId),
+    staleTime: 60000,
+  })
+
+  const { data: tags = [] } = useQuery({
+    queryKey: ['tags', instanceId],
+    queryFn: () => api.getTags(instanceId),
+    staleTime: 60000,
+  })
+  
+  // Calculate torrent counts for the sidebar
+  const torrentCounts = useTorrentCounts({ 
+    torrents: allTorrentsForCounts || [], 
+    allCategories: categories, 
+    allTags: tags 
+  })
+  
   const handleTorrentSelect = (torrent: Torrent | null) => {
     setSelectedTorrent(torrent)
   }
@@ -32,6 +88,7 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
           instanceId={instanceId}
           selectedFilters={filters}
           onFilterChange={setFilters}
+          torrentCounts={torrentCounts}
         />
       </div>
       
