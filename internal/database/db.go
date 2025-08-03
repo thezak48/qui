@@ -42,6 +42,12 @@ func New(databasePath string) (*DB, error) {
 		return nil, fmt.Errorf("failed to enable WAL mode: %w", err)
 	}
 
+	// Set busy timeout to 10 seconds - this is the key fix
+	if _, err := conn.Exec("PRAGMA busy_timeout = 10000"); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to set busy timeout: %w", err)
+	}
+
 	db := &DB{
 		conn: conn,
 	}
