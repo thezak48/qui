@@ -1,29 +1,20 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   type ColumnDef,
-  type PaginationState,
   type SortingState,
 } from '@tanstack/react-table'
-import { useTorrentsServerSide } from '@/hooks/useTorrentsServerSide'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { useTorrentsList } from '@/hooks/useTorrentsList'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import type { Torrent } from '@/types'
 
 interface TorrentTableOptimizedProps {
@@ -129,7 +120,7 @@ const columns: ColumnDef<Torrent>[] = [
         state === 'error' || state === 'missingFiles' ? 'destructive' :
         'outline'
       
-      return <Badge variant={variant as any}>{state}</Badge>
+      return <Badge variant={variant}>{state}</Badge>
     },
     size: 120,
   },
@@ -199,67 +190,63 @@ const columns: ColumnDef<Torrent>[] = [
 ]
 
 export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptimizedProps) {
-  // Server-side state management
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 50,
-  })
+  // State management
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [rowSelection, setRowSelection] = useState({})
+  
+  // Progressive loading state
+  const [loadedRows, setLoadedRows] = useState(100)
 
-  // Debounce search to prevent excessive API calls
-  const debouncedSearch = useDebounce(globalFilter, 500)
+  // Debounce search to prevent excessive filtering
+  const debouncedSearch = useDebounce(globalFilter, 300)
 
-  // Reset to first page when search changes
-  const [lastSearch, setLastSearch] = useState(debouncedSearch)
-  if (debouncedSearch !== lastSearch) {
-    setLastSearch(debouncedSearch)
-    setPagination(prev => ({ ...prev, pageIndex: 0 }))
-  }
-
-  // Reset to first page when filters change
-  const [lastFilters, setLastFilters] = useState(filters)
-  if (JSON.stringify(filters) !== JSON.stringify(lastFilters)) {
-    setLastFilters(filters)
-    setPagination(prev => ({ ...prev, pageIndex: 0 }))
-  }
-
-  // Server-side data fetching
+  // Fetch torrents data
   const { 
     torrents, 
     totalCount, 
     stats, 
     isLoading,
-    hasNextPage,
-    hasPreviousPage,
-  } = useTorrentsServerSide(instanceId, {
-    page: pagination.pageIndex,
-    limit: pagination.pageSize,
-    sort: sorting[0]?.id,
-    order: sorting[0]?.desc ? 'desc' : 'asc',
+    isLoadingMore,
+    hasLoadedAll,
+    loadMore: loadMoreTorrents,
+  } = useTorrentsList(instanceId, {
     search: debouncedSearch,
     filters,
   })
 
+  // Sort torrents client-side
+  const sortedTorrents = useMemo(() => {
+    if (sorting.length === 0) return torrents
+    
+    const sorted = [...torrents]
+    const sort = sorting[0]
+    
+    sorted.sort((a, b) => {
+      const aValue = a[sort.id as keyof Torrent]
+      const bValue = b[sort.id as keyof Torrent]
+      
+      if (aValue === null || aValue === undefined) return 1
+      if (bValue === null || bValue === undefined) return -1
+      
+      if (aValue < bValue) return sort.desc ? 1 : -1
+      if (aValue > bValue) return sort.desc ? -1 : 1
+      return 0
+    })
+    
+    return sorted
+  }, [torrents, sorting])
+
   const table = useReactTable({
-    data: torrents,
+    data: sortedTorrents,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    // Disable client-side operations for performance
-    manualPagination: true,
-    manualSorting: true,
-    manualFiltering: true,
-    // Provide total count for pagination
-    rowCount: totalCount,
     // State management
     state: {
-      pagination,
       sorting,
       globalFilter,
       rowSelection,
     },
-    onPaginationChange: setPagination,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
@@ -271,12 +258,75 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
   const selectedHashes = useMemo(() => {
     return Object.keys(rowSelection)
       .filter(key => rowSelection[key as keyof typeof rowSelection])
-      .map(index => torrents[parseInt(index)]?.hash)
+      .map(index => sortedTorrents[parseInt(index)]?.hash)
       .filter(Boolean)
-  }, [rowSelection, torrents])
+  }, [rowSelection, sortedTorrents])
 
-  if (isLoading && torrents.length === 0) {
-    return <div className="p-4">Loading torrents...</div>
+  // Load more rows as user scrolls (progressive loading)
+  const loadMore = useCallback(() => {
+    const newLoadedRows = Math.min(loadedRows + 100, sortedTorrents.length)
+    setLoadedRows(newLoadedRows)
+    
+    // If we're near the end of loaded torrents and haven't loaded all from server
+    if (newLoadedRows >= sortedTorrents.length - 50 && !hasLoadedAll && !isLoadingMore) {
+      loadMoreTorrents()
+    }
+  }, [loadedRows, sortedTorrents.length, hasLoadedAll, isLoadingMore, loadMoreTorrents])
+
+  // Virtualization setup with progressive loading
+  const { rows } = table.getRowModel()
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  // Only virtualize the loaded rows, not all rows
+  const virtualizer = useVirtualizer({
+    count: Math.min(loadedRows, rows.length),
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 45,
+    overscan: 20, // Increased for smoother scrolling
+    onChange: (instance) => {
+      const lastItem = instance.getVirtualItems().at(-1)
+      if (lastItem && lastItem.index >= loadedRows - 50) {
+        loadMore()
+      }
+    },
+  })
+
+  const virtualRows = virtualizer.getVirtualItems()
+
+  // Reset loaded rows when data changes
+  useEffect(() => {
+    if (sortedTorrents.length > 0) {
+      // If we have torrents but loadedRows is 0, set initial load
+      if (loadedRows === 0) {
+        setLoadedRows(Math.min(100, sortedTorrents.length))
+      }
+      // If data reduced below loaded rows, adjust
+      else if (sortedTorrents.length < loadedRows) {
+        setLoadedRows(sortedTorrents.length)
+      }
+    }
+  }, [sortedTorrents.length, loadedRows])
+
+  // Debug logging
+  useEffect(() => {
+    console.log('TorrentTable Debug:', {
+      torrentsCount: torrents.length,
+      sortedTorrentsCount: sortedTorrents.length,
+      rowsCount: rows.length,
+      loadedRows,
+      virtualRowsCount: virtualRows.length,
+      virtualizerTotalSize: virtualizer.getTotalSize(),
+      firstTorrent: sortedTorrents[0]?.name
+    })
+  }, [torrents, sortedTorrents, rows, loadedRows, virtualRows, virtualizer])
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading torrents...</span>
+      </div>
+    )
   }
 
   return (
@@ -289,7 +339,7 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
         <div>Paused: <strong className="text-chart-4">{stats.paused}</strong></div>
         <div>Error: <strong className="text-destructive">{stats.error}</strong></div>
         <div className="ml-auto">
-          ↓ {formatSpeed(stats.totalDownloadSpeed)} | ↑ {formatSpeed(stats.totalUploadSpeed)}
+          ↓ {formatSpeed(stats.totalDownloadSpeed || 0)} | ↑ {formatSpeed(stats.totalUploadSpeed || 0)}
         </div>
       </div>
 
@@ -315,18 +365,21 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
 
       {/* Table */}
       <div className="rounded-md border">
-        <div className="h-[600px] overflow-auto">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <TableHead 
-                      key={header.id}
-                      style={{ width: header.getSize() }}
-                      className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
+        <div className="relative h-[600px] overflow-auto" ref={parentRef}>
+          {/* Header */}
+          <div className="sticky top-0 bg-background z-10 border-b">
+            {table.getHeaderGroups().map(headerGroup => (
+              <div key={headerGroup.id} className="flex">
+                {headerGroup.headers.map(header => (
+                  <div
+                    key={header.id}
+                    style={{ width: header.getSize() || 'auto', flex: header.getSize() ? 'none' : '1' }}
+                    className={`px-3 py-2 text-left font-medium text-muted-foreground ${
+                      header.column.getCanSort() ? 'cursor-pointer select-none hover:text-foreground' : ''
+                    }`}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <div className="flex items-center gap-1">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -337,45 +390,65 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
                         asc: ' ↑',
                         desc: ' ↓',
                       }[header.column.getIsSorted() as string] ?? null}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map(row => (
-                <TableRow
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          
+          {/* Body */}
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualRows.map(virtualRow => {
+              const row = rows[virtualRow.index]
+              return (
+                <div
                   key={row.id}
-                  className={row.getIsSelected() ? 'bg-muted/50' : ''}
+                  className={`flex border-b ${row.getIsSelected() ? 'bg-muted/50' : ''}`}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
                 >
                   {row.getVisibleCells().map(cell => (
-                    <TableCell 
+                    <div
                       key={cell.id}
-                      style={{ width: cell.column.getSize() }}
+                      style={{ width: cell.column.getSize() || 'auto', flex: cell.column.getSize() ? 'none' : '1' }}
+                      className="px-3 py-2 flex items-center"
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
                       )}
-                    </TableCell>
+                    </div>
                   ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Pagination */}
+      {/* Status bar */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
           {totalCount === 0 ? (
             'No torrents found'
           ) : (
             <>
-              Showing {pagination.pageIndex * pagination.pageSize + 1} to{' '}
-              {Math.min((pagination.pageIndex + 1) * pagination.pageSize, totalCount)} of{' '}
-              {totalCount} torrents
+              Showing {Math.min(loadedRows, totalCount)} of {totalCount} torrents
+              {loadedRows < totalCount && ' (scroll to load more)'}
+              {isLoadingMore && ' • Loading more...'}
             </>
           )}
           {selectedHashes.length > 0 && (
@@ -385,43 +458,11 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
           )}
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!hasPreviousPage}
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!hasPreviousPage}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="text-sm">
-            Page {pagination.pageIndex + 1} of {Math.ceil(totalCount / pagination.pageSize)}
+        {virtualRows.length > 0 && (
+          <div className="text-sm text-muted-foreground">
+            Rendering rows {virtualRows[0].index + 1} - {virtualRows[virtualRows.length - 1].index + 1}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!hasNextPage}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.setPageIndex(Math.ceil(totalCount / pagination.pageSize) - 1)}
-            disabled={!hasNextPage}
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
-        </div>
+        )}
       </div>
     </div>
   )

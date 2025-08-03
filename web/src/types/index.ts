@@ -66,6 +66,8 @@ export interface TorrentStats {
   seeding: number
   paused: number
   error: number
+  totalDownloadSpeed?: number
+  totalUploadSpeed?: number
 }
 
 export interface TorrentResponse {
