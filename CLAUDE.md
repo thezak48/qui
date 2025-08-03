@@ -177,3 +177,56 @@ Follow Conventional Commit format:
 ## Commit Co-Authors
 
 - **Important**: Never add co-authors to commits at all
+
+## Common Development Workflows
+
+### Adding a New API Endpoint
+1. Define handler in `internal/api/handlers/`
+2. Add route in `internal/api/router.go`
+3. Update frontend API client in `web/src/lib/api.ts`
+4. Add TypeScript types in `web/src/types/index.ts`
+5. Create React Query hook in `web/src/hooks/`
+
+### Adding a New shadcn/ui Component
+```bash
+cd web
+pnpm dlx shadcn@latest add <component-name>
+# Components will be installed in web/src/components/ui/
+```
+
+### Debugging Performance Issues
+1. Check backend logs with `LOG_LEVEL=DEBUG`
+2. Monitor cache hit rates in sync_manager.go
+3. Use browser DevTools Performance tab for frontend
+4. Check virtual scrolling in TorrentTableOptimized.tsx
+
+## Key Implementation Details
+
+### Backend
+- **Database Migrations**: Auto-run on startup via `internal/database/migrations.go`
+- **Instance Connections**: Pooled and health-checked every 30 seconds
+- **Password Storage**: Argon2id hashing with secure defaults
+- **Session Management**: HTTP-only cookies with CSRF protection
+- **API Response Format**: Always camelCase JSON (handled by converters)
+
+### Frontend
+- **Route Guards**: Authentication checked in `_authenticated.tsx` layout
+- **Real-time Updates**: 
+  - Dashboard uses 10-second polling for stats
+  - Torrent table uses SyncMainData (currently disabled in favor of paginated API)
+- **State Management**: 
+  - Server state: TanStack Query with 30s stale time
+  - UI state: React useState/useReducer
+- **Virtual Scrolling**: Progressive loading starting at 100 rows
+- **Column Resizing**: Persisted in component state (not localStorage)
+
+### Critical Files
+- `internal/qbittorrent/sync_manager.go` - Handles all torrent operations and caching
+- `web/src/hooks/useTorrentsList.ts` - Main hook for torrent data fetching
+- `web/src/components/torrents/TorrentTableOptimized.tsx` - Virtual scrolling implementation
+- `internal/api/handlers/torrents.go` - Backend filtering and pagination logic
+
+## Known Issues and Workarounds
+- SyncMainData implementation exists but is currently unused due to complexity
+- Tags can be either string[] or comma-separated string from API
+- Instance status requires periodic health checks due to connection drops
