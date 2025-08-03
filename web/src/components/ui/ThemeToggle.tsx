@@ -48,13 +48,18 @@ const useThemeChange = () => {
 
 export const ThemeToggle: React.FC = () => {
   const { currentMode, currentTheme } = useThemeChange();
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleModeSelect = useCallback(async (mode: ThemeMode) => {
+    setIsTransitioning(true);
     await setThemeMode(mode);
+    setTimeout(() => setIsTransitioning(false), 400);
   }, []);
 
   const handleThemeSelect = useCallback(async (themeId: string) => {
+    setIsTransitioning(true);
     await setTheme(themeId);
+    setTimeout(() => setIsTransitioning(false), 400);
   }, []);
 
   return (
@@ -63,7 +68,10 @@ export const ThemeToggle: React.FC = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="text-muted-foreground hover:text-foreground"
+          className={cn(
+            "text-muted-foreground hover:text-foreground transition-transform duration-300",
+            isTransitioning && "animate-spin-slow"
+          )}
         >
           <Palette className="h-5 w-5" />
           <span className="sr-only">Change theme</span>
@@ -113,12 +121,13 @@ export const ThemeToggle: React.FC = () => {
             <div className="flex items-center gap-2 flex-1">
               <div
                 className={cn(
-                  "h-4 w-4 rounded-full ring-2 ring-offset-2 ring-offset-background",
+                  "h-4 w-4 rounded-full ring-2 ring-offset-2 ring-offset-background transition-all duration-200",
                   theme.id === "default" && "bg-indigo-400 ring-indigo-400",
                   theme.id === "purple" && "bg-purple-500 ring-purple-500",
                   theme.id === "amber-minimal" && "bg-amber-500 ring-amber-500",
                   theme.id === "bubblegum" && "bg-pink-500 ring-pink-500",
-                  theme.id === "perpetuity" && "bg-cyan-500 ring-cyan-500"
+                  theme.id === "perpetuity" && "bg-cyan-500 ring-cyan-500",
+                  currentTheme.id === theme.id && "scale-110"
                 )}
               />
               <span>{theme.name}</span>

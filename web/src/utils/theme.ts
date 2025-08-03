@@ -13,16 +13,89 @@ const THEME_DARK = 'dark';
 const THEME_LIGHT = 'light';
 const THEME_AUTO = 'auto';
 const THEME_TRANSITION_CLASS = 'theme-transition';
-const THEME_TRANSITION_DURATION = 300;
+const THEME_TRANSITION_DURATION = 400;
 const THEME_STYLES_ID = 'theme-transitions';
 
 // CSS for theme transitions
 const THEME_TRANSITION_CSS = `
+  /* CSS Variables for transition control */
+  :root {
+    --theme-transition-duration: 400ms;
+    --theme-transition-easing: cubic-bezier(0.4, 0.0, 0.2, 1);
+    --theme-transition-stagger: 50ms;
+  }
+
   /* Main transition for theme switching */
-  .theme-transition :not(::-webkit-scrollbar):not(::-webkit-scrollbar-track):not(::-webkit-scrollbar-thumb) {
-    transition-property: background-color, border-color, color, fill, box-shadow;
-    transition-duration: 0.3s;
-    transition-timing-function: ease-in-out;
+  .theme-transition {
+    position: relative;
+  }
+  
+  /* Core element transitions */
+  .theme-transition * {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-duration: var(--theme-transition-duration);
+    transition-timing-function: var(--theme-transition-easing);
+  }
+  
+  /* Font transitions for smooth font family changes */
+  .theme-transition body,
+  .theme-transition .font-sans,
+  .theme-transition .font-serif,
+  .theme-transition .font-mono {
+    transition-property: font-family, letter-spacing, line-height;
+    transition-duration: calc(var(--theme-transition-duration) * 0.8);
+    transition-timing-function: var(--theme-transition-easing);
+  }
+  
+  /* Subtle fade effect without any transforms */
+  .theme-transition {
+    animation: theme-transition-fade var(--theme-transition-duration) var(--theme-transition-easing);
+  }
+  
+  @keyframes theme-transition-fade {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.96;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  
+  /* Staggered transitions for different UI sections */
+  .theme-transition header,
+  .theme-transition nav {
+    transition-delay: calc(var(--theme-transition-stagger) * 0);
+  }
+  
+  .theme-transition main {
+    transition-delay: calc(var(--theme-transition-stagger) * 1);
+  }
+  
+  .theme-transition aside {
+    transition-delay: calc(var(--theme-transition-stagger) * 2);
+  }
+  
+  .theme-transition footer {
+    transition-delay: calc(var(--theme-transition-stagger) * 3);
+  }
+  
+  /* Cards and panels get a subtle lift effect */
+  .theme-transition [class*="card"],
+  .theme-transition [class*="panel"] {
+    transition-property: background-color, border-color, color, box-shadow, transform;
+    transition-duration: var(--theme-transition-duration);
+    transition-timing-function: var(--theme-transition-easing);
+  }
+  
+  /* Buttons get special treatment */
+  .theme-transition button,
+  .theme-transition [role="button"] {
+    transition-property: background-color, border-color, color, box-shadow, transform, filter;
+    transition-duration: calc(var(--theme-transition-duration) * 0.8);
+    transition-timing-function: var(--theme-transition-easing);
   }
   
   /* Prevent scrollbar transitions */
@@ -39,6 +112,18 @@ const THEME_TRANSITION_CSS = `
   html.theme-transition {
     scrollbar-color: initial !important;
   }
+  
+  /* Disable transitions for performance-sensitive elements */
+  .theme-transition svg *,
+  .theme-transition path,
+  .theme-transition circle,
+  .theme-transition rect,
+  .theme-transition line,
+  .theme-transition polyline,
+  .theme-transition polygon {
+    transition: none !important;
+  }
+  
 `;
 
 // Type definitions

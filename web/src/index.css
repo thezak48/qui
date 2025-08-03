@@ -179,6 +179,41 @@
   }
 }
 
+/* Theme transition enhancements */
+@layer base {
+  /* Smooth transitions for theme-aware elements */
+  .theme-transition [data-theme] {
+    transition: opacity 200ms cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  
+  /* Icon transitions */
+  .theme-transition svg:not([class*="lucide"]) {
+    transition: color 300ms cubic-bezier(0.4, 0.0, 0.2, 1), 
+                transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  
+  /* Interactive element hover states during transition */
+  .theme-transition button:hover,
+  .theme-transition a:hover,
+  .theme-transition [role="button"]:hover {
+    transition-duration: 150ms;
+  }
+  
+  /* Subtle spin animation for theme toggle */
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin-slow {
+    animation: spin-slow 400ms cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+}
+
 /* Custom scrollbar styles */
 @layer base {
   /* Firefox */
