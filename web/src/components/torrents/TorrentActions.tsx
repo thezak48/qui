@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ChevronDown, Play, Pause, Trash2, CheckCircle } from 'lucide-react'
+import { ChevronDown, Play, Pause, Trash2, CheckCircle, Tag, Folder } from 'lucide-react'
 
 interface TorrentActionsProps {
   instanceId: number
@@ -31,17 +33,25 @@ interface TorrentActionsProps {
 export function TorrentActions({ instanceId, selectedHashes, onComplete }: TorrentActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
+  const [showTagsDialog, setShowTagsDialog] = useState(false)
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false)
+  const [tagsInput, setTagsInput] = useState('')
+  const [categoryInput, setCategoryInput] = useState('')
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: (data: {
-      action: 'pause' | 'resume' | 'delete' | 'recheck'
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'addTags' | 'setCategory'
       deleteFiles?: boolean
+      tags?: string
+      category?: string
     }) => {
       return api.bulkAction(instanceId, {
         hashes: selectedHashes,
         action: data.action,
         deleteFiles: data.deleteFiles,
+        tags: data.tags,
+        category: data.category,
       })
     },
     onSuccess: (_, variables) => {
@@ -71,6 +81,12 @@ export function TorrentActions({ instanceId, selectedHashes, onComplete }: Torre
         case 'recheck':
           toast.success(`Started recheck for ${count} ${torrentText}`)
           break
+        case 'addTags':
+          toast.success(`Added tags to ${count} ${torrentText}`)
+          break
+        case 'setCategory':
+          toast.success(`Set category for ${count} ${torrentText}`)
+          break
       }
     },
     onError: (error, variables) => {
@@ -88,6 +104,19 @@ export function TorrentActions({ instanceId, selectedHashes, onComplete }: Torre
     await mutation.mutateAsync({ action: 'delete', deleteFiles })
     setShowDeleteDialog(false)
     setDeleteFiles(false)
+  }
+
+  const handleAddTags = async () => {
+    if (!tagsInput.trim()) return
+    await mutation.mutateAsync({ action: 'addTags', tags: tagsInput.trim() })
+    setShowTagsDialog(false)
+    setTagsInput('')
+  }
+
+  const handleSetCategory = async () => {
+    await mutation.mutateAsync({ action: 'setCategory', category: categoryInput })
+    setShowCategoryDialog(false)
+    setCategoryInput('')
   }
 
   return (
@@ -120,6 +149,21 @@ export function TorrentActions({ instanceId, selectedHashes, onComplete }: Torre
           >
             <CheckCircle className="mr-2 h-4 w-4" />
             Force Recheck
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => setShowTagsDialog(true)}
+            disabled={mutation.isPending}
+          >
+            <Tag className="mr-2 h-4 w-4" />
+            Add Tags
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setShowCategoryDialog(true)}
+            disabled={mutation.isPending}
+          >
+            <Folder className="mr-2 h-4 w-4" />
+            Set Category
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -160,6 +204,68 @@ export function TorrentActions({ instanceId, selectedHashes, onComplete }: Torre
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add Tags Dialog */}
+      <AlertDialog open={showTagsDialog} onOpenChange={setShowTagsDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add Tags to {selectedHashes.length} torrent(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter tags separated by commas (e.g., "music, flac, 2024")
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="tagsInput">Tags</Label>
+            <Input
+              id="tagsInput"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="Enter tags separated by commas"
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleAddTags}
+              disabled={!tagsInput.trim() || mutation.isPending}
+            >
+              Add Tags
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Set Category Dialog */}
+      <AlertDialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Set Category for {selectedHashes.length} torrent(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter a category name or leave empty to remove category
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="categoryInput">Category</Label>
+            <Input
+              id="categoryInput"
+              value={categoryInput}
+              onChange={(e) => setCategoryInput(e.target.value)}
+              placeholder="Enter category name (or leave empty)"
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSetCategory}
+              disabled={mutation.isPending}
+            >
+              Set Category
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

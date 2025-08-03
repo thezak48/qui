@@ -220,7 +220,7 @@ class ApiClient {
       action: 'pause' | 'resume' | 'delete' | 'recheck' | 'setCategory' | 'addTags' | 'removeTags'
       deleteFiles?: boolean
       category?: string
-      tags?: string[]
+      tags?: string  // Comma-separated tags string
     }
   ): Promise<void> {
     return this.request(`/instances/${instanceId}/torrents/bulk-action`, {

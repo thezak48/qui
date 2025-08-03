@@ -32,9 +32,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Label } from '@/components/ui/label'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { Loader2, Play, Pause, Trash2, CheckCircle, Copy } from 'lucide-react'
+import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder } from 'lucide-react'
 import type { Torrent } from '@/types'
 
 interface TorrentTableOptimizedProps {
@@ -238,6 +239,10 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [contextMenuHashes, setContextMenuHashes] = useState<string[]>([])
+  const [showTagsDialog, setShowTagsDialog] = useState(false)
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false)
+  const [tagsInput, setTagsInput] = useState('')
+  const [categoryInput, setCategoryInput] = useState('')
   
   // Progressive loading state
   const [loadedRows, setLoadedRows] = useState(100)
@@ -380,14 +385,18 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   // Mutation for bulk actions
   const mutation = useMutation({
     mutationFn: (data: {
-      action: 'pause' | 'resume' | 'delete' | 'recheck'
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'addTags' | 'setCategory'
       deleteFiles?: boolean
       hashes: string[]
+      tags?: string
+      category?: string
     }) => {
       return api.bulkAction(instanceId, {
         hashes: data.hashes,
         action: data.action,
         deleteFiles: data.deleteFiles,
+        tags: data.tags,
+        category: data.category,
       })
     },
     onSuccess: () => {
@@ -416,6 +425,29 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const handleContextMenuAction = (action: 'pause' | 'resume' | 'recheck', hashes: string[]) => {
     setContextMenuHashes(hashes)
     mutation.mutate({ action, hashes })
+  }
+
+  const handleAddTags = async () => {
+    if (!tagsInput.trim()) return
+    await mutation.mutateAsync({ 
+      action: 'addTags', 
+      hashes: contextMenuHashes, 
+      tags: tagsInput.trim() 
+    })
+    setShowTagsDialog(false)
+    setTagsInput('')
+    setContextMenuHashes([])
+  }
+
+  const handleSetCategory = async () => {
+    await mutation.mutateAsync({ 
+      action: 'setCategory', 
+      hashes: contextMenuHashes, 
+      category: categoryInput 
+    })
+    setShowCategoryDialog(false)
+    setCategoryInput('')
+    setContextMenuHashes([])
   }
 
   const copyToClipboard = (text: string) => {
@@ -616,6 +648,29 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                           Force Recheck {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
                         </ContextMenuItem>
                         <ContextMenuSeparator />
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            setContextMenuHashes(hashes)
+                            setShowTagsDialog(true)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <Tag className="mr-2 h-4 w-4" />
+                          Add Tags {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            setContextMenuHashes(hashes)
+                            setShowCategoryDialog(true)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <Folder className="mr-2 h-4 w-4" />
+                          Set Category {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
                         <ContextMenuItem onClick={() => copyToClipboard(torrent.name)}>
                           <Copy className="mr-2 h-4 w-4" />
                           Copy Name
@@ -699,6 +754,68 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add Tags Dialog */}
+      <AlertDialog open={showTagsDialog} onOpenChange={setShowTagsDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add Tags to {contextMenuHashes.length} torrent(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter tags separated by commas (e.g., "music, flac, 2024")
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="tagsInputContext">Tags</Label>
+            <Input
+              id="tagsInputContext"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="Enter tags separated by commas"
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleAddTags}
+              disabled={!tagsInput.trim() || mutation.isPending}
+            >
+              Add Tags
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Set Category Dialog */}
+      <AlertDialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Set Category for {contextMenuHashes.length} torrent(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter a category name or leave empty to remove category
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="categoryInputContext">Category</Label>
+            <Input
+              id="categoryInputContext"
+              value={categoryInput}
+              onChange={(e) => setCategoryInput(e.target.value)}
+              placeholder="Enter category name (or leave empty)"
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSetCategory}
+              disabled={mutation.isPending}
+            >
+              Set Category
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

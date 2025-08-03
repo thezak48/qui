@@ -836,3 +836,33 @@ func (sm *SyncManager) sortTorrents(torrents []qbt.Torrent, sortField, order str
 		return less
 	})
 }
+
+// AddTags adds tags to the specified torrents (keeps existing tags)
+func (sm *SyncManager) AddTags(ctx context.Context, instanceID int, hashes []string, tags string) error {
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get client: %w", err)
+	}
+
+	return client.Client.AddTagsCtx(ctx, hashes, tags)
+}
+
+// RemoveTags removes specific tags from the specified torrents
+func (sm *SyncManager) RemoveTags(ctx context.Context, instanceID int, hashes []string, tags string) error {
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get client: %w", err)
+	}
+
+	return client.Client.RemoveTagsCtx(ctx, hashes, tags)
+}
+
+// SetCategory sets the category for the specified torrents
+func (sm *SyncManager) SetCategory(ctx context.Context, instanceID int, hashes []string, category string) error {
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get client: %w", err)
+	}
+
+	return client.Client.SetCategoryCtx(ctx, hashes, category)
+}

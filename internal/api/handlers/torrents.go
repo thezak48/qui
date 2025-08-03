@@ -196,8 +196,11 @@ func (h *TorrentsHandler) AddTorrent(w http.ResponseWriter, r *http.Request) {
 
 // BulkActionRequest represents a bulk action request
 type BulkActionRequest struct {
-	Hashes []string `json:"hashes"`
-	Action string   `json:"action"`
+	Hashes      []string `json:"hashes"`
+	Action      string   `json:"action"`
+	DeleteFiles bool     `json:"deleteFiles,omitempty"` // For delete action
+	Tags        string   `json:"tags,omitempty"`        // For tag operations (comma-separated)
+	Category    string   `json:"category,omitempty"`    // For category operations
 }
 
 // BulkAction performs bulk operations on torrents
@@ -224,7 +227,7 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 	validActions := []string{
 		"pause", "resume", "delete", "deleteWithFiles",
 		"recheck", "reannounce", "increasePriority", "decreasePriority",
-		"topPriority", "bottomPriority",
+		"topPriority", "bottomPriority", "addTags", "removeTags", "setCategory",
 	}
 	
 	valid := false
@@ -240,8 +243,35 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Perform bulk action
-	if err := h.syncManager.BulkAction(r.Context(), instanceID, req.Hashes, req.Action); err != nil {
+	// Perform bulk action based on type
+	switch req.Action {
+	case "addTags":
+		if req.Tags == "" {
+			RespondError(w, http.StatusBadRequest, "Tags parameter is required for addTags action")
+			return
+		}
+		err = h.syncManager.AddTags(r.Context(), instanceID, req.Hashes, req.Tags)
+	case "removeTags":
+		if req.Tags == "" {
+			RespondError(w, http.StatusBadRequest, "Tags parameter is required for removeTags action")
+			return
+		}
+		err = h.syncManager.RemoveTags(r.Context(), instanceID, req.Hashes, req.Tags)
+	case "setCategory":
+		err = h.syncManager.SetCategory(r.Context(), instanceID, req.Hashes, req.Category)
+	case "delete":
+		// Handle delete with deleteFiles parameter
+		action := req.Action
+		if req.DeleteFiles {
+			action = "deleteWithFiles"
+		}
+		err = h.syncManager.BulkAction(r.Context(), instanceID, req.Hashes, action)
+	default:
+		// Handle other standard actions
+		err = h.syncManager.BulkAction(r.Context(), instanceID, req.Hashes, req.Action)
+	}
+
+	if err != nil {
 		log.Error().Err(err).Int("instanceID", instanceID).Str("action", req.Action).Msg("Failed to perform bulk action")
 		RespondError(w, http.StatusInternalServerError, "Failed to perform bulk action")
 		return
