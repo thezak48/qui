@@ -15,10 +15,12 @@ export function AppLayout() {
     <div className="flex h-screen bg-background">
       {/* Desktop Sidebar - Collapsible */}
       <div className={cn(
-        "hidden lg:flex transition-all duration-300 overflow-hidden",
-        sidebarCollapsed ? "w-0" : "w-64"
+        "hidden lg:flex transition-all duration-300 ease-out overflow-hidden",
+        sidebarCollapsed ? "w-0 opacity-0" : "w-64 opacity-100"
       )}>
-        <Sidebar />
+        <div className="w-64 flex-shrink-0">
+          <Sidebar />
+        </div>
       </div>
       
       <div className="flex flex-1 flex-col min-w-0">
@@ -28,9 +30,12 @@ export function AppLayout() {
             variant="ghost"
             size="icon"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="hidden lg:flex"
+            className="hidden lg:flex transition-transform duration-200 hover:scale-110"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className={cn(
+              "h-5 w-5 transition-transform duration-300",
+              sidebarCollapsed && "rotate-90"
+            )} />
           </Button>
           
           {/* Mobile toggle button */}

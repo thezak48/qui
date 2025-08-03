@@ -73,7 +73,10 @@ export const ThemeToggle: React.FC = () => {
             isTransitioning && "animate-spin-slow"
           )}
         >
-          <Palette className="h-5 w-5" />
+          <Palette className={cn(
+            "h-5 w-5 transition-transform duration-200",
+            isTransitioning && "scale-110"
+          )} />
           <span className="sr-only">Change theme</span>
         </Button>
       </DropdownMenuTrigger>
@@ -121,7 +124,7 @@ export const ThemeToggle: React.FC = () => {
             <div className="flex items-center gap-2 flex-1">
               <div
                 className={cn(
-                  "h-4 w-4 rounded-full ring-2 ring-offset-2 ring-offset-background transition-all duration-200",
+                  "h-4 w-4 rounded-full ring-2 ring-offset-2 ring-offset-background transition-all duration-300 ease-out",
                   theme.id === "default" && "bg-gray-500 ring-gray-500",
                   theme.id === "catppuccin" && "bg-indigo-400 ring-indigo-400",
                   theme.id === "purple" && "bg-purple-500 ring-purple-500",
@@ -130,7 +133,7 @@ export const ThemeToggle: React.FC = () => {
                   theme.id === "perpetuity" && "bg-cyan-500 ring-cyan-500",
                   theme.id === "kyle" && "bg-pink-500 ring-pink-500",
                   theme.id === "tangerine" && "bg-orange-500 ring-orange-500",
-                  currentTheme.id === theme.id && "scale-110"
+                  currentTheme.id === theme.id && "scale-125 ring-offset-4"
                 )}
               />
               <span>{theme.name}</span>
