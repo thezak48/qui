@@ -9,6 +9,7 @@ import {
 } from "@/utils/theme";
 import { Sun, Moon, Monitor, Check, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,12 +55,18 @@ export const ThemeToggle: React.FC = () => {
     setIsTransitioning(true);
     await setThemeMode(mode);
     setTimeout(() => setIsTransitioning(false), 400);
+    
+    const modeNames = { light: 'Light', dark: 'Dark', auto: 'System' };
+    toast.success(`Switched to ${modeNames[mode]} mode`);
   }, []);
 
   const handleThemeSelect = useCallback(async (themeId: string) => {
     setIsTransitioning(true);
     await setTheme(themeId);
     setTimeout(() => setIsTransitioning(false), 400);
+    
+    const theme = themes.find(t => t.id === themeId);
+    toast.success(`Switched to ${theme?.name || themeId} theme`);
   }, []);
 
   return (

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -43,9 +44,37 @@ export function TorrentActions({ instanceId, selectedHashes, onComplete }: Torre
         deleteFiles: data.deleteFiles,
       })
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['torrents', instanceId] })
       onComplete?.()
+      
+      // Show success toast
+      const count = selectedHashes.length
+      const torrentText = count === 1 ? 'torrent' : 'torrents'
+      
+      switch (variables.action) {
+        case 'resume':
+          toast.success(`Resumed ${count} ${torrentText}`)
+          break
+        case 'pause':
+          toast.success(`Paused ${count} ${torrentText}`)
+          break
+        case 'delete':
+          toast.success(`Deleted ${count} ${torrentText}${variables.deleteFiles ? ' and files' : ''}`)
+          break
+        case 'recheck':
+          toast.success(`Started recheck for ${count} ${torrentText}`)
+          break
+      }
+    },
+    onError: (error, variables) => {
+      const count = selectedHashes.length
+      const torrentText = count === 1 ? 'torrent' : 'torrents'
+      const actionText = variables.action === 'recheck' ? 'recheck' : variables.action
+      
+      toast.error(`Failed to ${actionText} ${count} ${torrentText}`, {
+        description: error.message || 'An unexpected error occurred'
+      })
     },
   })
 

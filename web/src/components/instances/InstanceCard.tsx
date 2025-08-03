@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Instance } from '@/types'
+import { toast } from 'sonner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -35,14 +36,37 @@ export function InstanceCard({ instance, onEdit }: InstanceCardProps) {
     try {
       const result = await testConnection(instance.id)
       setTestResult(result)
+      
+      if (result.success) {
+        toast.success('Test Connection', {
+          description: result.message || 'Successfully connected to qBittorrent instance'
+        })
+      } else {
+        toast.error('Test Connection Failed', {
+          description: result.message || 'Could not connect to qBittorrent instance'
+        })
+      }
     } catch (error) {
-      setTestResult({ success: false, message: 'Connection failed' })
+      const message = 'Connection failed'
+      setTestResult({ success: false, message })
+      toast.error('Test Connection Failed', {
+        description: error instanceof Error ? error.message : message
+      })
     }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm(`Are you sure you want to delete "${instance.name}"?`)) {
-      deleteInstance(instance.id)
+      try {
+        await deleteInstance(instance.id)
+        toast.success('Instance Deleted', {
+          description: `Successfully deleted "${instance.name}"`
+        })
+      } catch (error) {
+        toast.error('Delete Failed', {
+          description: error instanceof Error ? error.message : 'Failed to delete instance'
+        })
+      }
     }
   }
 
