@@ -59,10 +59,7 @@ export function InstanceCard({ instance, onEdit }: InstanceCardProps) {
         </div>
         <div className="flex items-center gap-2">
           <Badge 
-            variant={instance.isActive ? 'default' : 'secondary'}
-            className={cn(
-              instance.isActive ? 'bg-chart-3' : 'bg-destructive'
-            )}
+            variant={instance.isActive ? 'default' : 'destructive'}
           >
             {instance.isActive ? 'Active' : 'Inactive'}
           </Badge>
@@ -111,7 +108,7 @@ export function InstanceCard({ instance, onEdit }: InstanceCardProps) {
         {testResult && (
           <div className={cn(
             "mt-4 flex items-center gap-2 text-sm",
-            testResult.success ? "text-chart-3" : "text-destructive"
+            testResult.success ? "text-primary" : "text-destructive"
           )}>
             {testResult.success ? (
               <CheckCircle className="h-4 w-4" />

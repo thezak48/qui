@@ -111,7 +111,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 <span
                   className={cn(
                     'ml-auto h-2 w-2 rounded-full',
-                    instance.isActive ? 'bg-chart-3' : 'bg-destructive'
+                    instance.isActive ? 'bg-primary' : 'bg-destructive'
                   )}
                 />
               </Link>

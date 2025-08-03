@@ -364,10 +364,10 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
       {/* Stats bar */}
       <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
         <div>Total: <strong>{stats.total}</strong></div>
-        <div className="hidden sm:block">Downloading: <strong className="text-chart-1">{stats.downloading}</strong></div>
-        <div className="hidden sm:block">Seeding: <strong className="text-chart-3">{stats.seeding}</strong></div>
-        <div className="hidden sm:block">Paused: <strong className="text-chart-4">{stats.paused}</strong></div>
-        <div className="hidden sm:block">Error: <strong className="text-destructive">{stats.error}</strong></div>
+        <div className="hidden sm:block">Downloading: <strong>{stats.downloading}</strong></div>
+        <div className="hidden sm:block">Seeding: <strong>{stats.seeding}</strong></div>
+        <div className="hidden sm:block">Paused: <strong>{stats.paused}</strong></div>
+        <div className="hidden sm:block">Error: <strong className={stats.error > 0 ? "text-destructive" : ""}>{stats.error}</strong></div>
         <div className="ml-auto text-xs sm:text-sm">
           ↓ {formatSpeed(stats.totalDownloadSpeed || 0)} | ↑ {formatSpeed(stats.totalUploadSpeed || 0)}
         </div>

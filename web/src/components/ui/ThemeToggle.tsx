@@ -122,7 +122,8 @@ export const ThemeToggle: React.FC = () => {
               <div
                 className={cn(
                   "h-4 w-4 rounded-full ring-2 ring-offset-2 ring-offset-background transition-all duration-200",
-                  theme.id === "default" && "bg-indigo-400 ring-indigo-400",
+                  theme.id === "default" && "bg-gray-500 ring-gray-500",
+                  theme.id === "catppuccin" && "bg-indigo-400 ring-indigo-400",
                   theme.id === "purple" && "bg-purple-500 ring-purple-500",
                   theme.id === "amber-minimal" && "bg-amber-500 ring-amber-500",
                   theme.id === "bubblegum" && "bg-pink-500 ring-pink-500",
