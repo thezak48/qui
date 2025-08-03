@@ -11,12 +11,17 @@ import {
 import { User, LogOut, Key } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
-export function Header() {
+interface HeaderProps {
+  children?: React.ReactNode
+}
+
+export function Header({ children }: HeaderProps) {
   const { user, logout } = useAuth()
 
   return (
     <header className="flex h-16 items-center justify-between border-b px-6">
-      <div className="flex items-center gap-4 lg:ml-0 ml-12">
+      <div className="flex items-center gap-4">
+        {children}
         <h1 className="text-xl font-semibold">qbitwebui</h1>
       </div>
       
