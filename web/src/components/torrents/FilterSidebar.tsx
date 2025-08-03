@@ -9,6 +9,18 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { api } from '@/lib/api'
+import {
+  Circle,
+  Download,
+  Upload,
+  CheckCircle2,
+  PauseCircle,
+  PlayCircle,
+  StopCircle,
+  AlertCircle,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
 
 interface FilterSidebarProps {
   instanceId: number
@@ -28,19 +40,19 @@ interface FilterSidebarProps {
 }
 
 // Define torrent states based on qBittorrent
-const TORRENT_STATES = [
-  { value: 'all', label: 'All', icon: '🔵' },
-  { value: 'downloading', label: 'Downloading', icon: '⬇️' },
-  { value: 'seeding', label: 'Seeding', icon: '⬆️' },
-  { value: 'completed', label: 'Completed', icon: '✅' },
-  { value: 'paused', label: 'Paused', icon: '⏸️' },
-  { value: 'active', label: 'Active', icon: '▶️' },
-  { value: 'inactive', label: 'Inactive', icon: '⏹️' },
-  { value: 'resumed', label: 'Resumed', icon: '▶️' },
-  { value: 'stalled', label: 'Stalled', icon: '⚠️' },
-  { value: 'stalled_uploading', label: 'Stalled Uploading', icon: '⚠️' },
-  { value: 'stalled_downloading', label: 'Stalled Downloading', icon: '⚠️' },
-  { value: 'errored', label: 'Error', icon: '❌' },
+const TORRENT_STATES: Array<{ value: string; label: string; icon: LucideIcon }> = [
+  { value: 'all', label: 'All', icon: Circle },
+  { value: 'downloading', label: 'Downloading', icon: Download },
+  { value: 'seeding', label: 'Seeding', icon: Upload },
+  { value: 'completed', label: 'Completed', icon: CheckCircle2 },
+  { value: 'paused', label: 'Paused', icon: PauseCircle },
+  { value: 'active', label: 'Active', icon: PlayCircle },
+  { value: 'inactive', label: 'Inactive', icon: StopCircle },
+  { value: 'resumed', label: 'Resumed', icon: PlayCircle },
+  { value: 'stalled', label: 'Stalled', icon: AlertCircle },
+  { value: 'stalled_uploading', label: 'Stalled Uploading', icon: AlertCircle },
+  { value: 'stalled_downloading', label: 'Stalled Downloading', icon: AlertCircle },
+  { value: 'errored', label: 'Error', icon: XCircle },
 ]
 
 export function FilterSidebar({
@@ -136,8 +148,8 @@ export function FilterSidebar({
             className="space-y-2"
           >
             {/* Status Filter */}
-            <AccordionItem value="status" className="border rounded-lg px-3">
-              <AccordionTrigger className="py-2 hover:no-underline">
+            <AccordionItem value="status" className="border rounded-lg">
+              <AccordionTrigger className="px-3 py-2 hover:no-underline">
                 <div className="flex items-center justify-between w-full">
                   <span className="text-sm font-medium">Status</span>
                   {selectedFilters.status.length > 0 && (
@@ -147,19 +159,19 @@ export function FilterSidebar({
                   )}
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="pb-2">
+              <AccordionContent className="px-3 pb-2">
                 <div className="space-y-1">
                   {TORRENT_STATES.map((state) => (
                     <label
                       key={state.value}
-                      className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer"
+                      className="flex items-center space-x-2 py-1 hover:bg-muted rounded cursor-pointer"
                     >
                       <Checkbox
                         checked={selectedFilters.status.includes(state.value)}
                         onCheckedChange={() => handleStatusToggle(state.value)}
                       />
                       <span className="text-sm flex-1 flex items-center gap-2">
-                        <span>{state.icon}</span>
+                        <state.icon className="h-4 w-4" />
                         <span>{state.label}</span>
                       </span>
                       {torrentCounts[`status:${state.value}`] !== undefined && (
@@ -174,8 +186,8 @@ export function FilterSidebar({
             </AccordionItem>
 
             {/* Categories Filter */}
-            <AccordionItem value="categories" className="border rounded-lg px-3">
-              <AccordionTrigger className="py-2 hover:no-underline">
+            <AccordionItem value="categories" className="border rounded-lg">
+              <AccordionTrigger className="px-3 py-2 hover:no-underline">
                 <div className="flex items-center justify-between w-full">
                   <span className="text-sm font-medium">Categories</span>
                   {selectedFilters.categories.length > 0 && (
@@ -185,10 +197,10 @@ export function FilterSidebar({
                   )}
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="pb-2">
+              <AccordionContent className="px-3 pb-2">
                 <div className="space-y-1">
                   {/* Uncategorized option */}
-                  <label className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer">
+                  <label className="flex items-center space-x-2 py-1 hover:bg-muted rounded cursor-pointer">
                     <Checkbox
                       checked={selectedFilters.categories.includes('')}
                       onCheckedChange={() => handleCategoryToggle('')}
@@ -207,7 +219,7 @@ export function FilterSidebar({
                   {Object.entries(categories).map(([name]) => (
                     <label
                       key={name}
-                      className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer"
+                      className="flex items-center space-x-2 py-1 hover:bg-muted rounded cursor-pointer"
                     >
                       <Checkbox
                         checked={selectedFilters.categories.includes(name)}
@@ -228,8 +240,8 @@ export function FilterSidebar({
             </AccordionItem>
 
             {/* Tags Filter */}
-            <AccordionItem value="tags" className="border rounded-lg px-3">
-              <AccordionTrigger className="py-2 hover:no-underline">
+            <AccordionItem value="tags" className="border rounded-lg">
+              <AccordionTrigger className="px-3 py-2 hover:no-underline">
                 <div className="flex items-center justify-between w-full">
                   <span className="text-sm font-medium">Tags</span>
                   {selectedFilters.tags.length > 0 && (
@@ -239,7 +251,7 @@ export function FilterSidebar({
                   )}
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="pb-2">
+              <AccordionContent className="px-3 pb-2">
                 <div className="space-y-1">
                   {/* Untagged option */}
                   <label className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer">
@@ -261,7 +273,7 @@ export function FilterSidebar({
                   {tags.map((tag) => (
                     <label
                       key={tag}
-                      className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer"
+                      className="flex items-center space-x-2 py-1 hover:bg-muted rounded cursor-pointer"
                     >
                       <Checkbox
                         checked={selectedFilters.tags.includes(tag)}
