@@ -2,7 +2,8 @@ import { useState, useRef } from 'react'
 import { TorrentTableOptimized } from '@/components/torrents/TorrentTableOptimized'
 import { FilterSidebar } from '@/components/torrents/FilterSidebar'
 import { TorrentDetailsPanel } from '@/components/torrents/TorrentDetailsPanel'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { VisuallyHidden } from '@/components/ui/visually-hidden'
 import type { Torrent } from '@/types'
 
 interface TorrentsProps {
@@ -72,6 +73,13 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
           side="right"
           className="w-full sm:w-[480px] md:w-[540px] lg:w-[600px] xl:w-[640px] sm:max-w-[480px] md:max-w-[540px] lg:max-w-[600px] xl:max-w-[640px] p-0"
         >
+          <SheetHeader>
+            <VisuallyHidden>
+              <SheetTitle>
+                {selectedTorrent ? `Torrent Details: ${selectedTorrent.name}` : 'Torrent Details'}
+              </SheetTitle>
+            </VisuallyHidden>
+          </SheetHeader>
           {selectedTorrent && (
             <TorrentDetailsPanel
               instanceId={instanceId}
