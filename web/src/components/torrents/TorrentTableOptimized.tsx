@@ -5,6 +5,7 @@ import {
   flexRender,
   type ColumnDef,
   type SortingState,
+  type ColumnResizeMode,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTorrentsList } from '@/hooks/useTorrentsList'
@@ -77,15 +78,18 @@ const columns: ColumnDef<Torrent>[] = [
       />
     ),
     size: 40,
+    enableResizing: false,
   },
   {
     accessorKey: 'name',
     header: 'Name',
     cell: ({ row }) => (
-      <div className="truncate max-w-xs" title={row.original.name}>
+      <div className="truncate" title={row.original.name}>
         {row.original.name}
       </div>
     ),
+    size: 300,
+    minSize: 150,
   },
   {
     accessorKey: 'size',
@@ -168,24 +172,39 @@ const columns: ColumnDef<Torrent>[] = [
       const ampm = hours >= 12 ? 'PM' : 'AM'
       const displayHours = hours % 12 || 12 // Convert to 12-hour format
       
-      return `${month}/${day}/${year}, ${displayHours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} ${ampm}`
+      return (
+        <div className="whitespace-nowrap">
+          {month}/{day}/{year}, {displayHours}:{minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')} {ampm}
+        </div>
+      )
     },
-    size: 150,
+    size: 200,
+    minSize: 150,
   },
   {
     accessorKey: 'category',
     header: 'Category',
-    cell: ({ row }) => row.original.category || '-',
-    size: 120,
+    cell: ({ row }) => (
+      <div className="truncate" title={row.original.category || '-'}>
+        {row.original.category || '-'}
+      </div>
+    ),
+    size: 150,
+    minSize: 100,
   },
   {
     accessorKey: 'tags',
     header: 'Tags',
     cell: ({ row }) => {
       const tags = row.original.tags
-      return Array.isArray(tags) ? tags.join(', ') : tags || '-'
+      return (
+        <div className="truncate" title={Array.isArray(tags) ? tags.join(', ') : tags || '-'}>
+          {Array.isArray(tags) ? tags.join(', ') : tags || '-'}
+        </div>
+      )
     },
-    size: 150,
+    size: 200,
+    minSize: 100,
   },
 ]
 
@@ -194,6 +213,7 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [rowSelection, setRowSelection] = useState({})
+  const [columnSizing, setColumnSizing] = useState({})
   
   // Progressive loading state
   const [loadedRows, setLoadedRows] = useState(100)
@@ -246,12 +266,17 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
       sorting,
       globalFilter,
       rowSelection,
+      columnSizing,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
+    onColumnSizingChange: setColumnSizing,
     // Enable row selection
     enableRowSelection: true,
+    // Enable column resizing
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange' as ColumnResizeMode,
   })
 
   // Get selected torrent hashes
@@ -330,7 +355,7 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full gap-4">
       {/* Stats bar */}
       <div className="flex gap-4 text-sm">
         <div>Total: <strong>{stats.total}</strong></div>
@@ -364,8 +389,8 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
-        <div className="relative h-[600px] overflow-auto" ref={parentRef}>
+      <div className="rounded-md border flex-1 flex flex-col min-h-0">
+        <div className="relative flex-1 overflow-auto" ref={parentRef}>
           {/* Header */}
           <div className="sticky top-0 bg-background z-10 border-b">
             {table.getHeaderGroups().map(headerGroup => (
@@ -373,24 +398,42 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
                 {headerGroup.headers.map(header => (
                   <div
                     key={header.id}
-                    style={{ width: header.getSize() || 'auto', flex: header.getSize() ? 'none' : '1' }}
-                    className={`px-3 py-2 text-left font-medium text-muted-foreground ${
-                      header.column.getCanSort() ? 'cursor-pointer select-none hover:text-foreground' : ''
-                    }`}
-                    onClick={header.column.getToggleSortingHandler()}
+                    style={{ 
+                      width: header.getSize(),
+                      position: 'relative'
+                    }}
+                    className="group"
                   >
-                    <div className="flex items-center gap-1">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                      {{
-                        asc: ' ↑',
-                        desc: ' ↓',
-                      }[header.column.getIsSorted() as string] ?? null}
+                    <div
+                      className={`px-3 py-2 text-left font-medium text-muted-foreground overflow-hidden ${
+                        header.column.getCanSort() ? 'cursor-pointer select-none hover:text-foreground' : ''
+                      }`}
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      <div className="flex items-center gap-1 truncate">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                        {{
+                          asc: ' ↑',
+                          desc: ' ↓',
+                        }[header.column.getIsSorted() as string] ?? null}
+                      </div>
                     </div>
+                    {header.column.getCanResize() && (
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none ${
+                          header.column.getIsResizing() 
+                            ? 'bg-primary opacity-100' 
+                            : 'bg-border hover:bg-primary/50 opacity-0 group-hover:opacity-100'
+                        }`}
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -423,8 +466,8 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
                   {row.getVisibleCells().map(cell => (
                     <div
                       key={cell.id}
-                      style={{ width: cell.column.getSize() || 'auto', flex: cell.column.getSize() ? 'none' : '1' }}
-                      className="px-3 py-2 flex items-center"
+                      style={{ width: cell.column.getSize() }}
+                      className="px-3 py-2 flex items-center overflow-hidden"
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

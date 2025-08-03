@@ -25,8 +25,8 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
       />
       
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        <div className="container mx-auto p-6">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="p-6 flex flex-col h-full">
           <div className="mb-6">
             <h1 className="text-3xl font-bold">{instanceName}</h1>
             <p className="text-muted-foreground mt-2">
