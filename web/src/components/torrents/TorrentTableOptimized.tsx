@@ -84,7 +84,7 @@ const columns: ColumnDef<Torrent>[] = [
     accessorKey: 'name',
     header: 'Name',
     cell: ({ row }) => (
-      <div className="truncate" title={row.original.name}>
+      <div className="truncate text-sm" title={row.original.name}>
         {row.original.name}
       </div>
     ),
@@ -94,7 +94,7 @@ const columns: ColumnDef<Torrent>[] = [
   {
     accessorKey: 'size',
     header: 'Size',
-    cell: ({ row }) => formatBytes(row.original.size),
+    cell: ({ row }) => <span className="text-sm">{formatBytes(row.original.size)}</span>,
     size: 100,
   },
   {
@@ -103,7 +103,7 @@ const columns: ColumnDef<Torrent>[] = [
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <Progress value={row.original.progress * 100} className="w-20" />
-        <span className="text-sm text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {Math.round(row.original.progress * 100)}%
         </span>
       </div>
@@ -124,32 +124,32 @@ const columns: ColumnDef<Torrent>[] = [
         state === 'error' || state === 'missingFiles' ? 'destructive' :
         'outline'
       
-      return <Badge variant={variant}>{state}</Badge>
+      return <Badge variant={variant} className="text-xs">{state}</Badge>
     },
     size: 120,
   },
   {
     accessorKey: 'dlspeed',
     header: 'Down Speed',
-    cell: ({ row }) => formatSpeed(row.original.dlspeed),
+    cell: ({ row }) => <span className="text-sm">{formatSpeed(row.original.dlspeed)}</span>,
     size: 110,
   },
   {
     accessorKey: 'upspeed',
     header: 'Up Speed',
-    cell: ({ row }) => formatSpeed(row.original.upspeed),
+    cell: ({ row }) => <span className="text-sm">{formatSpeed(row.original.upspeed)}</span>,
     size: 110,
   },
   {
     accessorKey: 'eta',
     header: 'ETA',
-    cell: ({ row }) => formatEta(row.original.eta),
+    cell: ({ row }) => <span className="text-sm">{formatEta(row.original.eta)}</span>,
     size: 80,
   },
   {
     accessorKey: 'ratio',
     header: 'Ratio',
-    cell: ({ row }) => row.original.ratio.toFixed(2),
+    cell: ({ row }) => <span className="text-sm">{row.original.ratio.toFixed(2)}</span>,
     size: 80,
   },
   {
@@ -173,7 +173,7 @@ const columns: ColumnDef<Torrent>[] = [
       const displayHours = hours % 12 || 12 // Convert to 12-hour format
       
       return (
-        <div className="whitespace-nowrap">
+        <div className="whitespace-nowrap text-sm">
           {month}/{day}/{year}, {displayHours}:{minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')} {ampm}
         </div>
       )
@@ -185,7 +185,7 @@ const columns: ColumnDef<Torrent>[] = [
     accessorKey: 'category',
     header: 'Category',
     cell: ({ row }) => (
-      <div className="truncate" title={row.original.category || '-'}>
+      <div className="truncate text-sm" title={row.original.category || '-'}>
         {row.original.category || '-'}
       </div>
     ),
@@ -198,7 +198,7 @@ const columns: ColumnDef<Torrent>[] = [
     cell: ({ row }) => {
       const tags = row.original.tags
       return (
-        <div className="truncate" title={Array.isArray(tags) ? tags.join(', ') : tags || '-'}>
+        <div className="truncate text-sm" title={Array.isArray(tags) ? tags.join(', ') : tags || '-'}>
           {Array.isArray(tags) ? tags.join(', ') : tags || '-'}
         </div>
       )
@@ -306,7 +306,7 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
   const virtualizer = useVirtualizer({
     count: Math.min(loadedRows, rows.length),
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 45,
+    estimateSize: () => 40,
     overscan: 20, // Increased for smoother scrolling
     onChange: (instance) => {
       const lastItem = instance.getVirtualItems().at(-1)
@@ -413,7 +413,7 @@ export function TorrentTableOptimized({ instanceId, filters }: TorrentTableOptim
                       className="group"
                     >
                       <div
-                        className={`px-3 py-2 text-left font-medium text-muted-foreground overflow-hidden ${
+                        className={`px-3 py-2 text-left text-sm font-medium text-muted-foreground overflow-hidden ${
                           header.column.getCanSort() ? 'cursor-pointer select-none hover:text-foreground' : ''
                         }`}
                         onClick={header.column.getToggleSortingHandler()}
