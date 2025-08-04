@@ -38,7 +38,7 @@ This document outlines the implementation plan for a **self-hosted, single-user*
 #### Backend Setup
 ```bash
 # Initialize Go module
-go mod init github.com/s0up4200/qbitweb
+go mod init github.com/autobrr/qbitweb
 
 # Install core dependencies
 go get -u github.com/go-chi/chi/v5
@@ -198,7 +198,7 @@ package config
 
 import (
     "github.com/spf13/viper"
-    "github.com/s0up4200/qbitweb/internal/domain"
+    "github.com/autobrr/qbitweb/internal/domain"
 )
 
 type AppConfig struct {

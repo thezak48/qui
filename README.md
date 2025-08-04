@@ -22,7 +22,7 @@ A modern, self-hosted alternative web interface for qBittorrent designed for per
 
 ```bash
 # Clone the repository
-git clone https://github.com/s0up4200/qbitweb.git
+git clone https://github.com/autobrr/qbitweb.git
 cd qbitweb
 
 # Build the application

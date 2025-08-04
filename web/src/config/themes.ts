@@ -1,6 +1,8 @@
 export interface Theme {
   id: string;
   name: string;
+  isPremium?: boolean;
+  description?: string;
   cssVars: {
     light: Record<string, string>;
     dark: Record<string, string>;
@@ -11,6 +13,7 @@ export const themes: Theme[] = [
   {
     id: "default",
     name: "Minimal",
+    description: "Clean and minimal theme with neutral colors",
     cssVars: {
       light: {
         "--background": "oklch(1 0 0)",
@@ -111,6 +114,8 @@ export const themes: Theme[] = [
   {
     id: "catppuccin",
     name: "Catppuccin",
+    isPremium: true,
+    description: "Premium pastel theme with soothing colors",
     cssVars: {
       light: {
         "--background": "oklch(0.9578 0.0058 264.5321)",
@@ -219,6 +224,8 @@ export const themes: Theme[] = [
   {
     id: "amber-minimal",
     name: "Amber Minimal",
+    isPremium: true,
+    description: "Premium warm amber theme with minimal design",
     cssVars: {
       light: {
         "--background": "oklch(1.0000 0 0)",
@@ -307,6 +314,8 @@ export const themes: Theme[] = [
   {
     id: "bubblegum",
     name: "Bubblegum",
+    isPremium: true,
+    description: "Premium playful pink theme",
     cssVars: {
       light: {
         "--background": "oklch(0.9399 0.0203 345.6985)",
@@ -395,6 +404,8 @@ export const themes: Theme[] = [
   {
     id: "perpetuity",
     name: "Perpetuity",
+    isPremium: true,
+    description: "Premium monospace theme",
     cssVars: {
       light: {
         "--background": "oklch(0.9491 0.0085 197.0126)",
@@ -483,6 +494,8 @@ export const themes: Theme[] = [
   {
     id: "purple",
     name: "Amethyst Haze",
+    isPremium: true,
+    description: "Premium purple theme",
     cssVars: {
       light: {
         "--background": "oklch(0.9777 0.0041 301.4256)",
@@ -565,6 +578,8 @@ export const themes: Theme[] = [
   {
     id: "tangerine",
     name: "Tangerine",
+    isPremium: true,
+    description: "Premium bright orange theme with warm tones",
     cssVars: {
       light: {
         "--background": "oklch(0.9383 0.0042 236.4993)",
@@ -1002,4 +1017,18 @@ export function getThemeById(id: string): Theme | undefined {
 
 export function getDefaultTheme(): Theme {
   return themes[0];
+}
+
+// Helper functions for premium themes
+export function getPremiumThemes(): Theme[] {
+  return themes.filter(theme => theme.isPremium);
+}
+
+export function getFreeThemes(): Theme[] {
+  return themes.filter(theme => !theme.isPremium);
+}
+
+export function isThemePremium(themeId: string): boolean {
+  const theme = getThemeById(themeId);
+  return theme?.isPremium ?? false;
 }

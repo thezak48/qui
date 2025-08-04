@@ -7,7 +7,7 @@ This document tracks the implementation progress of the qBittorrent Alternative 
 
 ### Completed Tasks
 - [x] Created progress.md to track implementation
-- [x] Initialized Go module with `go mod init github.com/s0up4200/qbitweb`
+- [x] Initialized Go module with `go mod init github.com/autobrr/qbitweb`
 - [x] Installed all backend dependencies
 - [x] Created complete project directory structure
 - [x] Created Vite project with React TypeScript template

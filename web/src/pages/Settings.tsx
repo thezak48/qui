@@ -10,6 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Copy, Plus, Trash2 } from 'lucide-react'
+import { ThemeLicenseManager } from '@/components/themes/ThemeLicenseManager'
+import { ThemeSelector } from '@/components/themes/ThemeSelector'
 import {
   Dialog,
   DialogContent,
@@ -388,6 +390,7 @@ export function Settings() {
         <TabsList>
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="themes">Themes</TabsTrigger>
           <TabsTrigger value="api">API Keys</TabsTrigger>
         </TabsList>
 
@@ -420,6 +423,11 @@ export function Settings() {
               <ChangePasswordForm />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="themes" className="space-y-4">
+          <ThemeSelector />
+          <ThemeLicenseManager />
         </TabsContent>
 
         <TabsContent value="api" className="space-y-4">

@@ -1,3 +1,4 @@
+dist/*
 tmp/*
 .env
 internal/web/dist/

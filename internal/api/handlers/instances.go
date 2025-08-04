@@ -7,10 +7,10 @@ import (
 	"strconv"
 
 	"github.com/autobrr/go-qbittorrent"
+	"github.com/autobrr/qbitweb/internal/models"
+	internalqbittorrent "github.com/autobrr/qbitweb/internal/qbittorrent"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
-	"github.com/s0up4200/qbitweb/internal/models"
-	internalqbittorrent "github.com/s0up4200/qbitweb/internal/qbittorrent"
 )
 
 type InstancesHandler struct {
@@ -59,15 +59,15 @@ func (h *InstancesHandler) ListInstances(w http.ResponseWriter, r *http.Request)
 	response := make([]map[string]interface{}, len(instances))
 	for i, instance := range instances {
 		response[i] = map[string]interface{}{
-			"id":                instance.ID,
-			"name":              instance.Name,
-			"host":              instance.Host,
-			"port":              instance.Port,
-			"username":          instance.Username,
-			"isActive":          instance.IsActive,
-			"lastConnectedAt":   instance.LastConnectedAt,
-			"createdAt":         instance.CreatedAt,
-			"updatedAt":         instance.UpdatedAt,
+			"id":              instance.ID,
+			"name":            instance.Name,
+			"host":            instance.Host,
+			"port":            instance.Port,
+			"username":        instance.Username,
+			"isActive":        instance.IsActive,
+			"lastConnectedAt": instance.LastConnectedAt,
+			"createdAt":       instance.CreatedAt,
+			"updatedAt":       instance.UpdatedAt,
 		}
 	}
 
@@ -107,15 +107,15 @@ func (h *InstancesHandler) CreateInstance(w http.ResponseWriter, r *http.Request
 	}
 
 	RespondJSON(w, http.StatusCreated, map[string]interface{}{
-		"id":                instance.ID,
-		"name":              instance.Name,
-		"host":              instance.Host,
-		"port":              instance.Port,
-		"username":          instance.Username,
-		"isActive":          instance.IsActive,
-		"lastConnectedAt":   instance.LastConnectedAt,
-		"createdAt":         instance.CreatedAt,
-		"updatedAt":         instance.UpdatedAt,
+		"id":              instance.ID,
+		"name":            instance.Name,
+		"host":            instance.Host,
+		"port":            instance.Port,
+		"username":        instance.Username,
+		"isActive":        instance.IsActive,
+		"lastConnectedAt": instance.LastConnectedAt,
+		"createdAt":       instance.CreatedAt,
+		"updatedAt":       instance.UpdatedAt,
 	})
 }
 
@@ -156,15 +156,15 @@ func (h *InstancesHandler) UpdateInstance(w http.ResponseWriter, r *http.Request
 	h.clientPool.RemoveClient(instanceID)
 
 	RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"id":                instance.ID,
-		"name":              instance.Name,
-		"host":              instance.Host,
-		"port":              instance.Port,
-		"username":          instance.Username,
-		"isActive":          instance.IsActive,
-		"lastConnectedAt":   instance.LastConnectedAt,
-		"createdAt":         instance.CreatedAt,
-		"updatedAt":         instance.UpdatedAt,
+		"id":              instance.ID,
+		"name":            instance.Name,
+		"host":            instance.Host,
+		"port":            instance.Port,
+		"username":        instance.Username,
+		"isActive":        instance.IsActive,
+		"lastConnectedAt": instance.LastConnectedAt,
+		"createdAt":       instance.CreatedAt,
+		"updatedAt":       instance.UpdatedAt,
 	})
 }
 

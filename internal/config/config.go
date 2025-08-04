@@ -12,7 +12,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"github.com/s0up4200/qbitweb/internal/domain"
+
+	"github.com/autobrr/qbitweb/internal/domain"
 )
 
 type AppConfig struct {

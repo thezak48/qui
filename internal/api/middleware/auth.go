@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/autobrr/qbitweb/internal/auth"
 	"github.com/rs/zerolog/log"
-	"github.com/s0up4200/qbitweb/internal/auth"
 )
 
 // IsAuthenticated middleware checks if the user is authenticated

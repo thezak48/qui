@@ -4,26 +4,28 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/autobrr/qbitweb/internal/api/handlers"
+	apimiddleware "github.com/autobrr/qbitweb/internal/api/middleware"
+	"github.com/autobrr/qbitweb/internal/auth"
+	"github.com/autobrr/qbitweb/internal/config"
+	"github.com/autobrr/qbitweb/internal/models"
+	"github.com/autobrr/qbitweb/internal/qbittorrent"
+	"github.com/autobrr/qbitweb/internal/services"
+	"github.com/autobrr/qbitweb/internal/web"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/s0up4200/qbitweb/internal/api/handlers"
-	apimiddleware "github.com/s0up4200/qbitweb/internal/api/middleware"
-	"github.com/s0up4200/qbitweb/internal/auth"
-	"github.com/s0up4200/qbitweb/internal/config"
-	"github.com/s0up4200/qbitweb/internal/models"
-	"github.com/s0up4200/qbitweb/internal/qbittorrent"
-	"github.com/s0up4200/qbitweb/internal/web"
 )
 
 // Dependencies holds all the dependencies needed for the API
 type Dependencies struct {
-	Config        *config.AppConfig
-	DB            *sql.DB
-	AuthService   *auth.Service
-	InstanceStore *models.InstanceStore
-	ClientPool    *qbittorrent.ClientPool
-	SyncManager   *qbittorrent.SyncManager
-	WebHandler    *web.Handler
+	Config              *config.AppConfig
+	DB                  *sql.DB
+	AuthService         *auth.Service
+	InstanceStore       *models.InstanceStore
+	ClientPool          *qbittorrent.ClientPool
+	SyncManager         *qbittorrent.SyncManager
+	WebHandler          *web.Handler
+	ThemeLicenseService *services.ThemeLicenseService
 }
 
 // NewRouter creates and configures the main application router
@@ -36,7 +38,7 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Compress(5))
-	
+
 	// CORS - configure based on your needs
 	allowedOrigins := []string{"http://localhost:3000", "http://localhost:5173"}
 	if deps.Config.Config.BaseURL != "" {
@@ -48,6 +50,12 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 	authHandler := handlers.NewAuthHandler(deps.AuthService)
 	instancesHandler := handlers.NewInstancesHandler(deps.InstanceStore, deps.ClientPool)
 	torrentsHandler := handlers.NewTorrentsHandler(deps.SyncManager)
+
+	// Theme license handler (optional, only if service is configured)
+	var themeLicenseHandler *handlers.ThemeLicenseHandler
+	if deps.ThemeLicenseService != nil {
+		themeLicenseHandler = handlers.NewThemeLicenseHandler(deps.ThemeLicenseService)
+	}
 
 	// API routes
 	r.Route("/api", func(r chi.Router) {
@@ -69,7 +77,7 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 			r.Post("/auth/logout", authHandler.Logout)
 			r.Get("/auth/me", authHandler.GetCurrentUser)
 			r.Put("/auth/change-password", authHandler.ChangePassword)
-			
+
 			// API key management
 			r.Route("/api-keys", func(r chi.Router) {
 				r.Get("/", authHandler.ListAPIKeys)
@@ -81,7 +89,7 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 			r.Route("/instances", func(r chi.Router) {
 				r.Get("/", instancesHandler.ListInstances)
 				r.Post("/", instancesHandler.CreateInstance)
-				
+
 				r.Route("/{instanceID}", func(r chi.Router) {
 					r.Put("/", instancesHandler.UpdateInstance)
 					r.Delete("/", instancesHandler.DeleteInstance)
@@ -95,12 +103,12 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 						r.Get("/filter", torrentsHandler.GetFilteredTorrents)
 						r.Post("/", torrentsHandler.AddTorrent)
 						r.Post("/bulk-action", torrentsHandler.BulkAction)
-						
+
 						r.Route("/{hash}", func(r chi.Router) {
 							r.Delete("/", torrentsHandler.DeleteTorrent)
 							r.Put("/pause", torrentsHandler.PauseTorrent)
 							r.Put("/resume", torrentsHandler.ResumeTorrent)
-							
+
 							// Torrent details
 							r.Get("/properties", torrentsHandler.GetTorrentProperties)
 							r.Get("/trackers", torrentsHandler.GetTorrentTrackers)
@@ -114,6 +122,11 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 					r.Get("/tags", torrentsHandler.GetTags)
 				})
 			})
+
+			// Theme license routes (if configured)
+			if themeLicenseHandler != nil {
+				themeLicenseHandler.RegisterRoutes(r)
+			}
 		})
 	})
 
