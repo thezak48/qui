@@ -105,10 +105,8 @@ func runServer() {
 	// Use ONLY the baked-in credentials from build time
 	if PolarAccessToken != "" && PolarOrgID != "" {
 		// Production: Use baked-in publisher credentials
-		log.Info().
-			Str("environment", PolarEnvironment).
-			Str("orgId", PolarOrgID).
-			Msg("Initializing Polar SDK with baked-in credentials")
+		log.Trace().
+			Msg("Initializing Polar SDK")
 
 		polarClient := polar.NewClient(PolarAccessToken, PolarEnvironment)
 		polarClient.SetOrganizationID(PolarOrgID)
@@ -122,18 +120,18 @@ func runServer() {
 			// Continue with the configured client even if validation fails
 			// This allows the service to start but theme licensing will fail gracefully
 		}
-		
+
 		themeLicenseService = services.NewThemeLicenseService(db, polarClient)
 		log.Info().Msg("Theme licensing service initialized (production mode)")
 	} else {
 		// No credentials: Premium themes will not be available
 		log.Warn().Msg("No Polar credentials configured - premium themes will be disabled")
-		
+
 		// Create a client with empty credentials
 		// All license validations will fail, which is the expected behavior
 		polarClient := polar.NewClient("", "production")
 		polarClient.SetOrganizationID("")
-		
+
 		themeLicenseService = services.NewThemeLicenseService(db, polarClient)
 		log.Info().Msg("Theme licensing service initialized (no credentials mode)")
 	}
