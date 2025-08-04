@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import type { Torrent } from '@/types'
@@ -38,21 +38,22 @@ export function useTorrentsList(
     totalUploadSpeed: 0,
   })
   
-  // Reset pagination when filters change
+  // Reset pagination when filters or search change
   useEffect(() => {
     setCurrentPage(0)
     setAllTorrents([])
     setHasLoadedAll(false)
-  }, [filters])
+  }, [filters, search])
   
   // Initial load
   const { data: initialData, isLoading: initialLoading } = useQuery({
-    queryKey: ['torrents-list', instanceId, currentPage, filters],
+    queryKey: ['torrents-list', instanceId, currentPage, filters, search],
     queryFn: () => api.getTorrents(instanceId, { 
       page: currentPage, 
       limit: pageSize,
       sort: 'addedOn',
       order: 'desc',
+      search,
       filters
     }),
     staleTime: 2000, // 2 seconds - match backend cache TTL
@@ -108,52 +109,14 @@ export function useTorrentsList(
     }
   }
   
-  // Apply client-side search filter only
-  const filteredTorrents = useMemo(() => {
-    if (!search) return allTorrents
-    
-    const searchLower = search.toLowerCase()
-    return allTorrents.filter(t => {
-      const nameMatch = t.name.toLowerCase().includes(searchLower)
-      const categoryMatch = t.category?.toLowerCase().includes(searchLower)
-      
-      // Handle tags which could be string[] or string from API
-      let tagsMatch = false
-      if (Array.isArray(t.tags)) {
-        tagsMatch = t.tags.some(tag => tag.toLowerCase().includes(searchLower))
-      } else if (typeof t.tags === 'string') {
-        tagsMatch = (t.tags as any).toLowerCase().includes(searchLower)
-      }
-      
-      return nameMatch || categoryMatch || tagsMatch
-    })
-  }, [allTorrents, search])
-  
-  // Update filtered stats
-  const filteredStats = useMemo(() => {
-    // If we have client-side search, recalculate counts from filtered results
-    if (search) {
-      const filtered = {
-        total: filteredTorrents.length,
-        downloading: filteredTorrents.filter(t => t.state === 'downloading' || t.state === 'stalledDL').length,
-        seeding: filteredTorrents.filter(t => t.state === 'uploading' || t.state === 'stalledUP').length,
-        paused: filteredTorrents.filter(t => t.state === 'pausedDL' || t.state === 'pausedUP').length,
-        error: filteredTorrents.filter(t => t.state === 'error' || t.state === 'missingFiles').length,
-        totalDownloadSpeed: stats.totalDownloadSpeed,
-        totalUploadSpeed: stats.totalUploadSpeed,
-      }
-      return filtered
-    }
-    
-    // Otherwise use the stats from the API which already accounts for server-side filters
-    return stats
-  }, [filteredTorrents, stats, search])
+  // Since search is now handled server-side, we don't need client-side filtering
+  const filteredTorrents = allTorrents
   
   return {
     torrents: filteredTorrents,
     allTorrents,
     totalCount: stats.total,
-    stats: filteredStats,
+    stats,
     isLoading: initialLoading && currentPage === 0,
     isLoadingMore,
     hasLoadedAll,

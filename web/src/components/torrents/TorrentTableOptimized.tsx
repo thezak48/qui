@@ -234,6 +234,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   // State management
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [immediateSearch, setImmediateSearch] = useState('')
   const [rowSelection, setRowSelection] = useState({})
   const [columnSizing, setColumnSizing] = useState({})
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -250,8 +251,11 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   // Query client for invalidating queries
   const queryClient = useQueryClient()
 
-  // Debounce search to prevent excessive filtering
-  const debouncedSearch = useDebounce(globalFilter, 300)
+  // Debounce search to prevent excessive filtering (1 second delay)
+  const debouncedSearch = useDebounce(globalFilter, 1000)
+
+  // Use immediate search if available, otherwise use debounced search
+  const effectiveSearch = immediateSearch || debouncedSearch
 
   // Fetch torrents data
   const { 
@@ -263,9 +267,24 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     hasLoadedAll,
     loadMore: loadMoreTorrents,
   } = useTorrentsList(instanceId, {
-    search: debouncedSearch,
+    search: effectiveSearch,
     filters,
   })
+  
+  // Handle Enter key for immediate search
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setImmediateSearch(globalFilter)
+    }
+  }
+  
+  // Clear immediate search when input changes (to allow debounced search to take over)
+  const handleSearchChange = (value: string) => {
+    setGlobalFilter(value)
+    if (immediateSearch) {
+      setImmediateSearch('')
+    }
+  }
 
   // Sort torrents client-side
   const sortedTorrents = useMemo(() => {
@@ -467,15 +486,6 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     navigator.clipboard.writeText(text)
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading torrents...</span>
-      </div>
-    )
-  }
-
   return (
     <div className="h-full flex flex-col">
       {/* Stats bar */}
@@ -492,12 +502,20 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
 
       {/* Search and Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 flex-shrink-0 mt-3">
-        <Input
-          placeholder="Search torrents..."
-          value={globalFilter ?? ''}
-          onChange={event => setGlobalFilter(event.target.value)}
-          className="w-full sm:max-w-sm"
-        />
+        <div className="relative w-full sm:max-w-sm">
+          <Input
+            placeholder="Search torrents..."
+            value={globalFilter ?? ''}
+            onChange={event => handleSearchChange(event.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            className="w-full"
+          />
+          {isLoading && (
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          )}
+        </div>
         <div className="flex gap-2 w-full sm:w-auto">
           {selectedHashes.length > 0 && (
             <TorrentActions 
@@ -566,7 +584,20 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
             </div>
             
             {/* Body */}
-            <div
+            {torrents.length === 0 && isLoading ? (
+              // Show skeleton loader for initial load
+              <div className="p-8 text-center text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                <p>Loading torrents...</p>
+              </div>
+            ) : torrents.length === 0 ? (
+              // Show empty state
+              <div className="p-8 text-center text-muted-foreground">
+                <p>No torrents found</p>
+              </div>
+            ) : (
+              // Show virtual table
+              <div
                 style={{
                   height: `${virtualizer.getTotalSize()}px`,
                   width: '100%',
@@ -710,6 +741,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                   )
                 })}
               </div>
+            )}
           </div>
         </div>
 
