@@ -113,13 +113,10 @@ func (cp *ClientPool) createClient(instanceID int) (*Client, error) {
 	// Store in pool
 	cp.clients[instanceID] = client
 
-	// Update last connected timestamp and mark as active
+	// Update last connected timestamp
 	go func() {
 		if err := cp.instanceStore.UpdateLastConnected(instanceID); err != nil {
 			log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to update last connected timestamp")
-		}
-		if err := cp.instanceStore.UpdateActive(instanceID, true); err != nil {
-			log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to update active status")
 		}
 	}()
 
