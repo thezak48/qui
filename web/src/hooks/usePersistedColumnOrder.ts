@@ -1,0 +1,38 @@
+import { useState, useEffect } from 'react'
+import type { ColumnOrderState } from '@tanstack/react-table'
+
+export function usePersistedColumnOrder(
+  instanceId: number,
+  defaultOrder: ColumnOrderState = []
+) {
+  const storageKey = `qbitweb-column-order-${instanceId}`
+  
+  // Initialize state from localStorage or default values
+  const [columnOrder, setColumnOrder] = useState<ColumnOrderState>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        // Validate that it's an array of strings
+        if (Array.isArray(parsed) && parsed.every(item => typeof item === 'string')) {
+          return parsed
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load column order from localStorage:', error)
+    }
+    
+    return defaultOrder
+  })
+  
+  // Persist to localStorage whenever state changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(columnOrder))
+    } catch (error) {
+      console.error('Failed to save column order to localStorage:', error)
+    }
+  }, [columnOrder, storageKey])
+  
+  return [columnOrder, setColumnOrder] as const
+}

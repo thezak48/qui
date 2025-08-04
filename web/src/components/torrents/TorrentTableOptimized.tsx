@@ -9,9 +9,25 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import {
+  DndContext,
+  closestCenter,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers'
 import { useTorrentsList } from '@/hooks/useTorrentsList'
 import { useDebounce } from '@/hooks/useDebounce'
 import { usePersistedColumnVisibility } from '@/hooks/usePersistedColumnVisibility'
+import { usePersistedColumnOrder } from '@/hooks/usePersistedColumnOrder'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Progress } from '@/components/ui/progress'
@@ -52,6 +68,7 @@ import { Label } from '@/components/ui/label'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
 import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3 } from 'lucide-react'
+import { DraggableTableHeader } from './DraggableTableHeader'
 import type { Torrent } from '@/types'
 
 interface TorrentTableOptimizedProps {
@@ -345,6 +362,17 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     defaultColumnVisibility
   )
   
+  // Column order with persistence
+  const defaultColumnOrder = columns.map(col => {
+    if ('id' in col && col.id) return col.id
+    if ('accessorKey' in col && typeof col.accessorKey === 'string') return col.accessorKey
+    return null
+  }).filter(Boolean) as string[]
+  const [columnOrder, setColumnOrder] = usePersistedColumnOrder(
+    instanceId,
+    defaultColumnOrder
+  )
+  
   // Progressive loading state
   const [loadedRows, setLoadedRows] = useState(100)
   
@@ -422,12 +450,14 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       rowSelection,
       columnSizing,
       columnVisibility,
+      columnOrder,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnOrderChange: setColumnOrder,
     // Enable row selection
     enableRowSelection: true,
     // Enable column resizing
@@ -590,6 +620,33 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
   }
+  
+  // Drag and drop setup
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  )
+  
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    
+    if (active && over && active.id !== over.id) {
+      setColumnOrder((currentOrder) => {
+        const oldIndex = currentOrder.indexOf(active.id as string)
+        const newIndex = currentOrder.indexOf(over.id as string)
+        return arrayMove(currentOrder, oldIndex, newIndex)
+      })
+    }
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -719,53 +776,34 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
           <div style={{ minWidth: `${tableMinWidth}px` }}>
             {/* Header */}
             <div className="sticky top-0 bg-background z-10 border-b">
-              {table.getHeaderGroups().map(headerGroup => (
-                <div key={headerGroup.id} className="flex">
-                  {headerGroup.headers.map(header => (
-                    <div
-                      key={header.id}
-                      style={{ 
-                        width: header.getSize(),
-                        minWidth: header.getSize(),
-                        position: 'relative',
-                        flexShrink: 0
-                      }}
-                      className="group"
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+                modifiers={[restrictToHorizontalAxis]}
+              >
+                {table.getHeaderGroups().map(headerGroup => {
+                  const headers = headerGroup.headers
+                  const headerIds = headers.map(h => h.column.id)
+                  
+                  return (
+                    <SortableContext
+                      key={headerGroup.id}
+                      items={headerIds}
+                      strategy={horizontalListSortingStrategy}
                     >
-                      <div
-                        className={`px-3 py-2 text-left text-sm font-medium text-muted-foreground overflow-hidden ${
-                          header.column.getCanSort() ? 'cursor-pointer select-none hover:text-foreground' : ''
-                        }`}
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        <div className="flex items-center gap-1 truncate">
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                          {{
-                            asc: ' ↑',
-                            desc: ' ↓',
-                          }[header.column.getIsSorted() as string] ?? null}
-                        </div>
+                      <div className="flex">
+                        {headers.map(header => (
+                          <DraggableTableHeader
+                            key={header.id}
+                            header={header}
+                          />
+                        ))}
                       </div>
-                      {header.column.getCanResize() && (
-                        <div
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none ${
-                            header.column.getIsResizing() 
-                              ? 'bg-primary opacity-100' 
-                              : 'bg-border hover:bg-primary/50 opacity-0 group-hover:opacity-100'
-                          }`}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ))}
+                    </SortableContext>
+                  )
+                })}
+              </DndContext>
             </div>
             
             {/* Body */}
@@ -833,6 +871,10 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                               }}
                               className="px-3 py-2 flex items-center overflow-hidden"
                             >
+                              {/* Add spacing to match header drag handle */}
+                              {cell.column.id !== 'select' && (
+                                <div className="w-3 mr-1 flex-shrink-0" />
+                              )}
                               {flexRender(
                                 cell.column.columnDef.cell,
                                 cell.getContext()
