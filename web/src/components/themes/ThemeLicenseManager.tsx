@@ -93,15 +93,17 @@ export function ThemeLicenseManager() {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refreshLicenses.mutate()}
-              disabled={refreshLicenses.isPending}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshLicenses.isPending ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            {licenses && licenses.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refreshLicenses.mutate()}
+                disabled={refreshLicenses.isPending}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${refreshLicenses.isPending ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={() => setShowAddLicense(!showAddLicense)}
