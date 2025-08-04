@@ -8,6 +8,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/gorilla/sessions v1.4.0
+	github.com/lithammer/fuzzysearch v1.1.8
 	github.com/panjf2000/ants/v2 v2.11.3
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1

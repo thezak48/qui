@@ -10,6 +10,7 @@ import (
 
 	qbt "github.com/autobrr/go-qbittorrent"
 	"github.com/dgraph-io/ristretto"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/rs/zerolog/log"
 
 	"github.com/s0up4200/qbitweb/internal/api/converters"
@@ -625,27 +626,126 @@ func (sm *SyncManager) getAllTorrentsForStats(ctx context.Context, instanceID in
 	return torrents, nil
 }
 
-// filterTorrentsBySearch filters torrents by search string
+// normalizeForSearch normalizes text for searching by replacing common separators
+func normalizeForSearch(text string) string {
+	// Replace common torrent separators with spaces
+	replacers := []string{".", "_", "-", "[", "]", "(", ")", "{", "}"}
+	normalized := strings.ToLower(text)
+	for _, r := range replacers {
+		normalized = strings.ReplaceAll(normalized, r, " ")
+	}
+	// Collapse multiple spaces
+	return strings.Join(strings.Fields(normalized), " ")
+}
+
+// filterTorrentsBySearch filters torrents by search string with smart matching
 func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search string) []qbt.Torrent {
 	if search == "" {
 		return torrents
 	}
 
-	var filtered []qbt.Torrent
+	type torrentMatch struct {
+		torrent qbt.Torrent
+		score   int
+		method  string // for debugging
+	}
+
+	var matches []torrentMatch
 	searchLower := strings.ToLower(search)
-
+	searchNormalized := normalizeForSearch(search)
+	searchWords := strings.Fields(searchNormalized)
+	
 	for _, torrent := range torrents {
-		// Search in name, category, and tags
-		nameMatch := strings.Contains(strings.ToLower(torrent.Name), searchLower)
-		categoryMatch := strings.Contains(strings.ToLower(torrent.Category), searchLower)
-
-		// Search in tags (Tags is a comma-separated string)
-		tagsMatch := strings.Contains(strings.ToLower(torrent.Tags), searchLower)
-
-		if nameMatch || categoryMatch || tagsMatch {
-			filtered = append(filtered, torrent)
+		// Method 1: Exact substring match (highest priority)
+		nameLower := strings.ToLower(torrent.Name)
+		categoryLower := strings.ToLower(torrent.Category)
+		tagsLower := strings.ToLower(torrent.Tags)
+		
+		if strings.Contains(nameLower, searchLower) || 
+		   strings.Contains(categoryLower, searchLower) || 
+		   strings.Contains(tagsLower, searchLower) {
+			matches = append(matches, torrentMatch{
+				torrent: torrent, 
+				score: 0, // Best score
+				method: "exact",
+			})
+			continue
+		}
+		
+		// Method 2: Normalized match (handles dots, underscores, etc)
+		nameNormalized := normalizeForSearch(torrent.Name)
+		categoryNormalized := normalizeForSearch(torrent.Category)
+		tagsNormalized := normalizeForSearch(torrent.Tags)
+		
+		if strings.Contains(nameNormalized, searchNormalized) ||
+		   strings.Contains(categoryNormalized, searchNormalized) ||
+		   strings.Contains(tagsNormalized, searchNormalized) {
+			matches = append(matches, torrentMatch{
+				torrent: torrent,
+				score: 1,
+				method: "normalized",
+			})
+			continue
+		}
+		
+		// Method 3: All words present (for multi-word searches)
+		if len(searchWords) > 1 {
+			allFieldsNormalized := fmt.Sprintf("%s %s %s", nameNormalized, categoryNormalized, tagsNormalized)
+			allWordsFound := true
+			for _, word := range searchWords {
+				if !strings.Contains(allFieldsNormalized, word) {
+					allWordsFound = false
+					break
+				}
+			}
+			if allWordsFound {
+				matches = append(matches, torrentMatch{
+					torrent: torrent,
+					score: 2,
+					method: "all-words",
+				})
+				continue
+			}
+		}
+		
+		// Method 4: Fuzzy match only on the normalized name (not the full text)
+		// This prevents matching random letter combinations across the entire text
+		if fuzzy.MatchNormalizedFold(searchNormalized, nameNormalized) {
+			score := fuzzy.RankMatchNormalizedFold(searchNormalized, nameNormalized)
+			// Only accept good fuzzy matches (score < 10 is quite good)
+			if score < 10 {
+				matches = append(matches, torrentMatch{
+					torrent: torrent,
+					score: 3 + score, // Fuzzy matches start at score 3
+					method: "fuzzy",
+				})
+			}
 		}
 	}
+	
+	// Sort by score (lower is better)
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].score < matches[j].score
+	})
+	
+	// Extract just the torrents
+	filtered := make([]qbt.Torrent, len(matches))
+	for i, match := range matches {
+		filtered[i] = match.torrent
+		if i < 5 { // Log first 5 matches for debugging
+			log.Debug().
+				Str("name", match.torrent.Name).
+				Int("score", match.score).
+				Str("method", match.method).
+				Msg("Search match")
+		}
+	}
+	
+	log.Debug().
+		Str("search", search).
+		Int("totalTorrents", len(torrents)).
+		Int("matchedTorrents", len(filtered)).
+		Msg("Search completed")
 
 	return filtered
 }
