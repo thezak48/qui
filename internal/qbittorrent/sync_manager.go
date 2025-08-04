@@ -3,6 +3,7 @@ package qbittorrent
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -638,10 +639,22 @@ func normalizeForSearch(text string) string {
 	return strings.Join(strings.Fields(normalized), " ")
 }
 
+// isGlobPattern checks if a search string contains glob pattern characters
+func isGlobPattern(search string) bool {
+	// Check for glob metacharacters: *, ?, [
+	// Note: We check for [ but not ] alone, as ] without [ is not a glob pattern
+	return strings.ContainsAny(search, "*?[")
+}
+
 // filterTorrentsBySearch filters torrents by search string with smart matching
 func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search string) []qbt.Torrent {
 	if search == "" {
 		return torrents
+	}
+
+	// Check if search contains glob patterns
+	if isGlobPattern(search) {
+		return sm.filterTorrentsByGlob(torrents, search)
 	}
 
 	type torrentMatch struct {
@@ -747,6 +760,63 @@ func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search str
 		Int("matchedTorrents", len(filtered)).
 		Msg("Search completed")
 
+	return filtered
+}
+
+// filterTorrentsByGlob filters torrents using glob pattern matching
+func (sm *SyncManager) filterTorrentsByGlob(torrents []qbt.Torrent, pattern string) []qbt.Torrent {
+	var filtered []qbt.Torrent
+	
+	// Convert to lowercase for case-insensitive matching
+	patternLower := strings.ToLower(pattern)
+	
+	for _, torrent := range torrents {
+		nameLower := strings.ToLower(torrent.Name)
+		
+		// Try to match the pattern against the torrent name
+		matched, err := filepath.Match(patternLower, nameLower)
+		if err != nil {
+			// Invalid pattern, log and skip
+			log.Debug().
+				Str("pattern", pattern).
+				Err(err).
+				Msg("Invalid glob pattern")
+			continue
+		}
+		
+		if matched {
+			filtered = append(filtered, torrent)
+			continue
+		}
+		
+		// Also try matching against category and tags
+		if torrent.Category != "" {
+			categoryLower := strings.ToLower(torrent.Category)
+			if matched, _ := filepath.Match(patternLower, categoryLower); matched {
+				filtered = append(filtered, torrent)
+				continue
+			}
+		}
+		
+		if torrent.Tags != "" {
+			tagsLower := strings.ToLower(torrent.Tags)
+			// For tags, try matching against individual tags
+			tags := strings.Split(tagsLower, ", ")
+			for _, tag := range tags {
+				if matched, _ := filepath.Match(patternLower, strings.TrimSpace(tag)); matched {
+					filtered = append(filtered, torrent)
+					break
+				}
+			}
+		}
+	}
+	
+	log.Debug().
+		Str("pattern", pattern).
+		Int("totalTorrents", len(torrents)).
+		Int("matchedTorrents", len(filtered)).
+		Msg("Glob pattern search completed")
+		
 	return filtered
 }
 

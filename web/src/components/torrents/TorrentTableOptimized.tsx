@@ -261,6 +261,9 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
 
   // Use immediate search if available, otherwise use debounced search
   const effectiveSearch = immediateSearch || debouncedSearch
+  
+  // Check if search contains glob patterns
+  const isGlobSearch = globalFilter && /[*?[\]]/.test(globalFilter)
 
   // Fetch torrents data
   const { 
@@ -510,15 +513,22 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
         <div className="relative w-full sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="Search torrents (fuzzy enabled)..."
+            placeholder={isGlobSearch ? "Glob pattern search..." : "Search torrents (fuzzy enabled)..."}
             value={globalFilter ?? ''}
             onChange={event => handleSearchChange(event.target.value)}
             onKeyDown={handleSearchKeyDown}
             className={`w-full pl-9 pr-20 transition-all ${
               effectiveSearch ? 'ring-1 ring-primary/50' : ''
+            } ${
+              isGlobSearch ? 'ring-1 ring-primary' : ''
             }`}
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {isGlobSearch && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                GLOB
+              </Badge>
+            )}
             {isLoading && (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             )}
@@ -536,7 +546,8 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                 <div className="space-y-2 text-xs">
                   <p className="font-semibold">Smart Search Features:</p>
                   <ul className="space-y-1 ml-2">
-                    <li>• Fuzzy matching: "breaking bad" finds "Breaking.Bad"</li>
+                    <li>• <strong>Glob patterns:</strong> *.mkv, *1080p*, S??E??</li>
+                    <li>• <strong>Fuzzy matching:</strong> "breaking bad" finds "Breaking.Bad"</li>
                     <li>• Handles dots, underscores, and brackets</li>
                     <li>• Searches name, category, and tags</li>
                     <li>• Press Enter for instant search</li>
