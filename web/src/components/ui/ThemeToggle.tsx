@@ -7,7 +7,7 @@ import {
   themes,
   type ThemeMode,
 } from "@/utils/theme";
-import { Sun, Moon, Monitor, Check, Palette, Sparkles, Lock } from "lucide-react";
+import { Sun, Moon, Monitor, Check, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -96,7 +96,7 @@ export const ThemeToggle: React.FC = () => {
           <span className="sr-only">Change theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel>Appearance</DropdownMenuLabel>
         <DropdownMenuSeparator />
         
@@ -131,7 +131,14 @@ export const ThemeToggle: React.FC = () => {
         
         {/* Theme Selection */}
         <div className="px-2 py-1.5 text-sm font-medium">Theme</div>
-        {themes.map((theme) => {
+        {themes
+          .sort((a, b) => {
+            const aIsPremium = isThemePremium(a.id);
+            const bIsPremium = isThemePremium(b.id);
+            if (aIsPremium === bIsPremium) return 0;
+            return aIsPremium ? 1 : -1;
+          })
+          .map((theme) => {
           const isPremium = isThemePremium(theme.id);
           const isLocked = isPremium && !hasPremiumAccess;
           
@@ -160,16 +167,18 @@ export const ThemeToggle: React.FC = () => {
                     theme.id === "autobrr" && "bg-blue-500 ring-blue-500",
                     theme.id === "nightwalker" && "bg-slate-800 ring-slate-800",
                     theme.id === "matrix" && "bg-green-500 ring-green-500",
+                    theme.id === "synthwave" && "bg-fuchsia-500 ring-fuchsia-500",
+                    theme.id === "cyberpunk" && "bg-red-500 ring-red-500",
                   )}
                 />
-                <span>{theme.name}</span>
-                {isPremium && (
-                  isLocked ? (
-                    <Lock className="h-3 w-3 text-muted-foreground" />
-                  ) : (
-                    <Sparkles className="h-3 w-3 text-primary" />
-                  )
-                )}
+                <div className="flex items-center gap-1.5 flex-1">
+                  <span>{theme.name}</span>
+                  {isPremium && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground font-medium">
+                      Premium
+                    </span>
+                  )}
+                </div>
               </div>
               {currentTheme.id === theme.id && <Check className="h-4 w-4" />}
             </DropdownMenuItem>
