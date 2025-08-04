@@ -222,8 +222,8 @@ export function ThemeLicenseManager() {
               </p>
               <p className="text-sm text-muted-foreground">
                 {hasPremiumAccess 
-                  ? "You have access to all premium themes" 
-                  : "One-time purchase • $9.99 • All themes forever"}
+                  ? "You have access to all current and future premium themes" 
+                  : "One-time purchase • $9.99 • All current & future themes"}
               </p>
             </div>
           </div>
