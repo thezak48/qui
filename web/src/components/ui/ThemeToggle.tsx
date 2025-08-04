@@ -138,7 +138,7 @@ export const ThemeToggle: React.FC = () => {
                   theme.id === "amber-minimal" && "bg-amber-500 ring-amber-500",
                   theme.id === "bubblegum" && "bg-pink-500 ring-pink-500",
                   theme.id === "perpetuity" && "bg-cyan-500 ring-cyan-500",
-                  theme.id === "kyle" && "bg-red-500 ring-red-500",
+                  theme.id === "kyle" && "bg-rose-500 ring-rose-500",
                   theme.id === "tangerine" && "bg-orange-500 ring-orange-500",
                   theme.id === "autobrr" && "bg-blue-500 ring-blue-500",
                 )}
