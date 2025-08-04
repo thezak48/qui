@@ -116,6 +116,15 @@ function formatEta(seconds: number): string {
   return `${minutes}m`
 }
 
+// Calculate minimum column width based on header text
+function calculateMinWidth(text: string, padding: number = 48): number {
+  // Approximate character width in pixels for text-sm (14px) with font-medium
+  const charWidth = 7.5
+  // Add padding for sort indicator and drag handle
+  const extraPadding = 40
+  return Math.max(60, Math.ceil(text.length * charWidth) + padding + extraPadding)
+}
+
 const columns: ColumnDef<Torrent>[] = [
   {
     id: 'select',
@@ -190,13 +199,15 @@ const columns: ColumnDef<Torrent>[] = [
     accessorKey: 'dlspeed',
     header: 'Down Speed',
     cell: ({ row }) => <span className="text-sm">{formatSpeed(row.original.dlspeed)}</span>,
-    size: 110,
+    size: calculateMinWidth('Down Speed'),
+    minSize: 80,
   },
   {
     accessorKey: 'upspeed',
     header: 'Up Speed',
     cell: ({ row }) => <span className="text-sm">{formatSpeed(row.original.upspeed)}</span>,
-    size: 110,
+    size: calculateMinWidth('Up Speed'),
+    minSize: 80,
   },
   {
     accessorKey: 'eta',
@@ -293,13 +304,15 @@ const columns: ColumnDef<Torrent>[] = [
     accessorKey: 'downloaded',
     header: 'Downloaded',
     cell: ({ row }) => <span className="text-sm">{formatBytes(row.original.downloaded)}</span>,
-    size: 110,
+    size: calculateMinWidth('Downloaded'),
+    minSize: 90,
   },
   {
     accessorKey: 'uploaded',
     header: 'Uploaded',
     cell: ({ row }) => <span className="text-sm">{formatBytes(row.original.uploaded)}</span>,
-    size: 110,
+    size: calculateMinWidth('Uploaded'),
+    minSize: 80,
   },
   {
     accessorKey: 'saveLocation',
@@ -507,10 +520,6 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
 
   const virtualRows = virtualizer.getVirtualItems()
 
-  // Calculate total table width
-  const tableMinWidth = useMemo(() => {
-    return columns.reduce((acc, col) => acc + (col.size || 100), 0)
-  }, [])
 
   // Reset loaded rows when data changes
   useEffect(() => {
@@ -775,7 +784,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       {/* Table container */}
       <div className="rounded-md border flex flex-col flex-1 min-h-0 mt-3">
         <div className="relative flex-1 overflow-auto" ref={parentRef}>
-          <div style={{ minWidth: `${tableMinWidth}px` }}>
+          <div>
             {/* Header */}
             <div className="sticky top-0 bg-background z-10 border-b">
               <DndContext
@@ -844,7 +853,6 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                             top: 0,
                             left: 0,
                             width: '100%',
-                            minWidth: `${tableMinWidth}px`,
                             height: `${virtualRow.size}px`,
                             transform: `translateY(${virtualRow.start}px)`,
                           }}
@@ -868,8 +876,9 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                               key={cell.id}
                               style={{ 
                                 width: cell.column.getSize(),
-                                minWidth: cell.column.getSize(),
-                                flexShrink: 0
+                                minWidth: cell.column.columnDef.minSize || cell.column.getSize(),
+                                flexShrink: 0,
+                                flexGrow: cell.column.id === 'name' ? 1 : 0
                               }}
                               className="px-3 py-2 flex items-center overflow-hidden"
                             >
