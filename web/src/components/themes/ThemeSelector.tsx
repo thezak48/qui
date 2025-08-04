@@ -5,7 +5,7 @@ import { Separator } from '@/components/ui/separator'
 import { themes, isThemePremium, type Theme } from '@/config/themes'
 import { useHasPremiumAccess } from '@/hooks/useThemeLicense'
 import { useTheme } from '@/hooks/useTheme'
-import { Crown, Lock, Check, Palette } from 'lucide-react'
+import { Sparkles, Lock, Check, Palette } from 'lucide-react'
 
 interface ThemeCardProps {
   theme: Theme
@@ -26,9 +26,6 @@ function ThemeCard({ theme, isSelected, isLocked, onSelect }: ThemeCardProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             {theme.name}
-            {theme.isPremium && (
-              <Crown className="h-4 w-4 text-amber-500" />
-            )}
             {isSelected && (
               <Check className="h-4 w-4 text-green-500" />
             )}
@@ -47,7 +44,7 @@ function ThemeCard({ theme, isSelected, isLocked, onSelect }: ThemeCardProps) {
         <div className="flex items-center justify-between">
           {theme.isPremium ? (
             <Badge variant="secondary" className="text-xs">
-              <Crown className="h-3 w-3 mr-1" />
+              <Sparkles className="h-3 w-3 mr-1" />
               Premium
             </Badge>
           ) : (
@@ -162,7 +159,7 @@ export function ThemeSelector() {
         <div>
           <h4 className="font-medium mb-3 flex items-center gap-2">
             <Badge variant="secondary" className="text-xs">
-              <Crown className="h-3 w-3 mr-1" />
+              <Sparkles className="h-3 w-3 mr-1" />
               Premium
             </Badge>
             Premium Themes
@@ -190,31 +187,6 @@ export function ThemeSelector() {
           )}
         </div>
         
-        {/* Premium Access Info */}
-        <div className="bg-muted/30 p-4 rounded-lg">
-          <div className="flex items-start gap-3">
-            <Crown className="h-5 w-5 text-amber-500 mt-0.5" />
-            <div className="space-y-2">
-              <h5 className="font-medium">Premium Theme Access</h5>
-              <p className="text-sm text-muted-foreground">
-                One-time purchase unlocks ALL premium themes forever, including future releases. 
-                Support development and get beautiful themes!
-              </p>
-              <div className="flex gap-2 mt-3">
-                <Button variant="outline" size="sm" asChild>
-                  <a href="#themes" className="text-xs">
-                    Manage Licenses
-                  </a>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a href="https://buy.polar.sh/polar_cl_yyXJesVM9pFVfAPIplspbfCukgVgXzXjXIc2N0I8WcL" target="_blank" rel="noopener noreferrer" className="text-xs">
-                    Get Premium Access - $9.99
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
         
         {/* Current theme info */}
         <div className="text-center">

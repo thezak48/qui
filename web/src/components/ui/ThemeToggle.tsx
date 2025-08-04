@@ -7,7 +7,7 @@ import {
   themes,
   type ThemeMode,
 } from "@/utils/theme";
-import { Sun, Moon, Monitor, Check, Palette, Crown, Lock } from "lucide-react";
+import { Sun, Moon, Monitor, Check, Palette, Sparkles, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -166,7 +166,7 @@ export const ThemeToggle: React.FC = () => {
                   isLocked ? (
                     <Lock className="h-3 w-3 text-muted-foreground" />
                   ) : (
-                    <Crown className="h-3 w-3 text-amber-500" />
+                    <Sparkles className="h-3 w-3 text-primary" />
                   )
                 )}
               </div>

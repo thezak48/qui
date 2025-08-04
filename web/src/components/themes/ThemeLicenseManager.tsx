@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
   Dialog,
@@ -22,8 +21,7 @@ import {
   useRefreshThemeLicenses,
   useAllLicenses
 } from '@/hooks/useThemeLicense'
-import { themes, getPremiumThemes } from '@/config/themes'
-import { Key, Trash2, RefreshCw, Crown, Palette, Check, Copy } from 'lucide-react'
+import { Key, Trash2, RefreshCw, Sparkles, Copy } from 'lucide-react'
 
 export function ThemeLicenseManager() {
   const [showAddLicense, setShowAddLicense] = useState(false)
@@ -31,7 +29,6 @@ export function ThemeLicenseManager() {
   
   const { hasPremiumAccess, isLoading } = useHasPremiumAccess()
   const { data: licenses } = useAllLicenses()
-  const premiumThemes = getPremiumThemes()
   const validateLicense = useValidateThemeLicense()
   const deleteLicense = useDeleteThemeLicense()
   const refreshLicenses = useRefreshThemeLicenses()
@@ -66,8 +63,8 @@ export function ThemeLicenseManager() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Crown className="h-5 w-5" />
-            Premium Themes
+            <Key className="h-5 w-5" />
+            License Management
           </CardTitle>
           <CardDescription>Loading theme licenses...</CardDescription>
         </CardHeader>
@@ -88,11 +85,11 @@ export function ThemeLicenseManager() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5" />
-              Premium Themes
+              <Key className="h-5 w-5" />
+              License Management
             </CardTitle>
             <CardDescription>
-              Manage your premium theme licenses to unlock additional themes
+              Manage your theme licenses and premium access
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -181,42 +178,6 @@ export function ThemeLicenseManager() {
           </div>
         )}
 
-        <div>
-          <h4 className="font-medium mb-4 flex items-center gap-2">
-            <Palette className="h-4 w-4" />
-            Licensed Themes
-          </h4>
-          
-          {!hasPremiumAccess ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Crown className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">No Premium Access</p>
-              <p className="text-sm">
-                You currently don't have premium access. Add a license key to unlock all premium themes.
-              </p>
-            </div>
-          ) : (
-            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Crown className="h-4 w-4 text-primary" />
-                <span className="font-medium">Premium Access Active</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                You have access to ALL premium themes!
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {premiumThemes.map((theme) => (
-                  <div key={theme.id} className="flex items-center gap-2 text-sm">
-                    <Check className="h-3 w-3 text-primary" />
-                    <span>{theme.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <Separator />
 
         {/* Active Licenses */}
         {licenses && licenses.length > 0 && (
@@ -251,59 +212,28 @@ export function ThemeLicenseManager() {
           </>
         )}
 
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm">Premium Theme Access</h4>
-          
-          {/* Check if user has premium access */}
-          {hasPremiumAccess ? (
-            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Crown className="h-4 w-4 text-primary" />
-                <span className="font-medium">Premium Access Active</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                You have access to ALL premium themes, including future releases!
-              </p>
-            </div>
-          ) : (
-            <div className="p-3 bg-muted/50 border border-border rounded-lg">
-              <div className="flex items-center gap-2">
-                <Crown className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Premium Access Available</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                One-time purchase unlocks ALL premium themes forever
-              </p>
-              <div className="flex gap-2 mt-2">
-                <Button variant="outline" size="sm" asChild>
-                  <a href="https://buy.polar.sh/polar_cl_yyXJesVM9pFVfAPIplspbfCukgVgXzXjXIc2N0I8WcL" target="_blank" rel="noopener noreferrer">
-                    Get Premium Access - $9.99
-                  </a>
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          <div className="space-y-2 text-sm">
+        {/* Premium Status */}
+        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Sparkles className={hasPremiumAccess ? "h-5 w-5 text-primary" : "h-5 w-5 text-muted-foreground"} />
             <div>
-              <span className="font-medium">Available Themes:</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">Free</Badge>
-              <span>{themes.filter(t => !t.isPremium).length} themes</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">
-                <Crown className="h-3 w-3 mr-1" />
-                Premium
-              </Badge>
-              <span>{premiumThemes.length} themes + all future themes</span>
+              <p className="font-medium">
+                {hasPremiumAccess ? "Premium Access Active" : "Unlock Premium Themes"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {hasPremiumAccess 
+                  ? "You have access to all premium themes" 
+                  : "One-time purchase • $9.99 • All themes forever"}
+              </p>
             </div>
           </div>
-          
-          <p className="text-xs text-muted-foreground">
-            Premium access: One purchase unlocks everything forever.
-          </p>
+          {!hasPremiumAccess && (
+            <Button size="sm" asChild>
+              <a href="https://buy.polar.sh/polar_cl_yyXJesVM9pFVfAPIplspbfCukgVgXzXjXIc2N0I8WcL" target="_blank" rel="noopener noreferrer">
+                Get Access
+              </a>
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
