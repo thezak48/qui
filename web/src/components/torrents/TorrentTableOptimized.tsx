@@ -16,6 +16,11 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
@@ -35,7 +40,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder } from 'lucide-react'
+import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info } from 'lucide-react'
 import type { Torrent } from '@/types'
 
 interface TorrentTableOptimizedProps {
@@ -503,18 +508,44 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       {/* Search and Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 flex-shrink-0 mt-3">
         <div className="relative w-full sm:max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="Search torrents..."
+            placeholder="Search torrents (fuzzy enabled)..."
             value={globalFilter ?? ''}
             onChange={event => handleSearchChange(event.target.value)}
             onKeyDown={handleSearchKeyDown}
-            className="w-full"
+            className={`w-full pl-9 pr-20 transition-all ${
+              effectiveSearch ? 'ring-1 ring-primary/50' : ''
+            }`}
           />
-          {isLoading && (
-            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {isLoading && (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          )}
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  type="button"
+                  className="p-1 hover:bg-muted rounded-sm transition-colors"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <div className="space-y-2 text-xs">
+                  <p className="font-semibold">Smart Search Features:</p>
+                  <ul className="space-y-1 ml-2">
+                    <li>• Fuzzy matching: "breaking bad" finds "Breaking.Bad"</li>
+                    <li>• Handles dots, underscores, and brackets</li>
+                    <li>• Searches name, category, and tags</li>
+                    <li>• Press Enter for instant search</li>
+                    <li>• Auto-searches after 1 second pause</li>
+                  </ul>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           {selectedHashes.length > 0 && (
