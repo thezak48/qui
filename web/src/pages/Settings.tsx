@@ -404,12 +404,6 @@ export function Settings() {
                 <Label>Username</Label>
                 <p className="text-sm font-medium">{user?.username || 'Loading...'}</p>
               </div>
-              <div>
-                <Label>Account Created</Label>
-                <p className="text-sm font-medium">
-                  {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Loading...'}
-                </p>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
