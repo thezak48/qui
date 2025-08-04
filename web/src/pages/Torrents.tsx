@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { VisuallyHidden } from '@/components/ui/visually-hidden'
 import { useTorrentCounts } from '@/hooks/useTorrentCounts'
 import { usePersistedFilters } from '@/hooks/usePersistedFilters'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { api } from '@/lib/api'
 import type { Torrent } from '@/types'
 
@@ -18,6 +19,26 @@ interface TorrentsProps {
 export function Torrents({ instanceId, instanceName }: TorrentsProps) {
   const [filters, setFilters] = usePersistedFilters(instanceId)
   const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null)
+  const navigate = useNavigate()
+  const search = useSearch({ strict: false }) as any
+  
+  // Check if add torrent modal should be open
+  const isAddTorrentModalOpen = search?.modal === 'add-torrent'
+  
+  const handleAddTorrentModalChange = (open: boolean) => {
+    if (open) {
+      navigate({ 
+        search: { ...search, modal: 'add-torrent' },
+        replace: true 
+      })
+    } else {
+      const { modal, ...restSearch } = search || {}
+      navigate({ 
+        search: restSearch,
+        replace: true 
+      })
+    }
+  }
   
   // Get all torrents for accurate counting (separate from table's progressive loading)
   const { data: allTorrentsForCounts } = useQuery({
@@ -103,6 +124,8 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
               filters={filters}
               selectedTorrent={selectedTorrent}
               onTorrentSelect={handleTorrentSelect}
+              addTorrentModalOpen={isAddTorrentModalOpen}
+              onAddTorrentModalChange={handleAddTorrentModalChange}
             />
           </div>
         </div>

@@ -27,6 +27,8 @@ import { useQuery } from '@tanstack/react-query'
 
 interface AddTorrentDialogProps {
   instanceId: number
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 type TabValue = 'file' | 'url'
@@ -40,10 +42,14 @@ interface FormData {
   savePath: string
 }
 
-export function AddTorrentDialog({ instanceId }: AddTorrentDialogProps) {
-  const [open, setOpen] = useState(false)
+export function AddTorrentDialog({ instanceId, open: controlledOpen, onOpenChange }: AddTorrentDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<TabValue>('file')
   const queryClient = useQueryClient()
+  
+  // Use controlled state if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setOpen = onOpenChange || setInternalOpen
 
   // Fetch categories for the dropdown
   const { data: categories } = useQuery({

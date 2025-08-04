@@ -83,6 +83,8 @@ interface TorrentTableOptimizedProps {
   }
   selectedTorrent?: Torrent | null
   onTorrentSelect?: (torrent: Torrent | null) => void
+  addTorrentModalOpen?: boolean
+  onAddTorrentModalChange?: (open: boolean) => void
 }
 
 function formatBytes(bytes: number): string {
@@ -352,7 +354,7 @@ const columns: ColumnDef<Torrent>[] = [
   },
 ]
 
-export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, onTorrentSelect }: TorrentTableOptimizedProps) {
+export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, onTorrentSelect, addTorrentModalOpen, onAddTorrentModalChange }: TorrentTableOptimizedProps) {
   // State management
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -783,7 +785,11 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <AddTorrentDialog instanceId={instanceId} />
+          <AddTorrentDialog 
+            instanceId={instanceId} 
+            open={addTorrentModalOpen}
+            onOpenChange={onAddTorrentModalChange}
+          />
         </div>
       </div>
 
