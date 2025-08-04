@@ -34,6 +34,7 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Tooltip,
   TooltipContent,
@@ -119,17 +120,19 @@ const columns: ColumnDef<Torrent>[] = [
   {
     id: 'select',
     header: ({ table }) => (
-      <input
-        type="checkbox"
+      <Checkbox
         checked={table.getIsAllPageRowsSelected()}
-        onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
+        onCheckedChange={(checked) => table.toggleAllPageRowsSelected(!!checked)}
+        aria-label="Select all"
+        className="hover:border-ring cursor-pointer transition-colors"
       />
     ),
     cell: ({ row }) => (
-      <input
-        type="checkbox"
+      <Checkbox
         checked={row.getIsSelected()}
-        onChange={(e) => row.toggleSelected(e.target.checked)}
+        onCheckedChange={(checked) => row.toggleSelected(!!checked)}
+        aria-label="Select row"
+        className="hover:border-ring cursor-pointer transition-colors"
       />
     ),
     size: 40,
@@ -743,9 +746,8 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                 .getAllColumns()
                 .filter(
                   (column) =>
-                    typeof column.accessorFn !== 'undefined' && 
-                    column.getCanHide() &&
-                    column.id !== 'select'
+                    column.id !== 'select' && // Never show select in visibility options
+                    column.getCanHide()
                 )
                 .map((column) => {
                   return (
@@ -849,7 +851,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                           onClick={(e) => {
                             // Don't select when clicking checkbox
                             const target = e.target as HTMLElement
-                            const isCheckbox = (target as HTMLInputElement).type === 'checkbox' || target.closest('input[type="checkbox"]')
+                            const isCheckbox = target.closest('[data-slot="checkbox"]') || target.closest('[role="checkbox"]')
                             if (!isCheckbox) {
                               onTorrentSelect?.(torrent)
                             }

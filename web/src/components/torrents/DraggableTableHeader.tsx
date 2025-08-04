@@ -20,6 +20,7 @@ export function DraggableTableHeader({ header }: DraggableTableHeaderProps) {
     isDragging,
   } = useSortable({
     id: column.id,
+    disabled: column.id === 'select',
   })
 
   const style = {
@@ -39,7 +40,7 @@ export function DraggableTableHeader({ header }: DraggableTableHeaderProps) {
       className="group"
     >
       <div
-        className={`px-3 py-2 text-left text-sm font-medium text-muted-foreground overflow-hidden flex items-center ${
+        className={`px-3 py-2 text-left text-sm font-medium text-muted-foreground flex items-center ${
           column.getCanSort() ? 'cursor-pointer select-none hover:text-foreground' : ''
         }`}
       >
@@ -53,15 +54,12 @@ export function DraggableTableHeader({ header }: DraggableTableHeaderProps) {
           >
             <GripVertical className="h-3 w-3" />
           </div>
-        ) : column.id === 'select' ? (
-          // Reserve space for checkbox column to maintain alignment
-          <div className="w-3 mr-1 flex-shrink-0" />
         ) : null}
         
         {/* Header content */}
         <div 
-          className="flex items-center gap-1 truncate flex-1"
-          onClick={column.getToggleSortingHandler()}
+          className={`flex items-center gap-1 flex-1 ${column.id === 'select' ? 'justify-center' : 'truncate'}`}
+          onClick={column.id !== 'select' ? column.getToggleSortingHandler() : undefined}
         >
           {header.isPlaceholder
             ? null
@@ -69,10 +67,10 @@ export function DraggableTableHeader({ header }: DraggableTableHeaderProps) {
                 column.columnDef.header,
                 header.getContext()
               )}
-          {{
+          {column.id !== 'select' && ({
             asc: ' ↑',
             desc: ' ↓',
-          }[column.getIsSorted() as string] ?? null}
+          }[column.getIsSorted() as string] ?? null)}
         </div>
       </div>
       
