@@ -6,6 +6,7 @@ import { TorrentDetailsPanel } from '@/components/torrents/TorrentDetailsPanel'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { VisuallyHidden } from '@/components/ui/visually-hidden'
 import { useTorrentCounts } from '@/hooks/useTorrentCounts'
+import { usePersistedFilters } from '@/hooks/usePersistedFilters'
 import { api } from '@/lib/api'
 import type { Torrent } from '@/types'
 
@@ -15,12 +16,7 @@ interface TorrentsProps {
 }
 
 export function Torrents({ instanceId, instanceName }: TorrentsProps) {
-  const [filters, setFilters] = useState({
-    status: [] as string[],
-    categories: [] as string[],
-    tags: [] as string[],
-    trackers: [] as string[],
-  })
+  const [filters, setFilters] = usePersistedFilters(instanceId)
   const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null)
   
   // Get all torrents for accurate counting (separate from table's progressive loading)

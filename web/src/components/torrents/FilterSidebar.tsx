@@ -8,6 +8,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { usePersistedAccordion } from '@/hooks/usePersistedAccordion'
 import { api } from '@/lib/api'
 import {
   Circle,
@@ -61,6 +62,9 @@ export function FilterSidebar({
   onFilterChange,
   torrentCounts = {},
 }: FilterSidebarProps) {
+  // Persist accordion state
+  const [expandedItems, setExpandedItems] = usePersistedAccordion(instanceId)
+
   // Fetch categories
   const { data: categories = {} } = useQuery({
     queryKey: ['categories', instanceId],
@@ -118,6 +122,8 @@ export function FilterSidebar({
       tags: [],
       trackers: [],
     })
+    // Optionally reset accordion state to defaults
+    // setExpandedItems(['status', 'categories', 'tags'])
   }
 
   const hasActiveFilters = 
@@ -144,7 +150,8 @@ export function FilterSidebar({
 
           <Accordion 
             type="multiple" 
-            defaultValue={['status', 'categories', 'tags']}
+            value={expandedItems}
+            onValueChange={setExpandedItems}
             className="space-y-2"
           >
             {/* Status Filter */}
