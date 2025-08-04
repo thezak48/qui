@@ -42,7 +42,9 @@ export function DraggableTableHeader({ header }: DraggableTableHeaderProps) {
     >
       <div
         className={`px-3 py-2 text-left text-sm font-medium text-muted-foreground flex items-center ${
-          column.getCanSort() ? 'cursor-pointer select-none hover:text-foreground' : ''
+          column.getCanSort() ? 'cursor-pointer select-none' : ''
+        } ${
+          column.getCanSort() && !isDragging ? 'hover:text-foreground' : ''
         }`}
       >
         {/* Drag handle with reserved space */}
@@ -50,7 +52,9 @@ export function DraggableTableHeader({ header }: DraggableTableHeaderProps) {
           <div
             {...attributes}
             {...listeners}
-            className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing touch-none mr-1 flex-shrink-0"
+            className={`opacity-0 cursor-grab active:cursor-grabbing touch-none mr-1 flex-shrink-0 ${
+              !isDragging ? 'group-hover:opacity-100' : ''
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="h-3 w-3" />
@@ -83,7 +87,9 @@ export function DraggableTableHeader({ header }: DraggableTableHeaderProps) {
           className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none ${
             column.getIsResizing() 
               ? 'bg-primary opacity-100' 
-              : 'bg-border hover:bg-primary/50 opacity-0 group-hover:opacity-100'
+              : `bg-border opacity-0 ${
+                  !isDragging ? 'hover:bg-primary/50 group-hover:opacity-100' : ''
+                }`
           }`}
         />
       )}

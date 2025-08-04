@@ -28,6 +28,7 @@ import { useTorrentsList } from '@/hooks/useTorrentsList'
 import { useDebounce } from '@/hooks/useDebounce'
 import { usePersistedColumnVisibility } from '@/hooks/usePersistedColumnVisibility'
 import { usePersistedColumnOrder } from '@/hooks/usePersistedColumnOrder'
+import { usePersistedColumnSizing } from '@/hooks/usePersistedColumnSizing'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Progress } from '@/components/ui/progress'
@@ -357,7 +358,6 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const [globalFilter, setGlobalFilter] = useState('')
   const [immediateSearch, setImmediateSearch] = useState('')
   const [rowSelection, setRowSelection] = useState({})
-  const [columnSizing, setColumnSizing] = useState({})
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [contextMenuHashes, setContextMenuHashes] = useState<string[]>([])
@@ -387,6 +387,12 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const [columnOrder, setColumnOrder] = usePersistedColumnOrder(
     instanceId,
     defaultColumnOrder
+  )
+  
+  // Column sizing with persistence
+  const [columnSizing, setColumnSizing] = usePersistedColumnSizing(
+    instanceId,
+    {} // Start with empty object, let columns use their default sizes
   )
   
   // Progressive loading state
