@@ -688,6 +688,7 @@ export const themes: Theme[] = [
   {
     id: "kyle",
     name: "Kyle",
+    description: "Kyle's magenta paradise - bold and vibrant",
     cssVars: {
       light: {
         "--background": "oklch(1.0000 0 0)",
@@ -796,6 +797,7 @@ export const themes: Theme[] = [
   {
     id: "nightwalker",
     name: "Nightwalker",
+    description: "Dark theme with subtle purple undertones",
     cssVars: {
       light: {
         "--background": "oklch(1.0000 0 0)",
@@ -904,6 +906,7 @@ export const themes: Theme[] = [
   {
     id: "autobrr",
     name: "autobrr",
+    description: "Clean theme inspired by the autobrr project",
     cssVars: {
       light: {
         "--background": "oklch(1.0000 0 0)",

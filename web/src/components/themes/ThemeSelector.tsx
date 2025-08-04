@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { themes, isThemePremium, type Theme } from '@/config/themes'
 import { useHasPremiumAccess } from '@/hooks/useThemeLicense'
@@ -14,10 +13,26 @@ interface ThemeCardProps {
   onSelect: () => void
 }
 
+// Helper to extract color preview from theme
+function getThemeColors(theme: Theme) {
+  // Check if dark mode is active by looking at the document element
+  const isDark = document.documentElement.classList.contains('dark')
+  const cssVars = isDark ? theme.cssVars.dark : theme.cssVars.light
+  
+  // Extract the actual color values from the theme
+  const primary = cssVars['--primary']
+  const secondary = cssVars['--secondary'] 
+  const accent = cssVars['--accent']
+  
+  return { primary, secondary, accent }
+}
+
 function ThemeCard({ theme, isSelected, isLocked, onSelect }: ThemeCardProps) {
+  const colors = getThemeColors(theme)
+  
   return (
     <Card 
-      className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+      className={`cursor-pointer transition-all duration-200 hover:shadow-md h-full ${
         isSelected ? 'ring-2 ring-primary' : ''
       } ${isLocked ? 'opacity-60' : ''}`}
       onClick={!isLocked ? onSelect : undefined}
@@ -40,8 +55,37 @@ function ThemeCard({ theme, isSelected, isLocked, onSelect }: ThemeCardProps) {
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex items-center justify-between">
+      <CardContent className="pt-0 space-y-3">
+        {/* Theme preview colors */}
+        <div className="flex gap-1">
+          <div 
+            className="w-4 h-4 rounded-full ring-1 ring-black/10 dark:ring-white/10"
+            style={{ 
+              backgroundColor: colors.primary,
+              backgroundImage: 'none',
+              background: colors.primary + ' !important'
+            }}
+          />
+          <div 
+            className="w-4 h-4 rounded-full ring-1 ring-black/10 dark:ring-white/10"
+            style={{ 
+              backgroundColor: colors.secondary,
+              backgroundImage: 'none',
+              background: colors.secondary + ' !important'
+            }}
+          />
+          <div 
+            className="w-4 h-4 rounded-full ring-1 ring-black/10 dark:ring-white/10"
+            style={{ 
+              backgroundColor: colors.accent,
+              backgroundImage: 'none',
+              background: colors.accent + ' !important'
+            }}
+          />
+        </div>
+        
+        {/* Badges */}
+        <div className="flex items-center gap-2">
           {theme.isPremium ? (
             <Badge variant="secondary" className="text-xs">
               <Sparkles className="h-3 w-3 mr-1" />
@@ -59,22 +103,6 @@ function ThemeCard({ theme, isSelected, isLocked, onSelect }: ThemeCardProps) {
               Locked
             </Badge>
           )}
-        </div>
-        
-        {/* Theme preview colors */}
-        <div className="mt-3 flex gap-1">
-          <div 
-            className="w-4 h-4 rounded-full border"
-            style={{ backgroundColor: 'hsl(var(--primary))' }}
-          />
-          <div 
-            className="w-4 h-4 rounded-full border"
-            style={{ backgroundColor: 'hsl(var(--secondary))' }}
-          />
-          <div 
-            className="w-4 h-4 rounded-full border"
-            style={{ backgroundColor: 'hsl(var(--accent))' }}
-          />
         </div>
       </CardContent>
     </Card>
@@ -138,7 +166,7 @@ export function ThemeSelector() {
         <div>
           <h4 className="font-medium mb-3 flex items-center gap-2">
             <Badge variant="outline" className="text-xs">Free</Badge>
-            Available Themes
+            Free Themes
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {freeThemes.map((theme) => (
