@@ -176,7 +176,32 @@ const columns: ColumnDef<Torrent>[] = [
   {
     accessorKey: 'ratio',
     header: 'Ratio',
-    cell: ({ row }) => <span className="text-sm">{row.original.ratio.toFixed(2)}</span>,
+    cell: ({ row }) => {
+      const ratio = row.original.ratio
+      const displayRatio = ratio === -1 ? "∞" : ratio.toFixed(2)
+      
+      let colorVar = ''
+      if (ratio >= 0) {
+        if (ratio < 0.5) {
+          colorVar = 'var(--ratio-bad)'
+        } else if (ratio < 1.0) {
+          colorVar = 'var(--ratio-almost)'
+        } else if (ratio < 5.0) {
+          colorVar = 'var(--ratio-good)'
+        } else {
+          colorVar = 'var(--ratio-best)'
+        }
+      }
+      
+      return (
+        <span 
+          className="text-sm font-medium" 
+          style={{ color: colorVar }}
+        >
+          {displayRatio}
+        </span>
+      )
+    },
     size: 80,
   },
   {
