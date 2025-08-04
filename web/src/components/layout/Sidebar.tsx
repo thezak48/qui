@@ -55,9 +55,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   }
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-muted/50">
+    <div className="flex h-full w-64 flex-col border-r bg-sidebar border-sidebar-border">
       <div className="p-6">
-        <h2 className="text-lg font-semibold">qbitwebui</h2>
+        <h2 className="text-lg font-semibold text-sidebar-foreground">qbitwebui</h2>
       </div>
       
       <nav className="flex-1 space-y-1 px-3">
@@ -73,8 +73,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ease-out',
                 isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
               )}
             >
               <Icon className="h-4 w-4" />
@@ -86,7 +86,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         <Separator className="my-4" />
         
         <div className="space-y-1">
-          <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <p className="px-3 text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider">
             Instances
           </p>
           {instances?.map((instance) => {
@@ -102,8 +102,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 className={cn(
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ease-out',
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                 )}
               >
                 <HardDrive className="h-4 w-4" />
@@ -111,21 +111,21 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 <span
                   className={cn(
                     'ml-auto h-2 w-2 rounded-full',
-                    instance.isActive ? 'bg-primary' : 'bg-destructive'
+                    instance.isActive ? 'bg-sidebar-primary' : 'bg-destructive'
                   )}
                 />
               </Link>
             )
           })}
           {(!instances || instances.length === 0) && (
-            <p className="px-3 py-2 text-sm text-muted-foreground">
+            <p className="px-3 py-2 text-sm text-sidebar-foreground/50">
               No instances configured
             </p>
           )}
         </div>
       </nav>
       
-      <div className="border-t p-3">
+      <div className="border-t border-sidebar-border p-3">
         <Button
           variant="ghost"
           className="w-full justify-start"

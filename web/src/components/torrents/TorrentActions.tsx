@@ -191,7 +191,7 @@ export function TorrentActions({ instanceId, selectedHashes, onComplete }: Torre
               id="deleteFiles"
               checked={deleteFiles}
               onChange={(e) => setDeleteFiles(e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-input"
             />
             <label htmlFor="deleteFiles" className="text-sm font-medium">
               Also delete files from disk

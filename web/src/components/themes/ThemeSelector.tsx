@@ -42,7 +42,7 @@ function ThemeCard({ theme, isSelected, isLocked, onSelect }: ThemeCardProps) {
           <CardTitle className="text-base flex items-center gap-2">
             {theme.name}
             {isSelected && (
-              <Check className="h-4 w-4 text-green-500" />
+              <Check className="h-4 w-4 text-primary" />
             )}
           </CardTitle>
           {isLocked && (

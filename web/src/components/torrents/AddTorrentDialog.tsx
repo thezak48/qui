@@ -132,8 +132,8 @@ export function AddTorrentDialog({ instanceId, open: controlledOpen, onOpenChang
               onClick={() => setActiveTab('file')}
               className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors ${
                 activeTab === 'file'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
               <Upload className="mr-2 h-4 w-4 inline" />
@@ -144,8 +144,8 @@ export function AddTorrentDialog({ instanceId, open: controlledOpen, onOpenChang
               onClick={() => setActiveTab('url')}
               className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors ${
                 activeTab === 'url'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
               <Link className="mr-2 h-4 w-4 inline" />
