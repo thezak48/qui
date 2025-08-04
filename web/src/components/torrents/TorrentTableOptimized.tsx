@@ -164,7 +164,7 @@ const columns: ColumnDef<Torrent>[] = [
   {
     accessorKey: 'size',
     header: 'Size',
-    cell: ({ row }) => <span className="text-sm">{formatBytes(row.original.size)}</span>,
+    cell: ({ row }) => <span className="text-sm truncate">{formatBytes(row.original.size)}</span>,
     size: 100,
   },
   {
@@ -201,21 +201,21 @@ const columns: ColumnDef<Torrent>[] = [
   {
     accessorKey: 'dlspeed',
     header: 'Down Speed',
-    cell: ({ row }) => <span className="text-sm">{formatSpeed(row.original.dlspeed)}</span>,
+    cell: ({ row }) => <span className="text-sm truncate">{formatSpeed(row.original.dlspeed)}</span>,
     size: calculateMinWidth('Down Speed'),
     minSize: 80,
   },
   {
     accessorKey: 'upspeed',
     header: 'Up Speed',
-    cell: ({ row }) => <span className="text-sm">{formatSpeed(row.original.upspeed)}</span>,
+    cell: ({ row }) => <span className="text-sm truncate">{formatSpeed(row.original.upspeed)}</span>,
     size: calculateMinWidth('Up Speed'),
     minSize: 80,
   },
   {
     accessorKey: 'eta',
     header: 'ETA',
-    cell: ({ row }) => <span className="text-sm">{formatEta(row.original.eta)}</span>,
+    cell: ({ row }) => <span className="text-sm truncate">{formatEta(row.original.eta)}</span>,
     size: 80,
   },
   {
@@ -306,14 +306,14 @@ const columns: ColumnDef<Torrent>[] = [
   {
     accessorKey: 'downloaded',
     header: 'Downloaded',
-    cell: ({ row }) => <span className="text-sm">{formatBytes(row.original.downloaded)}</span>,
+    cell: ({ row }) => <span className="text-sm truncate">{formatBytes(row.original.downloaded)}</span>,
     size: calculateMinWidth('Downloaded'),
     minSize: 90,
   },
   {
     accessorKey: 'uploaded',
     header: 'Uploaded',
-    cell: ({ row }) => <span className="text-sm">{formatBytes(row.original.uploaded)}</span>,
+    cell: ({ row }) => <span className="text-sm truncate">{formatBytes(row.original.uploaded)}</span>,
     size: calculateMinWidth('Uploaded'),
     minSize: 80,
   },
@@ -892,7 +892,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                                 flexShrink: 0,
                                 flexGrow: cell.column.id === 'name' ? 1 : 0
                               }}
-                              className="px-3 py-2 flex items-center overflow-hidden"
+                              className="px-3 py-2 flex items-center overflow-hidden min-w-0"
                             >
                               {/* Add spacing to match header drag handle */}
                               {cell.column.id !== 'select' && (
