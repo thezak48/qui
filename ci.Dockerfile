@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for CI builds
 
 # Build stage for Go binary
-FROM golang:1.21-alpine AS go-builder
+FROM golang:1.24-alpine3.22 AS go-builder
 
 # Install build dependencies
 RUN apk add --no-cache git make
@@ -39,7 +39,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="\
     -o qbitweb ./cmd/server
 
 # Final stage
-FROM alpine:latest
+FROM alpine:3.22
 
 # Install runtime dependencies
 RUN apk --no-cache add ca-certificates tzdata
