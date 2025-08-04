@@ -6,15 +6,18 @@ import {
   type ColumnDef,
   type SortingState,
   type ColumnResizeMode,
+  type VisibilityState,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTorrentsList } from '@/hooks/useTorrentsList'
 import { useDebounce } from '@/hooks/useDebounce'
+import { usePersistedColumnVisibility } from '@/hooks/usePersistedColumnVisibility'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
@@ -37,10 +40,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info } from 'lucide-react'
+import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3 } from 'lucide-react'
 import type { Torrent } from '@/types'
 
 interface TorrentTableOptimizedProps {
@@ -258,6 +269,53 @@ const columns: ColumnDef<Torrent>[] = [
     size: 200,
     minSize: 100,
   },
+  {
+    accessorKey: 'downloaded',
+    header: 'Downloaded',
+    cell: ({ row }) => <span className="text-sm">{formatBytes(row.original.downloaded)}</span>,
+    size: 110,
+  },
+  {
+    accessorKey: 'uploaded',
+    header: 'Uploaded',
+    cell: ({ row }) => <span className="text-sm">{formatBytes(row.original.uploaded)}</span>,
+    size: 110,
+  },
+  {
+    accessorKey: 'saveLocation',
+    header: 'Save Path',
+    cell: ({ row }) => (
+      <div className="truncate text-sm" title={row.original.saveLocation}>
+        {row.original.saveLocation}
+      </div>
+    ),
+    size: 250,
+    minSize: 150,
+  },
+  {
+    accessorKey: 'tracker',
+    header: 'Tracker',
+    cell: ({ row }) => {
+      const tracker = row.original.tracker
+      // Extract domain from tracker URL
+      let displayTracker = tracker
+      try {
+        if (tracker && tracker.includes('://')) {
+          const url = new URL(tracker)
+          displayTracker = url.hostname
+        }
+      } catch (e) {
+        // If URL parsing fails, show as is
+      }
+      return (
+        <div className="truncate text-sm" title={tracker}>
+          {displayTracker || '-'}
+        </div>
+      )
+    },
+    size: 150,
+    minSize: 100,
+  },
 ]
 
 export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, onTorrentSelect }: TorrentTableOptimizedProps) {
@@ -274,6 +332,18 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
   const [tagsInput, setTagsInput] = useState('')
   const [categoryInput, setCategoryInput] = useState('')
+  
+  // Column visibility with persistence
+  const defaultColumnVisibility: VisibilityState = {
+    downloaded: false,
+    uploaded: false,
+    saveLocation: false,
+    tracker: false,
+  }
+  const [columnVisibility, setColumnVisibility] = usePersistedColumnVisibility(
+    instanceId,
+    defaultColumnVisibility
+  )
   
   // Progressive loading state
   const [loadedRows, setLoadedRows] = useState(100)
@@ -351,11 +421,13 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       globalFilter,
       rowSelection,
       columnSizing,
+      columnVisibility,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
     onColumnSizingChange: setColumnSizing,
+    onColumnVisibilityChange: setColumnVisibility,
     // Enable row selection
     enableRowSelection: true,
     // Enable column resizing
@@ -591,6 +663,52 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
               onComplete={() => setRowSelection({})}
             />
           )}
+          
+          {/* Column visibility dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="relative"
+              >
+                <Columns3 className="h-4 w-4" />
+                {Object.values(columnVisibility).some(v => v === false) && (
+                  <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full" />
+                )}
+                <span className="sr-only">Toggle columns</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {table
+                .getAllColumns()
+                .filter(
+                  (column) =>
+                    typeof column.accessorFn !== 'undefined' && 
+                    column.getCanHide() &&
+                    column.id !== 'select'
+                )
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      <span className="truncate">
+                        {column.columnDef.header as string}
+                      </span>
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <AddTorrentDialog instanceId={instanceId} />
         </div>
       </div>
