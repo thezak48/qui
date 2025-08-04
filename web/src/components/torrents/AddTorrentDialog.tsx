@@ -99,7 +99,7 @@ export function AddTorrentDialog({ instanceId }: AddTorrentDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="transition-all duration-200 hover:scale-105">
+        <Button>
           <Plus className="mr-2 h-4 w-4 transition-transform duration-200" />
           Add Torrent
         </Button>
