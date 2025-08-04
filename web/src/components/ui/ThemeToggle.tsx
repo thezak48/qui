@@ -159,6 +159,7 @@ export const ThemeToggle: React.FC = () => {
                     theme.id === "tangerine" && "bg-orange-500 ring-orange-500",
                     theme.id === "autobrr" && "bg-blue-500 ring-blue-500",
                     theme.id === "nightwalker" && "bg-slate-800 ring-slate-800",
+                    theme.id === "matrix" && "bg-green-500 ring-green-500",
                   )}
                 />
                 <span>{theme.name}</span>
