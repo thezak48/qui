@@ -36,11 +36,12 @@ type TorrentStats struct {
 
 // SyncManager manages SyncMainData for efficient torrent updates
 type SyncManager struct {
-	clientPool *ClientPool
-	mainData   map[int]*qbt.MainData
-	ridTracker map[int]int64
-	mu         sync.RWMutex
-	cache      *ristretto.Cache
+	clientPool   *ClientPool
+	mainData     map[int]*qbt.MainData
+	ridTracker   map[int]int64
+	mu           sync.RWMutex
+	cache        *ristretto.Cache
+	cacheCleared time.Time // Track when cache was last cleared to avoid re-caching stale data
 }
 
 // NewSyncManager creates a new sync manager
@@ -91,7 +92,9 @@ func (sm *SyncManager) InitialLoad(ctx context.Context, instanceID int, limit, o
 	}
 
 	// Cache the response with shorter TTL for more responsive updates
-	sm.cache.SetWithTTL(cacheKey, response, 1, 2*time.Second)
+	if !sm.shouldSkipCache() {
+		sm.cache.SetWithTTL(cacheKey, response, 1, 2*time.Second)
+	}
 
 	log.Debug().
 		Int("instanceID", instanceID).
@@ -150,7 +153,9 @@ func (sm *SyncManager) GetTorrentsWithSearch(ctx context.Context, instanceID int
 	}
 
 	// Cache the response with shorter TTL for more responsive updates
-	sm.cache.SetWithTTL(cacheKey, response, 1, 2*time.Second)
+	if !sm.shouldSkipCache() {
+		sm.cache.SetWithTTL(cacheKey, response, 1, 2*time.Second)
+	}
 
 	log.Debug().
 		Int("instanceID", instanceID).
@@ -210,7 +215,9 @@ func (sm *SyncManager) GetTorrentsWithFilters(ctx context.Context, instanceID in
 	}
 
 	// Cache the response with shorter TTL for more responsive updates
-	sm.cache.SetWithTTL(cacheKey, response, 1, 2*time.Second)
+	if !sm.shouldSkipCache() {
+		sm.cache.SetWithTTL(cacheKey, response, 1, 2*time.Second)
+	}
 
 	log.Debug().
 		Int("instanceID", instanceID).
@@ -299,7 +306,9 @@ func (sm *SyncManager) GetFilteredTorrents(ctx context.Context, instanceID int, 
 	}
 
 	// Cache with shorter TTL for filtered results
-	sm.cache.SetWithTTL(cacheKey, response, 1, 5*time.Second)
+	if !sm.shouldSkipCache() {
+		sm.cache.SetWithTTL(cacheKey, response, 1, 5*time.Second)
+	}
 
 	return response, nil
 }
@@ -547,7 +556,9 @@ func (sm *SyncManager) getTotalCount(ctx context.Context, instanceID int) int {
 	count := len(torrents)
 
 	// Cache for shorter time for more responsive updates
-	sm.cache.SetWithTTL(cacheKey, count, 1, 2*time.Second)
+	if !sm.shouldSkipCache() {
+		sm.cache.SetWithTTL(cacheKey, count, 1, 2*time.Second)
+	}
 
 	return count
 }
@@ -596,6 +607,19 @@ func (sm *SyncManager) InvalidateCache(instanceID int) {
 	// Just clear the entire cache. This is not ideal for multi-instance setups,
 	// but ensures consistency and is simple to implement.
 	sm.cache.Clear()
+
+	// Track when cache was cleared to avoid re-caching stale data
+	sm.mu.Lock()
+	sm.cacheCleared = time.Now()
+	sm.mu.Unlock()
+}
+
+// shouldSkipCache returns true if we should skip caching (cache was recently cleared)
+func (sm *SyncManager) shouldSkipCache() bool {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	// Skip caching for 3 seconds after cache clear to let qBittorrent process changes
+	return time.Since(sm.cacheCleared) < 3*time.Second
 }
 
 // getAllTorrentsForStats gets all torrents for stats calculation (cached)
@@ -621,7 +645,9 @@ func (sm *SyncManager) getAllTorrentsForStats(ctx context.Context, instanceID in
 	}
 
 	// Cache for shorter time for more responsive updates
-	sm.cache.SetWithTTL(cacheKey, torrents, 1, 2*time.Second)
+	if !sm.shouldSkipCache() {
+		sm.cache.SetWithTTL(cacheKey, torrents, 1, 2*time.Second)
+	}
 
 	return torrents, nil
 }
