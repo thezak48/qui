@@ -29,9 +29,7 @@ export function DraggableTableHeader({ header }: DraggableTableHeaderProps) {
     opacity: isDragging ? 0.8 : 1,
     position: 'relative' as const,
     width: header.getSize(),
-    minWidth: column.columnDef.minSize || header.getSize(),
     flexShrink: 0,
-    flexGrow: column.id === 'name' ? 1 : 0,
   }
 
   return (

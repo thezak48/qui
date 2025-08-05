@@ -159,7 +159,6 @@ const columns: ColumnDef<Torrent>[] = [
       </div>
     ),
     size: 300,
-    minSize: 150,
   },
   {
     accessorKey: 'size',
@@ -203,14 +202,12 @@ const columns: ColumnDef<Torrent>[] = [
     header: 'Down Speed',
     cell: ({ row }) => <span className="text-sm truncate">{formatSpeed(row.original.dlspeed)}</span>,
     size: calculateMinWidth('Down Speed'),
-    minSize: 80,
   },
   {
     accessorKey: 'upspeed',
     header: 'Up Speed',
     cell: ({ row }) => <span className="text-sm truncate">{formatSpeed(row.original.upspeed)}</span>,
     size: calculateMinWidth('Up Speed'),
-    minSize: 80,
   },
   {
     accessorKey: 'eta',
@@ -278,7 +275,6 @@ const columns: ColumnDef<Torrent>[] = [
       )
     },
     size: 200,
-    minSize: 150,
   },
   {
     accessorKey: 'category',
@@ -289,7 +285,6 @@ const columns: ColumnDef<Torrent>[] = [
       </div>
     ),
     size: 150,
-    minSize: 100,
   },
   {
     accessorKey: 'tags',
@@ -303,21 +298,18 @@ const columns: ColumnDef<Torrent>[] = [
       )
     },
     size: 200,
-    minSize: 100,
   },
   {
     accessorKey: 'downloaded',
     header: 'Downloaded',
     cell: ({ row }) => <span className="text-sm truncate">{formatBytes(row.original.downloaded)}</span>,
     size: calculateMinWidth('Downloaded'),
-    minSize: 90,
   },
   {
     accessorKey: 'uploaded',
     header: 'Uploaded',
     cell: ({ row }) => <span className="text-sm truncate">{formatBytes(row.original.uploaded)}</span>,
     size: calculateMinWidth('Uploaded'),
-    minSize: 80,
   },
   {
     accessorKey: 'save_path',
@@ -328,7 +320,6 @@ const columns: ColumnDef<Torrent>[] = [
       </div>
     ),
     size: 250,
-    minSize: 150,
   },
   {
     accessorKey: 'tracker',
@@ -352,7 +343,6 @@ const columns: ColumnDef<Torrent>[] = [
       )
     },
     size: 150,
-    minSize: 100,
   },
 ]
 
@@ -963,9 +953,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                               key={cell.id}
                               style={{ 
                                 width: cell.column.getSize(),
-                                minWidth: cell.column.columnDef.minSize || cell.column.getSize(),
                                 flexShrink: 0,
-                                flexGrow: cell.column.id === 'name' ? 1 : 0
                               }}
                               className="px-3 py-2 flex items-center overflow-hidden min-w-0"
                             >

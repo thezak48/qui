@@ -1,5 +1,5 @@
 import { useForm } from '@tanstack/react-form'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -21,10 +21,14 @@ interface InstanceFormProps {
 }
 
 export function InstanceForm({ instance, onSuccess, onCancel }: InstanceFormProps) {
+  const queryClient = useQueryClient()
+  
   const mutation = useMutation({
     mutationFn: (data: InstanceFormData) => 
       instance ? api.updateInstance(instance.id, data) : api.createInstance(data),
     onSuccess: () => {
+      // Invalidate instances query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['instances'] })
       onSuccess()
     },
   })
