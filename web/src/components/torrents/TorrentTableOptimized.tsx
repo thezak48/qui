@@ -924,6 +924,11 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                   const row = rows[virtualRow.index]
                   const torrent = row.original
                   const isSelected = selectedTorrent?.hash === torrent.hash
+                  
+                  // Calculate minimum table width based on visible columns
+                  const minTableWidth = table.getVisibleLeafColumns().reduce((width, col) => {
+                    return width + col.getSize()
+                  }, 0)
                 
                   return (
                     <ContextMenu key={torrent.hash}>
@@ -934,7 +939,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                             position: 'absolute',
                             top: 0,
                             left: 0,
-                            width: '100%',
+                            minWidth: `${minTableWidth}px`,
                             height: `${virtualRow.size}px`,
                             transform: `translateY(${virtualRow.start}px)`,
                           }}
