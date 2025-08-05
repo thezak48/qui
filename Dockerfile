@@ -9,10 +9,16 @@ COPY web/ ./
 RUN npm run build
 
 # Go build stage
-FROM golang:1.24-alpine3.22 AS go-builder
+# Use BUILDPLATFORM to build on native architecture (fast)
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine3.22 AS go-builder
 
 # Install build dependencies
 RUN apk add --no-cache git
+
+# Cross-compilation arguments from Docker BuildKit
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
 
 WORKDIR /app
 
@@ -30,8 +36,22 @@ ARG POLAR_ACCESS_TOKEN=""
 ARG POLAR_ORG_ID=""
 ARG POLAR_ENVIRONMENT="production"
 
-# Build the application with baked-in credentials
-RUN CGO_ENABLED=0 GOOS=linux go build \
+# Set cross-compilation environment variables
+ENV GOOS=${TARGETOS} \
+    GOARCH=${TARGETARCH}
+
+# Handle ARM variants
+RUN case "${TARGETARCH}" in \
+      "arm") \
+        case "${TARGETVARIANT}" in \
+          "v6") export GOARM=6 ;; \
+          "v7") export GOARM=7 ;; \
+        esac \
+      ;; \
+    esac
+
+# Build the application with baked-in credentials for target platform
+RUN CGO_ENABLED=0 go build \
     -ldflags "-s -w -X main.Version=${VERSION} -X main.PolarAccessToken=${POLAR_ACCESS_TOKEN} -X main.PolarOrgID=${POLAR_ORG_ID} -X main.PolarEnvironment=${POLAR_ENVIRONMENT}" \
     -o qui ./cmd/server
 

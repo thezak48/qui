@@ -1,7 +1,8 @@
 # Multi-stage Dockerfile for CI builds
 
 # Build stage for Go binary
-FROM golang:1.24-alpine3.22 AS go-builder
+# Use BUILDPLATFORM to build on native architecture (fast)
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine3.22 AS go-builder
 
 # Install build dependencies
 RUN apk add --no-cache git make
@@ -15,6 +16,11 @@ ARG POLAR_ACCESS_TOKEN=""
 ARG POLAR_ORG_ID=""
 ARG POLAR_ENVIRONMENT="production"
 
+# Cross-compilation arguments from Docker BuildKit
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+
 WORKDIR /app
 
 # Copy go mod files
@@ -27,8 +33,22 @@ COPY . .
 # Copy pre-built frontend (from GitHub Actions artifact)
 COPY internal/web/dist internal/web/dist
 
-# Build the binary with ldflags
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="\
+# Set cross-compilation environment variables
+ENV GOOS=${TARGETOS} \
+    GOARCH=${TARGETARCH}
+
+# Handle ARM variants
+RUN case "${TARGETARCH}" in \
+      "arm") \
+        case "${TARGETVARIANT}" in \
+          "v6") export GOARM=6 ;; \
+          "v7") export GOARM=7 ;; \
+        esac \
+      ;; \
+    esac
+
+# Build the binary with ldflags for target platform
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="\
     -s -w \
     -X main.Version=${VERSION} \
     -X main.buildTime=${BUILDTIME} \
