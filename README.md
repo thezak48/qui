@@ -2,6 +2,10 @@
 
 A fast, modern web interface for qBittorrent designed for personal use. Manage multiple qBittorrent instances from a single, lightweight application.
 
+<div align="center">
+  <img src=".github/assets/qui.png" alt="qui" width="100%" />
+</div>
+
 ## Features
 
 - **Single Binary**: No dependencies, just download and run
