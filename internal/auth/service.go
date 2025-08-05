@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/autobrr/qbitweb/internal/models"
 	"github.com/gorilla/sessions"
 	"github.com/rs/zerolog/log"
-	"github.com/s0up4200/qbitweb/internal/models"
 )
 
 var (
 	ErrInvalidCredentials = errors.New("invalid username or password")
-	ErrNotSetup          = errors.New("initial setup required")
+	ErrNotSetup           = errors.New("initial setup required")
 )
 
 type Service struct {
@@ -24,7 +24,7 @@ type Service struct {
 
 func NewService(db *sql.DB, sessionSecret string) *Service {
 	store := sessions.NewCookieStore([]byte(sessionSecret))
-	
+
 	// Configure session options
 	store.Options = &sessions.Options{
 		Path:     "/",

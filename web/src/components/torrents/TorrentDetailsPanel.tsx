@@ -98,17 +98,32 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between p-3 border-b">
-        <h3 className="text-sm font-medium truncate flex-1" title={torrent.name}>
+      <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+        <h3 className="text-sm font-semibold truncate flex-1" title={torrent.name}>
           {torrent.name}
         </h3>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="w-full justify-start rounded-none border-b h-9">
-          <TabsTrigger value="general" className="text-xs">General</TabsTrigger>
-          <TabsTrigger value="trackers" className="text-xs">Trackers</TabsTrigger>
-          <TabsTrigger value="content" className="text-xs">Content</TabsTrigger>
+        <TabsList className="w-full justify-start rounded-none border-b h-10 bg-background p-0">
+          <TabsTrigger 
+            value="general" 
+            className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-accent/50 transition-all px-4 cursor-pointer"
+          >
+            General
+          </TabsTrigger>
+          <TabsTrigger 
+            value="trackers" 
+            className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-accent/50 transition-all px-4 cursor-pointer"
+          >
+            Trackers
+          </TabsTrigger>
+          <TabsTrigger 
+            value="content" 
+            className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-accent/50 transition-all px-4 cursor-pointer"
+          >
+            Content
+          </TabsTrigger>
         </TabsList>
 
         <ScrollArea className="flex-1">
@@ -179,13 +194,13 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
                 <div className="space-y-2">
                   <div>
                     <span className="text-sm text-muted-foreground">Save Path:</span>
-                    <div className="text-sm mt-1 font-mono text-xs bg-muted p-2 rounded break-all">
+                    <div className="text-sm mt-1 font-mono text-xs bg-muted/50 hover:bg-muted transition-colors p-2 rounded break-all">
                       {properties.savePath || 'N/A'}
                     </div>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Download Path:</span>
-                    <div className="text-sm mt-1 font-mono text-xs bg-muted p-2 rounded break-all">
+                    <div className="text-sm mt-1 font-mono text-xs bg-muted/50 hover:bg-muted transition-colors p-2 rounded break-all">
                       {properties.downloadPath || properties.savePath || 'N/A'}
                     </div>
                   </div>
@@ -209,7 +224,7 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
                 {properties.comment && (
                   <div>
                     <span className="text-sm text-muted-foreground">Comment:</span>
-                    <div className="text-sm mt-1 bg-muted p-2 rounded">
+                    <div className="text-sm mt-1 bg-muted/50 hover:bg-muted transition-colors p-2 rounded">
                       {properties.comment}
                     </div>
                   </div>
@@ -233,7 +248,7 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
             ) : trackers && trackers.length > 0 ? (
               <div className="space-y-2">
                 {trackers.map((tracker, index) => (
-                  <div key={index} className="border rounded-lg p-3 space-y-2">
+                  <div key={index} className="border border-border/50 hover:border-border bg-card/50 hover:bg-card transition-all rounded-lg p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-mono break-all">{tracker.url}</span>
                       {getTrackerStatusBadge(tracker.status)}
@@ -265,7 +280,7 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
             ) : files && files.length > 0 ? (
               <div className="space-y-1">
                 {files.map((file, index) => (
-                  <div key={index} className="border rounded p-2 space-y-1">
+                  <div key={index} className="border border-border/50 hover:border-border bg-card/50 hover:bg-card transition-all rounded p-2 space-y-1">
                     <div className="text-sm font-mono break-all">{file.name}</div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{formatBytes(file.size)}</span>

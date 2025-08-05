@@ -209,6 +209,7 @@ export function FilterSidebar({
                     <Checkbox
                       checked={selectedFilters.categories.includes('')}
                       onCheckedChange={() => handleCategoryToggle('')}
+                      className="rounded border-input"
                     />
                     <span className="text-sm flex-1 italic text-muted-foreground">
                       Uncategorized
@@ -259,6 +260,7 @@ export function FilterSidebar({
                     <Checkbox
                       checked={selectedFilters.tags.includes('')}
                       onCheckedChange={() => handleTagToggle('')}
+                      className="rounded border-input"
                     />
                     <span className="text-sm flex-1 italic text-muted-foreground">
                       Untagged

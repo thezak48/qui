@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/autobrr/qbitweb/internal/auth"
+	"github.com/autobrr/qbitweb/internal/models"
 	"github.com/gorilla/sessions"
 	"github.com/rs/zerolog/log"
-	"github.com/s0up4200/qbitweb/internal/auth"
-	"github.com/s0up4200/qbitweb/internal/models"
 )
 
 type AuthHandler struct {
@@ -162,11 +162,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // Logout handles user logout
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	session, _ := h.authService.GetSessionStore().Get(r, "user_session")
-	
+
 	// Clear session values
 	session.Values["authenticated"] = false
 	session.Options.MaxAge = -1
-	
+
 	if err := session.Save(r, w); err != nil {
 		log.Error().Err(err).Msg("Failed to clear session")
 		RespondError(w, http.StatusInternalServerError, "Failed to logout")
@@ -181,7 +181,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // GetCurrentUser returns the current user information
 func (h *AuthHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	session, _ := h.authService.GetSessionStore().Get(r, "user_session")
-	
+
 	userID, ok := session.Values["user_id"].(int)
 	if !ok {
 		RespondError(w, http.StatusUnauthorized, "Not authenticated")

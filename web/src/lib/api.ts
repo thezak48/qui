@@ -278,6 +278,42 @@ class ApiClient {
   async deleteApiKey(id: number): Promise<void> {
     return this.request(`/api-keys/${id}`, { method: 'DELETE' })
   }
+
+  // Theme License endpoints
+  async validateThemeLicense(licenseKey: string): Promise<{
+    valid: boolean
+    themeName?: string
+    expiresAt?: string
+    message?: string
+    error?: string
+  }> {
+    return this.request('/themes/license/validate', {
+      method: 'POST',
+      body: JSON.stringify({ licenseKey }),
+    })
+  }
+
+  async getLicensedThemes(): Promise<{ hasPremiumAccess: boolean }> {
+    return this.request('/themes/licensed')
+  }
+
+  async getAllLicenses(): Promise<Array<{
+    licenseKey: string
+    themeName: string
+    status: string
+    createdAt: string
+  }>> {
+    return this.request('/themes/licenses')
+  }
+
+
+  async deleteThemeLicense(licenseKey: string): Promise<{ message: string }> {
+    return this.request(`/themes/license/${licenseKey}`, { method: 'DELETE' })
+  }
+
+  async refreshThemeLicenses(): Promise<{ message: string }> {
+    return this.request('/themes/license/refresh', { method: 'POST' })
+  }
 }
 
 export const api = new ApiClient()

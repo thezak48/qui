@@ -12,19 +12,26 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	
-	"github.com/s0up4200/qbitweb/internal/api"
-	"github.com/s0up4200/qbitweb/internal/auth"
-	"github.com/s0up4200/qbitweb/internal/config"
-	"github.com/s0up4200/qbitweb/internal/database"
-	"github.com/s0up4200/qbitweb/internal/models"
-	"github.com/s0up4200/qbitweb/internal/qbittorrent"
-	"github.com/s0up4200/qbitweb/internal/web"
+
+	"github.com/autobrr/qbitweb/internal/api"
+	"github.com/autobrr/qbitweb/internal/auth"
+	"github.com/autobrr/qbitweb/internal/config"
+	"github.com/autobrr/qbitweb/internal/database"
+	"github.com/autobrr/qbitweb/internal/models"
+	"github.com/autobrr/qbitweb/internal/polar"
+	"github.com/autobrr/qbitweb/internal/qbittorrent"
+	"github.com/autobrr/qbitweb/internal/services"
+	"github.com/autobrr/qbitweb/internal/web"
 )
 
 var (
 	Version = "dev"
 	cfgFile string
+
+	// Publisher credentials - set during build via ldflags
+	PolarAccessToken = ""           // Set via: -X main.PolarAccessToken=your-token
+	PolarOrgID       = ""           // Set via: -X main.PolarOrgID=your-org-id
+	PolarEnvironment = "production" // Set via: -X main.PolarEnvironment=production
 )
 
 var rootCmd = &cobra.Command{
@@ -47,13 +54,13 @@ func init() {
 func initConfig() {
 	// Initialize logger
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	
+
 	// Config initialization will be implemented later
 }
 
 func runServer() {
 	log.Info().Str("version", Version).Msg("Starting qBittorrent WebUI")
-	
+
 	// Initialize configuration
 	cfg, err := config.New(cfgFile)
 	if err != nil {
@@ -69,7 +76,7 @@ func runServer() {
 
 	// Initialize services
 	authService := auth.NewService(db.Conn(), cfg.Config.SessionSecret)
-	
+
 	// Initialize stores
 	instanceStore, err := models.NewInstanceStore(db.Conn(), cfg.GetEncryptionKey())
 	if err != nil {
@@ -92,15 +99,53 @@ func runServer() {
 		log.Warn().Err(err).Msg("Failed to initialize web handler")
 	}
 
+	// Initialize Polar client and theme license service
+	var themeLicenseService *services.ThemeLicenseService
+
+	// Use ONLY the baked-in credentials from build time
+	if PolarAccessToken != "" && PolarOrgID != "" {
+		// Production: Use baked-in publisher credentials
+		log.Trace().
+			Msg("Initializing Polar SDK")
+
+		polarClient := polar.NewClient(PolarAccessToken, PolarEnvironment)
+		polarClient.SetOrganizationID(PolarOrgID)
+
+		// Test the connection
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := polarClient.ValidateConfiguration(ctx); err != nil {
+			log.Error().Err(err).Msg("Failed to validate Polar configuration")
+			// Continue with the configured client even if validation fails
+			// This allows the service to start but theme licensing will fail gracefully
+		}
+
+		themeLicenseService = services.NewThemeLicenseService(db, polarClient)
+		log.Info().Msg("Theme licensing service initialized (production mode)")
+	} else {
+		// No credentials: Premium themes will not be available
+		log.Warn().Msg("No Polar credentials configured - premium themes will be disabled")
+
+		// Create a client with empty credentials
+		// All license validations will fail, which is the expected behavior
+		polarClient := polar.NewClient("", "production")
+		polarClient.SetOrganizationID("")
+
+		themeLicenseService = services.NewThemeLicenseService(db, polarClient)
+		log.Info().Msg("Theme licensing service initialized (no credentials mode)")
+	}
+
 	// Create router dependencies
 	deps := &api.Dependencies{
-		Config:        cfg,
-		DB:            db.Conn(),
-		AuthService:   authService,
-		InstanceStore: instanceStore,
-		ClientPool:    clientPool,
-		SyncManager:   syncManager,
-		WebHandler:    webHandler,
+		Config:              cfg,
+		DB:                  db.Conn(),
+		AuthService:         authService,
+		InstanceStore:       instanceStore,
+		ClientPool:          clientPool,
+		SyncManager:         syncManager,
+		WebHandler:          webHandler,
+		ThemeLicenseService: themeLicenseService,
 	}
 
 	// Initialize router
@@ -121,7 +166,7 @@ func runServer() {
 		if cfg.Config.BaseURL != "" {
 			log.Info().Str("baseURL", cfg.Config.BaseURL).Msg("Serving under base URL")
 		}
-		
+
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal().Err(err).Msg("Server failed")
 		}

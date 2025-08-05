@@ -7,9 +7,9 @@ import (
 	"strconv"
 
 	qbt "github.com/autobrr/go-qbittorrent"
+	"github.com/autobrr/qbitweb/internal/qbittorrent"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
-	"github.com/s0up4200/qbitweb/internal/qbittorrent"
 )
 
 type TorrentsHandler struct {
@@ -37,40 +37,40 @@ func (h *TorrentsHandler) ListTorrents(w http.ResponseWriter, r *http.Request) {
 	sort := "addedOn"
 	order := "desc"
 	search := ""
-	
+
 	if l := r.URL.Query().Get("limit"); l != "" {
 		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 1000 {
 			limit = parsed
 		}
 	}
-	
+
 	if p := r.URL.Query().Get("page"); p != "" {
 		if parsed, err := strconv.Atoi(p); err == nil && parsed >= 0 {
 			page = parsed
 		}
 	}
-	
+
 	if s := r.URL.Query().Get("sort"); s != "" {
 		sort = s
 	}
-	
+
 	if o := r.URL.Query().Get("order"); o != "" {
 		order = o
 	}
-	
+
 	if q := r.URL.Query().Get("search"); q != "" {
 		search = q
 	}
-	
+
 	// Parse filters
 	var filters qbittorrent.FilterOptions
-	
+
 	if f := r.URL.Query().Get("filters"); f != "" {
 		if err := json.Unmarshal([]byte(f), &filters); err != nil {
 			log.Warn().Err(err).Msg("Failed to parse filters, ignoring")
 		}
 	}
-	
+
 	// Debug logging
 	log.Debug().
 		Str("sort", sort).
@@ -157,23 +157,23 @@ func (h *TorrentsHandler) AddTorrent(w http.ResponseWriter, r *http.Request) {
 
 	// Parse options from form
 	options := make(map[string]string)
-	
+
 	if category := r.FormValue("category"); category != "" {
 		options["category"] = category
 	}
-	
+
 	if tags := r.FormValue("tags"); tags != "" {
 		options["tags"] = tags
 	}
-	
+
 	if paused := r.FormValue("paused"); paused == "true" {
 		options["paused"] = "true"
 	}
-	
+
 	if skipChecking := r.FormValue("skip_checking"); skipChecking == "true" {
 		options["skip_checking"] = "true"
 	}
-	
+
 	if savePath := r.FormValue("savepath"); savePath != "" {
 		options["savepath"] = savePath
 	}
@@ -229,7 +229,7 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 		"recheck", "reannounce", "increasePriority", "decreasePriority",
 		"topPriority", "bottomPriority", "addTags", "removeTags", "setCategory",
 	}
-	
+
 	valid := false
 	for _, action := range validActions {
 		if req.Action == action {
@@ -237,7 +237,7 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	
+
 	if !valid {
 		RespondError(w, http.StatusBadRequest, "Invalid action")
 		return
@@ -305,7 +305,7 @@ func (h *TorrentsHandler) DeleteTorrent(w http.ResponseWriter, r *http.Request) 
 
 	// Check if files should be deleted
 	deleteFiles := r.URL.Query().Get("deleteFiles") == "true"
-	
+
 	action := "delete"
 	if deleteFiles {
 		action = "deleteWithFiles"

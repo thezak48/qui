@@ -1,5 +1,11 @@
 # qBittorrent WebUI Makefile
 
+# Load .env file if it exists (silently)
+ifneq (,$(wildcard .env))
+    include .env
+    export
+endif
+
 # Variables
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BINARY_NAME = qbitweb
@@ -7,8 +13,8 @@ BUILD_DIR = build
 WEB_DIR = web
 INTERNAL_WEB_DIR = internal/web
 
-# Go build flags
-LDFLAGS = -ldflags "-X main.Version=$(VERSION)"
+# Go build flags with Polar credentials
+LDFLAGS = -ldflags "-X main.Version=$(VERSION) -X main.PolarAccessToken=$(POLAR_ACCESS_TOKEN) -X main.PolarOrgID=$(POLAR_ORG_ID) -X main.PolarEnvironment=$(POLAR_ENVIRONMENT)"
 
 .PHONY: all build frontend backend dev dev-backend dev-frontend clean test help
 

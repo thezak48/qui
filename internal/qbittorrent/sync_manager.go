@@ -14,7 +14,7 @@ import (
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/rs/zerolog/log"
 
-	"github.com/s0up4200/qbitweb/internal/api/converters"
+	"github.com/autobrr/qbitweb/internal/api/converters"
 )
 
 // TorrentResponse represents a response containing torrents with stats
@@ -667,40 +667,40 @@ func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search str
 	searchLower := strings.ToLower(search)
 	searchNormalized := normalizeForSearch(search)
 	searchWords := strings.Fields(searchNormalized)
-	
+
 	for _, torrent := range torrents {
 		// Method 1: Exact substring match (highest priority)
 		nameLower := strings.ToLower(torrent.Name)
 		categoryLower := strings.ToLower(torrent.Category)
 		tagsLower := strings.ToLower(torrent.Tags)
-		
-		if strings.Contains(nameLower, searchLower) || 
-		   strings.Contains(categoryLower, searchLower) || 
-		   strings.Contains(tagsLower, searchLower) {
+
+		if strings.Contains(nameLower, searchLower) ||
+			strings.Contains(categoryLower, searchLower) ||
+			strings.Contains(tagsLower, searchLower) {
 			matches = append(matches, torrentMatch{
-				torrent: torrent, 
-				score: 0, // Best score
-				method: "exact",
+				torrent: torrent,
+				score:   0, // Best score
+				method:  "exact",
 			})
 			continue
 		}
-		
+
 		// Method 2: Normalized match (handles dots, underscores, etc)
 		nameNormalized := normalizeForSearch(torrent.Name)
 		categoryNormalized := normalizeForSearch(torrent.Category)
 		tagsNormalized := normalizeForSearch(torrent.Tags)
-		
+
 		if strings.Contains(nameNormalized, searchNormalized) ||
-		   strings.Contains(categoryNormalized, searchNormalized) ||
-		   strings.Contains(tagsNormalized, searchNormalized) {
+			strings.Contains(categoryNormalized, searchNormalized) ||
+			strings.Contains(tagsNormalized, searchNormalized) {
 			matches = append(matches, torrentMatch{
 				torrent: torrent,
-				score: 1,
-				method: "normalized",
+				score:   1,
+				method:  "normalized",
 			})
 			continue
 		}
-		
+
 		// Method 3: All words present (for multi-word searches)
 		if len(searchWords) > 1 {
 			allFieldsNormalized := fmt.Sprintf("%s %s %s", nameNormalized, categoryNormalized, tagsNormalized)
@@ -714,13 +714,13 @@ func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search str
 			if allWordsFound {
 				matches = append(matches, torrentMatch{
 					torrent: torrent,
-					score: 2,
-					method: "all-words",
+					score:   2,
+					method:  "all-words",
 				})
 				continue
 			}
 		}
-		
+
 		// Method 4: Fuzzy match only on the normalized name (not the full text)
 		// This prevents matching random letter combinations across the entire text
 		if fuzzy.MatchNormalizedFold(searchNormalized, nameNormalized) {
@@ -729,18 +729,18 @@ func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search str
 			if score < 10 {
 				matches = append(matches, torrentMatch{
 					torrent: torrent,
-					score: 3 + score, // Fuzzy matches start at score 3
-					method: "fuzzy",
+					score:   3 + score, // Fuzzy matches start at score 3
+					method:  "fuzzy",
 				})
 			}
 		}
 	}
-	
+
 	// Sort by score (lower is better)
 	sort.Slice(matches, func(i, j int) bool {
 		return matches[i].score < matches[j].score
 	})
-	
+
 	// Extract just the torrents
 	filtered := make([]qbt.Torrent, len(matches))
 	for i, match := range matches {
@@ -753,7 +753,7 @@ func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search str
 				Msg("Search match")
 		}
 	}
-	
+
 	log.Debug().
 		Str("search", search).
 		Int("totalTorrents", len(torrents)).
@@ -766,13 +766,13 @@ func (sm *SyncManager) filterTorrentsBySearch(torrents []qbt.Torrent, search str
 // filterTorrentsByGlob filters torrents using glob pattern matching
 func (sm *SyncManager) filterTorrentsByGlob(torrents []qbt.Torrent, pattern string) []qbt.Torrent {
 	var filtered []qbt.Torrent
-	
+
 	// Convert to lowercase for case-insensitive matching
 	patternLower := strings.ToLower(pattern)
-	
+
 	for _, torrent := range torrents {
 		nameLower := strings.ToLower(torrent.Name)
-		
+
 		// Try to match the pattern against the torrent name
 		matched, err := filepath.Match(patternLower, nameLower)
 		if err != nil {
@@ -783,12 +783,12 @@ func (sm *SyncManager) filterTorrentsByGlob(torrents []qbt.Torrent, pattern stri
 				Msg("Invalid glob pattern")
 			continue
 		}
-		
+
 		if matched {
 			filtered = append(filtered, torrent)
 			continue
 		}
-		
+
 		// Also try matching against category and tags
 		if torrent.Category != "" {
 			categoryLower := strings.ToLower(torrent.Category)
@@ -797,7 +797,7 @@ func (sm *SyncManager) filterTorrentsByGlob(torrents []qbt.Torrent, pattern stri
 				continue
 			}
 		}
-		
+
 		if torrent.Tags != "" {
 			tagsLower := strings.ToLower(torrent.Tags)
 			// For tags, try matching against individual tags
@@ -810,13 +810,13 @@ func (sm *SyncManager) filterTorrentsByGlob(torrents []qbt.Torrent, pattern stri
 			}
 		}
 	}
-	
+
 	log.Debug().
 		Str("pattern", pattern).
 		Int("totalTorrents", len(torrents)).
 		Int("matchedTorrents", len(filtered)).
 		Msg("Glob pattern search completed")
-		
+
 	return filtered
 }
 

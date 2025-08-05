@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/autobrr/qbitweb/internal/models"
 	"github.com/dgraph-io/ristretto"
 	"github.com/panjf2000/ants/v2"
 	"github.com/rs/zerolog/log"
-	"github.com/s0up4200/qbitweb/internal/models"
 )
 
 var (
@@ -70,7 +70,7 @@ func (cp *ClientPool) GetClient(instanceID int) (*Client, error) {
 		cp.mu.RUnlock()
 		return nil, ErrPoolClosed
 	}
-	
+
 	client, exists := cp.clients[instanceID]
 	cp.mu.RUnlock()
 
@@ -168,12 +168,12 @@ func (cp *ClientPool) performHealthChecks() {
 
 			if err := client.HealthCheck(ctx); err != nil {
 				log.Warn().Err(err).Int("instanceID", instanceID).Msg("Health check failed")
-				
+
 				// Mark as inactive in database
 				if err := cp.instanceStore.UpdateActive(instanceID, false); err != nil {
 					log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to update inactive status")
 				}
-				
+
 				// Try to recreate the client
 				if _, err := cp.createClient(instanceID); err != nil {
 					log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to recreate client")
