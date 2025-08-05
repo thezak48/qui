@@ -9,6 +9,8 @@ A fast, modern web interface for qBittorrent designed for personal use. Manage m
 - **Fast & Responsive**: Optimized for performance with large torrent collections
 - **Real-time Updates**: Live torrent progress and status updates
 - **Clean Interface**: Modern UI built with React and shadcn/ui components
+- **Multiple Themes**: Choose from various color themes
+- **Base URL Support**: Serve from a subdirectory (e.g., `/qui/`) for reverse proxy setups
 
 ## Installation
 
@@ -43,12 +45,13 @@ Configuration is stored in `config.toml` (created on first run). You can also us
 # Server
 QUI__HOST=0.0.0.0        # Listen address
 QUI__PORT=8080           # Port number
+QUI__BASE_URL=/qui/      # Optional: serve from subdirectory
 
 # Security
 QUI__SESSION_SECRET=...  # Auto-generated if not set
 
-# Paths
-QUI__DATABASE_PATH=./data/qui.db  # Database location
+# Logging
+QUI__LOG_LEVEL=INFO      # Options: ERROR, DEBUG, INFO, WARN, TRACE
 ```
 
 ## Docker
@@ -60,8 +63,39 @@ docker compose up -d
 # Or standalone
 docker run -d \
   -p 8080:8080 \
-  -v $(pwd)/data:/data \
+  -v $(pwd)/config:/config \
   ghcr.io/autobrr/qui:latest
+```
+
+## Base URL Configuration
+
+If you need to serve qui from a subdirectory (e.g., `https://example.com/qui/`), you can configure the base URL:
+
+### Using Environment Variable
+```bash
+QUI__BASE_URL=/qui/ ./qui
+```
+
+### Using Configuration File
+Edit your `config.toml`:
+```toml
+baseUrl = "/qui/"
+```
+
+### With Nginx Reverse Proxy
+```nginx
+# Redirect /qui to /qui/ for proper SPA routing
+location = /qui {
+    return 301 /qui/;
+}
+
+location /qui/ {
+    proxy_pass http://localhost:8080/qui/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
 ```
 
 ## Development
