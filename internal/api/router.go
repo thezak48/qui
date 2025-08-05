@@ -123,7 +123,13 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 
 					// Categories and tags
 					r.Get("/categories", torrentsHandler.GetCategories)
+					r.Post("/categories", torrentsHandler.CreateCategory)
+					r.Put("/categories", torrentsHandler.EditCategory)
+					r.Delete("/categories", torrentsHandler.RemoveCategories)
+					
 					r.Get("/tags", torrentsHandler.GetTags)
+					r.Post("/tags", torrentsHandler.CreateTags)
+					r.Delete("/tags", torrentsHandler.DeleteTags)
 				})
 			})
 

@@ -465,6 +465,107 @@ func (h *TorrentsHandler) GetCategories(w http.ResponseWriter, r *http.Request) 
 	RespondJSON(w, http.StatusOK, categories)
 }
 
+// CreateCategory creates a new category
+func (h *TorrentsHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
+	// Get instance ID from URL
+	instanceID, err := strconv.Atoi(chi.URLParam(r, "instanceID"))
+	if err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid instance ID")
+		return
+	}
+
+	var req struct {
+		Name     string `json:"name"`
+		SavePath string `json:"savePath"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.Name == "" {
+		RespondError(w, http.StatusBadRequest, "Category name is required")
+		return
+	}
+
+	if err := h.syncManager.CreateCategory(r.Context(), instanceID, req.Name, req.SavePath); err != nil {
+		log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to create category")
+		RespondError(w, http.StatusInternalServerError, "Failed to create category")
+		return
+	}
+
+	RespondJSON(w, http.StatusCreated, map[string]string{
+		"message": "Category created successfully",
+	})
+}
+
+// EditCategory edits an existing category
+func (h *TorrentsHandler) EditCategory(w http.ResponseWriter, r *http.Request) {
+	// Get instance ID from URL
+	instanceID, err := strconv.Atoi(chi.URLParam(r, "instanceID"))
+	if err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid instance ID")
+		return
+	}
+
+	var req struct {
+		Name     string `json:"name"`
+		SavePath string `json:"savePath"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.Name == "" {
+		RespondError(w, http.StatusBadRequest, "Category name is required")
+		return
+	}
+
+	if err := h.syncManager.EditCategory(r.Context(), instanceID, req.Name, req.SavePath); err != nil {
+		log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to edit category")
+		RespondError(w, http.StatusInternalServerError, "Failed to edit category")
+		return
+	}
+
+	RespondJSON(w, http.StatusOK, map[string]string{
+		"message": "Category updated successfully",
+	})
+}
+
+// RemoveCategories removes categories
+func (h *TorrentsHandler) RemoveCategories(w http.ResponseWriter, r *http.Request) {
+	// Get instance ID from URL
+	instanceID, err := strconv.Atoi(chi.URLParam(r, "instanceID"))
+	if err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid instance ID")
+		return
+	}
+
+	var req struct {
+		Categories []string `json:"categories"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if len(req.Categories) == 0 {
+		RespondError(w, http.StatusBadRequest, "No categories provided")
+		return
+	}
+
+	if err := h.syncManager.RemoveCategories(r.Context(), instanceID, req.Categories); err != nil {
+		log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to remove categories")
+		RespondError(w, http.StatusInternalServerError, "Failed to remove categories")
+		return
+	}
+
+	RespondJSON(w, http.StatusOK, map[string]string{
+		"message": "Categories removed successfully",
+	})
+}
+
 // GetTags returns all tags
 func (h *TorrentsHandler) GetTags(w http.ResponseWriter, r *http.Request) {
 	// Get instance ID from URL
@@ -483,6 +584,72 @@ func (h *TorrentsHandler) GetTags(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondJSON(w, http.StatusOK, tags)
+}
+
+// CreateTags creates new tags
+func (h *TorrentsHandler) CreateTags(w http.ResponseWriter, r *http.Request) {
+	// Get instance ID from URL
+	instanceID, err := strconv.Atoi(chi.URLParam(r, "instanceID"))
+	if err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid instance ID")
+		return
+	}
+
+	var req struct {
+		Tags []string `json:"tags"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if len(req.Tags) == 0 {
+		RespondError(w, http.StatusBadRequest, "No tags provided")
+		return
+	}
+
+	if err := h.syncManager.CreateTags(r.Context(), instanceID, req.Tags); err != nil {
+		log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to create tags")
+		RespondError(w, http.StatusInternalServerError, "Failed to create tags")
+		return
+	}
+
+	RespondJSON(w, http.StatusCreated, map[string]string{
+		"message": "Tags created successfully",
+	})
+}
+
+// DeleteTags deletes tags
+func (h *TorrentsHandler) DeleteTags(w http.ResponseWriter, r *http.Request) {
+	// Get instance ID from URL
+	instanceID, err := strconv.Atoi(chi.URLParam(r, "instanceID"))
+	if err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid instance ID")
+		return
+	}
+
+	var req struct {
+		Tags []string `json:"tags"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if len(req.Tags) == 0 {
+		RespondError(w, http.StatusBadRequest, "No tags provided")
+		return
+	}
+
+	if err := h.syncManager.DeleteTags(r.Context(), instanceID, req.Tags); err != nil {
+		log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to delete tags")
+		RespondError(w, http.StatusInternalServerError, "Failed to delete tags")
+		return
+	}
+
+	RespondJSON(w, http.StatusOK, map[string]string{
+		"message": "Tags deleted successfully",
+	})
 }
 
 // GetTorrentProperties returns detailed properties for a specific torrent

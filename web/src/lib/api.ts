@@ -251,8 +251,43 @@ class ApiClient {
     return this.request(`/instances/${instanceId}/categories`)
   }
 
+  async createCategory(instanceId: number, name: string, savePath?: string): Promise<{ message: string }> {
+    return this.request(`/instances/${instanceId}/categories`, {
+      method: 'POST',
+      body: JSON.stringify({ name, savePath: savePath || '' }),
+    })
+  }
+
+  async editCategory(instanceId: number, name: string, savePath: string): Promise<{ message: string }> {
+    return this.request(`/instances/${instanceId}/categories`, {
+      method: 'PUT',
+      body: JSON.stringify({ name, savePath }),
+    })
+  }
+
+  async removeCategories(instanceId: number, categories: string[]): Promise<{ message: string }> {
+    return this.request(`/instances/${instanceId}/categories`, {
+      method: 'DELETE',
+      body: JSON.stringify({ categories }),
+    })
+  }
+
   async getTags(instanceId: number): Promise<string[]> {
     return this.request(`/instances/${instanceId}/tags`)
+  }
+
+  async createTags(instanceId: number, tags: string[]): Promise<{ message: string }> {
+    return this.request(`/instances/${instanceId}/tags`, {
+      method: 'POST',
+      body: JSON.stringify({ tags }),
+    })
+  }
+
+  async deleteTags(instanceId: number, tags: string[]): Promise<{ message: string }> {
+    return this.request(`/instances/${instanceId}/tags`, {
+      method: 'DELETE',
+      body: JSON.stringify({ tags }),
+    })
   }
 
   // User endpoints

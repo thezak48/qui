@@ -1053,3 +1053,53 @@ func (sm *SyncManager) SetCategory(ctx context.Context, instanceID int, hashes [
 
 	return client.Client.SetCategoryCtx(ctx, hashes, category)
 }
+
+// CreateTags creates new tags
+func (sm *SyncManager) CreateTags(ctx context.Context, instanceID int, tags []string) error {
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get client: %w", err)
+	}
+
+	return client.Client.CreateTagsCtx(ctx, tags)
+}
+
+// DeleteTags deletes tags
+func (sm *SyncManager) DeleteTags(ctx context.Context, instanceID int, tags []string) error {
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get client: %w", err)
+	}
+
+	return client.Client.DeleteTagsCtx(ctx, tags)
+}
+
+// CreateCategory creates a new category
+func (sm *SyncManager) CreateCategory(ctx context.Context, instanceID int, name string, path string) error {
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get client: %w", err)
+	}
+
+	return client.Client.CreateCategoryCtx(ctx, name, path)
+}
+
+// EditCategory edits an existing category
+func (sm *SyncManager) EditCategory(ctx context.Context, instanceID int, name string, path string) error {
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get client: %w", err)
+	}
+
+	return client.Client.EditCategoryCtx(ctx, name, path)
+}
+
+// RemoveCategories removes categories
+func (sm *SyncManager) RemoveCategories(ctx context.Context, instanceID int, categories []string) error {
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get client: %w", err)
+	}
+
+	return client.Client.RemoveCategoriesCtx(ctx, categories)
+}

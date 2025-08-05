@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Accordion,
@@ -8,6 +9,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import { usePersistedAccordion } from '@/hooks/usePersistedAccordion'
 import { api } from '@/lib/api'
 import {
@@ -20,8 +28,18 @@ import {
   StopCircle,
   AlertCircle,
   XCircle,
+  Plus,
+  Edit,
+  Trash2,
   type LucideIcon,
 } from 'lucide-react'
+import {
+  CreateTagDialog,
+  DeleteTagDialog,
+  CreateCategoryDialog,
+  EditCategoryDialog,
+  DeleteCategoryDialog,
+} from './TagCategoryManagement'
 
 interface FilterSidebarProps {
   instanceId: number
@@ -64,6 +82,17 @@ export function FilterSidebar({
 }: FilterSidebarProps) {
   // Persist accordion state
   const [expandedItems, setExpandedItems] = usePersistedAccordion(instanceId)
+  
+  // Dialog states
+  const [showCreateTagDialog, setShowCreateTagDialog] = useState(false)
+  const [showDeleteTagDialog, setShowDeleteTagDialog] = useState(false)
+  const [tagToDelete, setTagToDelete] = useState('')
+  
+  const [showCreateCategoryDialog, setShowCreateCategoryDialog] = useState(false)
+  const [showEditCategoryDialog, setShowEditCategoryDialog] = useState(false)
+  const [showDeleteCategoryDialog, setShowDeleteCategoryDialog] = useState(false)
+  const [categoryToEdit, setCategoryToEdit] = useState<{ name: string; savePath: string } | null>(null)
+  const [categoryToDelete, setCategoryToDelete] = useState('')
 
   // Fetch categories
   const { data: categories = {} } = useQuery({
@@ -204,6 +233,15 @@ export function FilterSidebar({
               </AccordionTrigger>
               <AccordionContent className="px-3 pb-2">
                 <div className="space-y-1">
+                  {/* Add new category button */}
+                  <button
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 px-2 w-full cursor-pointer"
+                    onClick={() => setShowCreateCategoryDialog(true)}
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add category
+                  </button>
+                  
                   {/* Uncategorized option */}
                   <label className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer">
                     <Checkbox
@@ -220,22 +258,45 @@ export function FilterSidebar({
                   </label>
                   
                   {/* Category list */}
-                  {Object.entries(categories).map(([name]) => (
-                    <label
-                      key={name}
-                      className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={selectedFilters.categories.includes(name)}
-                        onCheckedChange={() => handleCategoryToggle(name)}
-                      />
-                      <span className="text-sm flex-1 truncate" title={name}>
-                        {name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {torrentCounts[`category:${name}`] || 0}
-                      </span>
-                    </label>
+                  {Object.entries(categories).map(([name, category]) => (
+                    <ContextMenu key={name}>
+                      <ContextMenuTrigger asChild>
+                        <label className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer">
+                          <Checkbox
+                            checked={selectedFilters.categories.includes(name)}
+                            onCheckedChange={() => handleCategoryToggle(name)}
+                          />
+                          <span className="text-sm flex-1 truncate" title={name}>
+                            {name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {torrentCounts[`category:${name}`] || 0}
+                          </span>
+                        </label>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem
+                          onClick={() => {
+                            setCategoryToEdit({ name, savePath: category.savePath })
+                            setShowEditCategoryDialog(true)
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit Category
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem
+                          onClick={() => {
+                            setCategoryToDelete(name)
+                            setShowDeleteCategoryDialog(true)
+                          }}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Category
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   ))}
                 </div>
               </AccordionContent>
@@ -255,6 +316,15 @@ export function FilterSidebar({
               </AccordionTrigger>
               <AccordionContent className="px-3 pb-2">
                 <div className="space-y-1">
+                  {/* Add new tag button */}
+                  <button
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 px-2 w-full cursor-pointer"
+                    onClick={() => setShowCreateTagDialog(true)}
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add tag
+                  </button>
+                  
                   {/* Untagged option */}
                   <label className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer">
                     <Checkbox
@@ -272,21 +342,34 @@ export function FilterSidebar({
                   
                   {/* Tag list */}
                   {tags.map((tag) => (
-                    <label
-                      key={tag}
-                      className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={selectedFilters.tags.includes(tag)}
-                        onCheckedChange={() => handleTagToggle(tag)}
-                      />
-                      <span className="text-sm flex-1 truncate" title={tag}>
-                        {tag}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {torrentCounts[`tag:${tag}`] || 0}
-                      </span>
-                    </label>
+                    <ContextMenu key={tag}>
+                      <ContextMenuTrigger asChild>
+                        <label className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer">
+                          <Checkbox
+                            checked={selectedFilters.tags.includes(tag)}
+                            onCheckedChange={() => handleTagToggle(tag)}
+                          />
+                          <span className="text-sm flex-1 truncate" title={tag}>
+                            {tag}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {torrentCounts[`tag:${tag}`] || 0}
+                          </span>
+                        </label>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem
+                          onClick={() => {
+                            setTagToDelete(tag)
+                            setShowDeleteTagDialog(true)
+                          }}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Tag
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   ))}
                 </div>
               </AccordionContent>
@@ -305,6 +388,42 @@ export function FilterSidebar({
           </Accordion>
         </div>
       </ScrollArea>
+      
+      {/* Dialogs */}
+      <CreateTagDialog
+        open={showCreateTagDialog}
+        onOpenChange={setShowCreateTagDialog}
+        instanceId={instanceId}
+      />
+      
+      <DeleteTagDialog
+        open={showDeleteTagDialog}
+        onOpenChange={setShowDeleteTagDialog}
+        instanceId={instanceId}
+        tag={tagToDelete}
+      />
+      
+      <CreateCategoryDialog
+        open={showCreateCategoryDialog}
+        onOpenChange={setShowCreateCategoryDialog}
+        instanceId={instanceId}
+      />
+      
+      {categoryToEdit && (
+        <EditCategoryDialog
+          open={showEditCategoryDialog}
+          onOpenChange={setShowEditCategoryDialog}
+          instanceId={instanceId}
+          category={categoryToEdit}
+        />
+      )}
+      
+      <DeleteCategoryDialog
+        open={showDeleteCategoryDialog}
+        onOpenChange={setShowDeleteCategoryDialog}
+        instanceId={instanceId}
+        categoryName={categoryToDelete}
+      />
     </div>
   )
 }
