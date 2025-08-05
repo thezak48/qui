@@ -228,13 +228,15 @@ const columns: ColumnDef<Torrent>[] = [
       let colorVar = ''
       if (ratio >= 0) {
         if (ratio < 0.5) {
-          colorVar = 'var(--ratio-bad)'
+          colorVar = 'var(--chart-5)' // very bad - lowest/darkest
         } else if (ratio < 1.0) {
-          colorVar = 'var(--ratio-almost)'
+          colorVar = 'var(--chart-4)' // bad - below 1.0
+        } else if (ratio < 2.0) {
+          colorVar = 'var(--chart-3)' // okay - above 1.0
         } else if (ratio < 5.0) {
-          colorVar = 'var(--ratio-good)'
+          colorVar = 'var(--chart-2)' // good - healthy ratio
         } else {
-          colorVar = 'var(--ratio-best)'
+          colorVar = 'var(--chart-1)' // excellent - best ratio
         }
       }
       
