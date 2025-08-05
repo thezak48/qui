@@ -39,6 +39,7 @@ import {
   CreateCategoryDialog,
   EditCategoryDialog,
   DeleteCategoryDialog,
+  DeleteUnusedTagsDialog,
 } from './TagCategoryManagement'
 
 interface FilterSidebarProps {
@@ -86,6 +87,7 @@ export function FilterSidebar({
   // Dialog states
   const [showCreateTagDialog, setShowCreateTagDialog] = useState(false)
   const [showDeleteTagDialog, setShowDeleteTagDialog] = useState(false)
+  const [showDeleteUnusedTagsDialog, setShowDeleteUnusedTagsDialog] = useState(false)
   const [tagToDelete, setTagToDelete] = useState('')
   
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] = useState(false)
@@ -368,6 +370,14 @@ export function FilterSidebar({
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete Tag
                         </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem
+                          onClick={() => setShowDeleteUnusedTagsDialog(true)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete All Unused Tags
+                        </ContextMenuItem>
                       </ContextMenuContent>
                     </ContextMenu>
                   ))}
@@ -423,6 +433,14 @@ export function FilterSidebar({
         onOpenChange={setShowDeleteCategoryDialog}
         instanceId={instanceId}
         categoryName={categoryToDelete}
+      />
+      
+      <DeleteUnusedTagsDialog
+        open={showDeleteUnusedTagsDialog}
+        onOpenChange={setShowDeleteUnusedTagsDialog}
+        instanceId={instanceId}
+        tags={tags}
+        torrentCounts={torrentCounts}
       />
     </div>
   )
