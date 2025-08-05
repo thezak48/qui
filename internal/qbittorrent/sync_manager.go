@@ -3,6 +3,7 @@ package qbittorrent
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -881,8 +882,29 @@ func (sm *SyncManager) applyFilters(torrents []qbt.Torrent, filters FilterOption
 			}
 		}
 
-		// Note: Tracker filtering would require additional API calls for each torrent
-		// which is expensive. Consider implementing this differently if needed.
+		// Check tracker filter
+		if len(filters.Trackers) > 0 {
+			trackerMatch := false
+			for _, filterTracker := range filters.Trackers {
+				if filterTracker == "" && torrent.Tracker == "" {
+					// Handle "No tracker" filter
+					trackerMatch = true
+					break
+				}
+				if torrent.Tracker != "" {
+					// Extract hostname from tracker URL for comparison
+					if trackerURL, err := url.Parse(torrent.Tracker); err == nil {
+						if trackerURL.Hostname() == filterTracker {
+							trackerMatch = true
+							break
+						}
+					}
+				}
+			}
+			if !trackerMatch {
+				continue
+			}
+		}
 
 		filtered = append(filtered, torrent)
 	}

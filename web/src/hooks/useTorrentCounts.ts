@@ -107,6 +107,31 @@ export function useTorrentCounts({ torrents, allCategories = {}, allTags = [] }:
       counts[`tag:${tag}`] = count
     })
 
+    // Tracker counts
+    const trackerMap = new Map<string, number>()
+    
+    // Count actual torrents by tracker hostname
+    torrents.forEach(torrent => {
+      if (!torrent.tracker || torrent.tracker === '') {
+        // Count trackerless torrents
+        trackerMap.set('', (trackerMap.get('') || 0) + 1)
+      } else {
+        try {
+          // Extract hostname from tracker URL
+          const url = new URL(torrent.tracker)
+          const hostname = url.hostname
+          trackerMap.set(hostname, (trackerMap.get(hostname) || 0) + 1)
+        } catch {
+          // If tracker URL is invalid, count as unknown
+          trackerMap.set('Unknown', (trackerMap.get('Unknown') || 0) + 1)
+        }
+      }
+    })
+    
+    trackerMap.forEach((count, tracker) => {
+      counts[`tracker:${tracker}`] = count
+    })
+
     // Debug logging
     console.log('useTorrentCounts debug:', {
       torrentCount: torrents.length,

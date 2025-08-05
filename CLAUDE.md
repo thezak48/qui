@@ -272,3 +272,44 @@ This approach ensures:
 2. Backend cache is cleared immediately
 3. Frontend waits for qBittorrent to process changes
 4. Next API call gets fresh data with updated torrent states
+
+## Cache Architecture and qBittorrent Protection
+
+### Cache Implementation
+The backend uses **Ristretto** high-performance cache to prevent overwhelming qBittorrent instances:
+
+- **Cache Capacity**: 1GB memory, 10M counters
+- **Shared Cache**: Single cache serves all qBittorrent instances
+- **Metrics Available**: Hit/miss ratios exposed for monitoring via pool stats
+
+### Cache TTL Strategy
+Different data types have optimized TTL values:
+
+- **Torrent Lists**: 2-second TTL (main torrent data for responsiveness)
+- **Categories/Tags**: 60-second TTL (metadata rarely changes)  
+- **Torrent Properties**: 30-second TTL (individual torrent details)
+- **Filtered Results**: 5-second TTL (search/filter combinations)
+- **Torrent Files/Trackers**: 30-second TTL (detailed torrent data)
+
+### Cache Key Structure
+Every API endpoint uses specific cache keys to prevent collisions:
+```
+torrents:filtered:{instanceId}:{offset}:{limit}:{sort}:{order}:{search}:{filters}
+categories:{instanceId}
+tags:{instanceId}
+torrent:properties:{instanceId}:{hash}
+torrent:trackers:{instanceId}:{hash}
+```
+
+### Protection Mechanisms
+1. **Respectful Polling**: Frontend React Query polls every 5 seconds (not aggressive)
+2. **Cache-First**: Backend checks cache before qBittorrent API calls
+3. **Coordinated Invalidation**: Cache cleared immediately after user actions
+4. **Batch Operations**: Multiple requests coalesced where possible
+5. **Health Monitoring**: Instance connections health-checked every 30 seconds
+
+### Monitoring Cache Performance
+Cache metrics are exposed in the client pool stats:
+- `cache_hits`: Number of successful cache lookups
+- `cache_misses`: Number of cache misses requiring qBittorrent API calls
+- Monitor these to ensure qBittorrent instances aren't being overwhelmed

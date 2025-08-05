@@ -110,8 +110,6 @@ export function FilterSidebar({
     staleTime: 60000, // 1 minute
   })
 
-  // For now, we'll skip trackers since the backend doesn't support it yet
-  // We can add it later when backend support is added
 
   const handleStatusToggle = (status: string) => {
     const newStatus = selectedFilters.status.includes(status)
@@ -145,6 +143,24 @@ export function FilterSidebar({
       tags: newTags,
     })
   }
+
+  const handleTrackerToggle = (tracker: string) => {
+    const newTrackers = selectedFilters.trackers.includes(tracker)
+      ? selectedFilters.trackers.filter(t => t !== tracker)
+      : [...selectedFilters.trackers, tracker]
+    
+    onFilterChange({
+      ...selectedFilters,
+      trackers: newTrackers,
+    })
+  }
+
+  // Extract unique trackers from torrentCounts
+  const trackers = Object.keys(torrentCounts)
+    .filter(key => key.startsWith('tracker:'))
+    .map(key => key.replace('tracker:', ''))
+    .filter(tracker => torrentCounts[`tracker:${tracker}`] > 0)
+    .sort()
 
   const clearFilters = () => {
     onFilterChange({
@@ -385,16 +401,56 @@ export function FilterSidebar({
               </AccordionContent>
             </AccordionItem>
 
-            {/* Trackers Filter - Placeholder for future implementation */}
-            {/* <AccordionItem value="trackers" className="border rounded-lg px-3">
-              <AccordionTrigger className="py-2 hover:no-underline" disabled>
+            {/* Trackers Filter */}
+            <AccordionItem value="trackers" className="border rounded-lg">
+              <AccordionTrigger className="px-3 py-2 hover:no-underline">
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Trackers (Coming Soon)
-                  </span>
+                  <span className="text-sm font-medium">Trackers</span>
+                  {selectedFilters.trackers.length > 0 && (
+                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                      {selectedFilters.trackers.length}
+                    </Badge>
+                  )}
                 </div>
               </AccordionTrigger>
-            </AccordionItem> */}
+              <AccordionContent className="px-3 pb-2">
+                <div className="space-y-1">
+                  {/* No tracker option */}
+                  <label className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer">
+                    <Checkbox
+                      checked={selectedFilters.trackers.includes('')}
+                      onCheckedChange={() => handleTrackerToggle('')}
+                      className="rounded border-input"
+                    />
+                    <span className="text-sm flex-1 italic text-muted-foreground">
+                      No tracker
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {torrentCounts['tracker:'] || 0}
+                    </span>
+                  </label>
+                  
+                  {/* Tracker list */}
+                  {trackers.filter(tracker => tracker !== '').map((tracker) => (
+                    <label 
+                      key={tracker} 
+                      className="flex items-center space-x-2 py-1 px-2 hover:bg-muted rounded cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedFilters.trackers.includes(tracker)}
+                        onCheckedChange={() => handleTrackerToggle(tracker)}
+                      />
+                      <span className="text-sm flex-1 truncate" title={tracker}>
+                        {tracker}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {torrentCounts[`tracker:${tracker}`] || 0}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </div>
       </ScrollArea>
