@@ -13,15 +13,15 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
-	"github.com/autobrr/qbitweb/internal/api"
-	"github.com/autobrr/qbitweb/internal/auth"
-	"github.com/autobrr/qbitweb/internal/config"
-	"github.com/autobrr/qbitweb/internal/database"
-	"github.com/autobrr/qbitweb/internal/models"
-	"github.com/autobrr/qbitweb/internal/polar"
-	"github.com/autobrr/qbitweb/internal/qbittorrent"
-	"github.com/autobrr/qbitweb/internal/services"
-	"github.com/autobrr/qbitweb/internal/web"
+	"github.com/autobrr/qui/internal/api"
+	"github.com/autobrr/qui/internal/auth"
+	"github.com/autobrr/qui/internal/config"
+	"github.com/autobrr/qui/internal/database"
+	"github.com/autobrr/qui/internal/models"
+	"github.com/autobrr/qui/internal/polar"
+	"github.com/autobrr/qui/internal/qbittorrent"
+	"github.com/autobrr/qui/internal/services"
+	"github.com/autobrr/qui/internal/web"
 )
 
 var (
@@ -35,7 +35,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "qbitweb",
+	Use:   "qui",
 	Short: "A self-hosted qBittorrent WebUI alternative",
 	Long: `qBittorrent WebUI - A modern, self-hosted web interface for managing 
 multiple qBittorrent instances with support for 10k+ torrents.`,
@@ -47,7 +47,7 @@ multiple qBittorrent instances with support for 10k+ torrents.`,
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.qbitweb/config.toml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.qui/config.toml)")
 	rootCmd.Version = Version
 }
 

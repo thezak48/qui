@@ -5,7 +5,7 @@ before:
     - go mod tidy
 
 builds:
-  - id: qbitweb
+  - id: qui
     env:
       - CGO_ENABLED=0
     flags:
@@ -44,12 +44,12 @@ builds:
       - goos: freebsd
         goarch: arm64
     main: ./cmd/server
-    binary: qbitweb
+    binary: qui
 
 archives:
-  - id: qbitweb-archive
+  - id: qui-archive
     builds:
-      - qbitweb
+      - qui
     format_overrides:
       - goos: windows
         format: zip
@@ -68,14 +68,14 @@ release:
   prerelease: auto
   mode: replace
   header: |
-    ## qBitWeb {{ .Tag }}
+    ## qui {{ .Tag }}
     
     🎨 **Premium Theme Access Available**
     One-time purchase unlocks ALL premium themes forever! Visit [our store](https://buy.polar.sh/polar_cl_yyXJesVM9pFVfAPIplspbfCukgVgXzXjXIc2N0I8WcL) for Premium Access.
     
     ## How to Get Premium Themes
     1. Purchase "Premium Access" at: https://buy.polar.sh/polar_cl_yyXJesVM9pFVfAPIplspbfCukgVgXzXjXIc2N0I8WcL ($9.99)
-    2. Open qBitWeb → Settings → Themes  
+    2. Open qui → Settings → Themes  
     3. Enter your license key and unlock ALL themes forever!
     
     ## Installation
@@ -85,27 +85,27 @@ release:
     
     ## What's New in This Release
     
-    **Full Changelog**: https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qbitweb/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qui/compare/{{ .PreviousTag }}...{{ .Tag }}
 
     ## 🐳 Docker images
 
-    - `docker pull ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qbitweb:{{ .Tag }}`
-    - `docker pull ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qbitweb:latest`
+    - `docker pull ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qui:{{ .Tag }}`
+    - `docker pull ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qui:latest`
 
     ## 📚 Resources
 
-    - [GitHub Issues](https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qbitweb/issues)
-    - [GitHub Discussions](https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qbitweb/discussions)
+    - [GitHub Issues](https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qui/issues)
+    - [GitHub Discussions](https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qui/discussions)
     
     ## 💝 Support the project
     
-    If you enjoy qBitWeb, consider:
+    If you enjoy qui, consider:
     - ⭐ **Star this repo** - It helps with visibility
     - 🎨 **Buy premium themes** - Directly supports development  
     - 🐛 **Report bugs** - Help us improve
-    - 💡 **Request features** - Shape the future of qBitWeb
+    - 💡 **Request features** - Shape the future of qui
     
-    Thank you for using qBitWeb!
+    Thank you for using qui!
 
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
@@ -142,11 +142,11 @@ changelog:
       order: 999
 
 nfpms:
-  - id: qbitweb-nfpm
-    package_name: qbitweb
-    vendor: qBitWeb Team
-    homepage: https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qbitweb
-    maintainer: qBitWeb Team <support@qbitweb.com>
+  - id: qui-nfpm
+    package_name: qui
+    vendor: qui Team
+    homepage: https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/qui
+    maintainer: qui Team <support@qui.com>
     description: |-
       A modern, self-hosted qBittorrent WebUI alternative with premium themes.
       Support for 10k+ torrents with virtual scrolling and real-time updates.
@@ -162,7 +162,7 @@ nfpms:
     meta: true
     contents:
       - src: ./README.md
-        dst: /usr/share/doc/qbitweb/README.md
+        dst: /usr/share/doc/qui/README.md
     # scripts:
     #   postinstall: scripts/postinstall.sh
 

@@ -185,7 +185,7 @@ jobs:
       - name: Upload assets
         uses: actions/upload-artifact@v4
         with:
-          name: qbitweb
+          name: qui
           path: |
             dist/*.tar.gz
             dist/*.zip

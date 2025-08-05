@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/autobrr/qbitweb/internal/database"
-	"github.com/autobrr/qbitweb/internal/models"
-	"github.com/autobrr/qbitweb/internal/polar"
 	"github.com/rs/zerolog/log"
+
+	"github.com/autobrr/qui/internal/database"
+	"github.com/autobrr/qui/internal/models"
+	"github.com/autobrr/qui/internal/polar"
 )
 
 // ThemeLicenseService handles theme license operations
@@ -177,7 +178,6 @@ func (s *ThemeLicenseService) hasPremiumAccess(ctx context.Context) (bool, error
 
 	return count > 0, nil
 }
-
 
 // RefreshAllLicenses validates all stored licenses against Polar API
 func (s *ThemeLicenseService) RefreshAllLicenses(ctx context.Context) error {

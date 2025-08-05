@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/autobrr/qbitweb/internal/auth"
+	"github.com/autobrr/qui/internal/auth"
 	"github.com/rs/zerolog/log"
 )
 

@@ -55,5 +55,5 @@ config.toml
 .claude/hooks/*
 ai_docs/*
 output/*
-qbitweb
+qui
 .claude/agents/*

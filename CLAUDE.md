@@ -16,7 +16,7 @@ qBittorrent Alternative WebUI - a self-hosted, single-user web interface for man
 go mod download
 
 # Build backend
-go build -ldflags "-X main.Version=$(git describe --tags --always)" -o qbitweb ./cmd/server
+go build -ldflags "-X main.Version=$(git describe --tags --always)" -o qui ./cmd/server
 
 # Run backend in development
 air -c .air.toml  # Hot reload
@@ -125,12 +125,12 @@ When handling 10k+ torrents:
 
 ## Configuration
 
-Environment variables use `QBITWEB__` prefix:
-- `QBITWEB__HOST` (default: localhost or 0.0.0.0 in containers)
-- `QBITWEB__PORT` (default: 8080)
-- `QBITWEB__SESSION_SECRET` (auto-generated if not set)
-- `QBITWEB__DATABASE_PATH` (default: ./data/qbitweb.db)
-- `QBITWEB__LOG_LEVEL` (ERROR, DEBUG, INFO, WARN, TRACE)
+Environment variables use `qui__` prefix:
+- `qui__HOST` (default: localhost or 0.0.0.0 in containers)
+- `qui__PORT` (default: 8080)
+- `qui__SESSION_SECRET` (auto-generated if not set)
+- `qui__DATABASE_PATH` (default: ./data/qui.db)
+- `qui__LOG_LEVEL` (ERROR, DEBUG, INFO, WARN, TRACE)
 
 Config file: `config.toml` (auto-created on first run)
 

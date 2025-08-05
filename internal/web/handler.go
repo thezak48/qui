@@ -51,7 +51,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	// Serve static assets
 	fileServer := http.FileServer(http.FS(h.fs))
 	r.Handle("/assets/*", fileServer)
-	
+
 	// SPA catch-all route
 	r.Get("/*", h.serveSPA)
 }
@@ -64,13 +64,13 @@ func (h *Handler) serveSPA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-	
+
 	stat, err := file.Stat()
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
-	
+
 	// Serve the file
 	http.ServeContent(w, r, "index.html", stat.ModTime(), file.(io.ReadSeeker))
 }

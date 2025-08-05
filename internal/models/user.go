@@ -31,7 +31,7 @@ func (s *UserStore) Create(username, passwordHash string) (*User, error) {
 		VALUES (1, ?, ?)
 		RETURNING id, username, password_hash, created_at, updated_at
 	`
-	
+
 	user := &User{}
 	err := s.db.QueryRow(query, username, passwordHash).Scan(
 		&user.ID,
@@ -40,7 +40,7 @@ func (s *UserStore) Create(username, passwordHash string) (*User, error) {
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
-	
+
 	if err != nil {
 		if err.Error() == "UNIQUE constraint failed: user.username" {
 			return nil, ErrUserAlreadyExists
@@ -50,7 +50,7 @@ func (s *UserStore) Create(username, passwordHash string) (*User, error) {
 		}
 		return nil, err
 	}
-	
+
 	return user, nil
 }
 
@@ -60,7 +60,7 @@ func (s *UserStore) Get() (*User, error) {
 		FROM user 
 		WHERE id = 1
 	`
-	
+
 	user := &User{}
 	err := s.db.QueryRow(query).Scan(
 		&user.ID,
@@ -69,14 +69,14 @@ func (s *UserStore) Get() (*User, error) {
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, ErrUserNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return user, nil
 }
 
@@ -86,7 +86,7 @@ func (s *UserStore) GetByUsername(username string) (*User, error) {
 		FROM user 
 		WHERE username = ?
 	`
-	
+
 	user := &User{}
 	err := s.db.QueryRow(query, username).Scan(
 		&user.ID,
@@ -95,14 +95,14 @@ func (s *UserStore) GetByUsername(username string) (*User, error) {
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, ErrUserNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return user, nil
 }
 
@@ -112,21 +112,21 @@ func (s *UserStore) UpdatePassword(passwordHash string) error {
 		SET password_hash = ? 
 		WHERE id = 1
 	`
-	
+
 	result, err := s.db.Exec(query, passwordHash)
 	if err != nil {
 		return err
 	}
-	
+
 	rows, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
-	
+
 	if rows == 0 {
 		return ErrUserNotFound
 	}
-	
+
 	return nil
 }
 

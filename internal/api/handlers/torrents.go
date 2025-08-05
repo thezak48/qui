@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	qbt "github.com/autobrr/go-qbittorrent"
-	"github.com/autobrr/qbitweb/internal/qbittorrent"
+	"github.com/autobrr/qui/internal/qbittorrent"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
 )

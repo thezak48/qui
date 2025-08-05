@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	
+
 	"github.com/rs/zerolog/log"
 	_ "modernc.org/sqlite"
 )
@@ -36,7 +36,7 @@ func New(databasePath string) (*DB, error) {
 		conn.Close()
 		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
-	
+
 	if _, err := conn.Exec("PRAGMA journal_mode = WAL"); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("failed to enable WAL mode: %w", err)

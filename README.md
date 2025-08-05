@@ -22,14 +22,14 @@ A modern, self-hosted alternative web interface for qBittorrent designed for per
 
 ```bash
 # Clone the repository
-git clone https://github.com/autobrr/qbitweb.git
-cd qbitweb
+git clone https://github.com/autobrr/qui.git
+cd qui
 
 # Build the application
 make build
 
 # Run the application
-./qbitweb
+./qui
 ```
 
 The application will be available at http://localhost:8080
@@ -39,9 +39,9 @@ The application will be available at http://localhost:8080
 On first run, a `config.toml` file will be created with default settings. You can also use environment variables:
 
 ```bash
-QBITWEB__HOST=0.0.0.0
-QBITWEB__PORT=8080
-QBITWEB__SESSION_SECRET=your-secret-key
+qui__HOST=0.0.0.0
+qui__PORT=8080
+qui__SESSION_SECRET=your-secret-key
 ```
 
 ## Development

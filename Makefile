@@ -8,7 +8,7 @@ endif
 
 # Variables
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-BINARY_NAME = qbitweb
+BINARY_NAME = qui
 BUILD_DIR = build
 WEB_DIR = web
 INTERNAL_WEB_DIR = internal/web

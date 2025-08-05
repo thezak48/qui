@@ -184,7 +184,7 @@ function ApiKeysManager() {
     mutationFn: async (name: string) => {
       // This would call the create API key endpoint
       // For now, return a mock response
-      return { name, key: 'qbitweb_' + Math.random().toString(36).substring(2, 15) }
+      return { name, key: 'qui_' + Math.random().toString(36).substring(2, 15) }
     },
     onSuccess: (data) => {
       setNewKey(data)

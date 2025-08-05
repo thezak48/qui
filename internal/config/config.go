@@ -13,7 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 
-	"github.com/autobrr/qbitweb/internal/domain"
+	"github.com/autobrr/qui/internal/domain"
 )
 
 type AppConfig struct {
@@ -65,7 +65,7 @@ func (c *AppConfig) defaults() {
 	c.viper.SetDefault("sessionSecret", sessionSecret)
 	c.viper.SetDefault("logLevel", "INFO")
 	c.viper.SetDefault("logPath", "")
-	c.viper.SetDefault("databasePath", "./data/qbitweb.db")
+	c.viper.SetDefault("databasePath", "./data/qui.db")
 }
 
 func (c *AppConfig) load(configPath string) error {
@@ -81,8 +81,8 @@ func (c *AppConfig) load(configPath string) error {
 		// Search for config in standard locations
 		c.viper.SetConfigName("config")
 		c.viper.AddConfigPath(".")
-		c.viper.AddConfigPath("$HOME/.config/qbitweb")
-		c.viper.AddConfigPath("$HOME/.qbitweb")
+		c.viper.AddConfigPath("$HOME/.config/qui")
+		c.viper.AddConfigPath("$HOME/.qui")
 
 		// Create default config if doesn't exist
 		if err := c.writeDefaultConfig("config.toml"); err != nil {
@@ -102,7 +102,7 @@ func (c *AppConfig) load(configPath string) error {
 
 func (c *AppConfig) loadFromEnv() {
 	// Enable environment variable support
-	c.viper.SetEnvPrefix("QBITWEB")
+	c.viper.SetEnvPrefix("qui")
 	c.viper.SetEnvKeyReplacer(strings.NewReplacer(".", "__"))
 	c.viper.AutomaticEnv()
 }
@@ -159,23 +159,23 @@ host = "{{ .host }}"
 port = {{ .port }}
 
 # Base URL
-# Set custom baseUrl eg /qbitweb/ to serve in subdirectory.
+# Set custom baseUrl eg /qui/ to serve in subdirectory.
 # Not needed for subdomain, or by accessing with :port directly.
 # Optional
-#baseUrl = "/qbitweb/"
+#baseUrl = "/qui/"
 
 # Session secret
 # Auto-generated if not provided
 sessionSecret = "{{ .sessionSecret }}"
 
 # Database path
-# Default: "./data/qbitweb.db"
+# Default: "./data/qui.db"
 databasePath = "{{ .databasePath }}"
 
 # Log file path
 # If not defined, logs to stdout
 # Optional
-#logPath = "log/qbitweb.log"
+#logPath = "log/qui.log"
 
 # Log level
 # Default: "INFO"

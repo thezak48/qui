@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/autobrr/qbitweb/internal/api/handlers"
-	apimiddleware "github.com/autobrr/qbitweb/internal/api/middleware"
-	"github.com/autobrr/qbitweb/internal/auth"
-	"github.com/autobrr/qbitweb/internal/config"
-	"github.com/autobrr/qbitweb/internal/models"
-	"github.com/autobrr/qbitweb/internal/qbittorrent"
-	"github.com/autobrr/qbitweb/internal/services"
-	"github.com/autobrr/qbitweb/internal/web"
+	"github.com/autobrr/qui/internal/api/handlers"
+	apimiddleware "github.com/autobrr/qui/internal/api/middleware"
+	"github.com/autobrr/qui/internal/auth"
+	"github.com/autobrr/qui/internal/config"
+	"github.com/autobrr/qui/internal/models"
+	"github.com/autobrr/qui/internal/qbittorrent"
+	"github.com/autobrr/qui/internal/services"
+	"github.com/autobrr/qui/internal/web"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -67,7 +67,7 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 		r.Route("/auth", func(r chi.Router) {
 			// Apply rate limiting to auth endpoints
 			r.Use(middleware.ThrottleBacklog(1, 1, time.Second))
-			
+
 			r.Post("/setup", authHandler.Setup)
 			r.Post("/login", authHandler.Login)
 			r.Get("/check-setup", authHandler.CheckSetupRequired)
@@ -126,7 +126,7 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 					r.Post("/categories", torrentsHandler.CreateCategory)
 					r.Put("/categories", torrentsHandler.EditCategory)
 					r.Delete("/categories", torrentsHandler.RemoveCategories)
-					
+
 					r.Get("/tags", torrentsHandler.GetTags)
 					r.Post("/tags", torrentsHandler.CreateTags)
 					r.Delete("/tags", torrentsHandler.DeleteTags)

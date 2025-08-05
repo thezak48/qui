@@ -16,5 +16,5 @@ type Config struct {
 // Publisher credentials (AccessToken, OrganizationID, Environment) are baked into the binary
 type PolarConfig struct {
 	LicenseValidationInterval string `toml:"licenseValidationInterval" mapstructure:"licenseValidationInterval"`
-	OfflineGracePeriod       string `toml:"offlineGracePeriod" mapstructure:"offlineGracePeriod"`
+	OfflineGracePeriod        string `toml:"offlineGracePeriod" mapstructure:"offlineGracePeriod"`
 }

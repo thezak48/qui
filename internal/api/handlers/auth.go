@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/autobrr/qbitweb/internal/auth"
-	"github.com/autobrr/qbitweb/internal/models"
+	"github.com/autobrr/qui/internal/auth"
+	"github.com/autobrr/qui/internal/models"
 	"github.com/gorilla/sessions"
 	"github.com/rs/zerolog/log"
 )
@@ -88,7 +88,7 @@ func (h *AuthHandler) Setup(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	}
-	
+
 	// If behind reverse proxy with HTTPS, upgrade security
 	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
 		session.Options.Secure = true
@@ -147,7 +147,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	}
-	
+
 	// If behind reverse proxy with HTTPS, upgrade security
 	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
 		session.Options.Secure = true

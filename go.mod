@@ -1,4 +1,4 @@
-module github.com/autobrr/qbitweb
+module github.com/autobrr/qui
 
 go 1.24.5
 

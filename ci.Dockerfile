@@ -36,7 +36,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="\
     -X main.PolarAccessToken=${POLAR_ACCESS_TOKEN} \
     -X main.PolarOrgID=${POLAR_ORG_ID} \
     -X main.PolarEnvironment=${POLAR_ENVIRONMENT}" \
-    -o qbitweb ./cmd/server
+    -o qui ./cmd/server
 
 # Final stage
 FROM alpine:3.22
@@ -47,16 +47,16 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 
 # Create non-root user
-RUN addgroup -g 1001 -S qbitweb && \
-    adduser -S -D -H -u 1001 -h /app -s /sbin/nologin -G qbitweb -g qbitweb qbitweb
+RUN addgroup -g 1001 -S qui && \
+    adduser -S -D -H -u 1001 -h /app -s /sbin/nologin -G qui -g qui qui
 
 # Copy binary from build stage
-COPY --from=go-builder /app/qbitweb .
+COPY --from=go-builder /app/qui .
 
 # Create data directory
-RUN mkdir -p /app/data && chown -R qbitweb:qbitweb /app
+RUN mkdir -p /app/data && chown -R qui:qui /app
 
-USER qbitweb
+USER qui
 
 EXPOSE 8080
 
@@ -64,4 +64,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
 
-CMD ["./qbitweb"]
+CMD ["./qui"]

@@ -5,7 +5,7 @@ export function usePersistedColumnVisibility(
   instanceId: number,
   defaultVisibility: VisibilityState = {}
 ) {
-  const storageKey = `qbitweb-column-visibility-${instanceId}`
+  const storageKey = `qui-column-visibility-${instanceId}`
   
   // Initialize state from localStorage or default values
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {

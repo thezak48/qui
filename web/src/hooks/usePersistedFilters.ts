@@ -8,7 +8,7 @@ interface Filters {
 }
 
 export function usePersistedFilters(instanceId: number) {
-  const storageKey = `qbitweb-filters-${instanceId}`
+  const storageKey = `qui-filters-${instanceId}`
   
   // Initialize state from localStorage or default values
   const [filters, setFilters] = useState<Filters>(() => {

@@ -38,7 +38,7 @@ This document outlines the implementation plan for a **self-hosted, single-user*
 #### Backend Setup
 ```bash
 # Initialize Go module
-go mod init github.com/autobrr/qbitweb
+go mod init github.com/autobrr/qui
 
 # Install core dependencies
 go get -u github.com/go-chi/chi/v5
@@ -84,7 +84,7 @@ pnpm dlx shadcn@latest init
 
 #### Project Structure
 ```
-qbitweb/
+qui/
 ├── cmd/
 │   └── server/
 │       └── main.go
@@ -198,7 +198,7 @@ package config
 
 import (
     "github.com/spf13/viper"
-    "github.com/autobrr/qbitweb/internal/domain"
+    "github.com/autobrr/qui/internal/domain"
 )
 
 type AppConfig struct {
@@ -237,8 +237,8 @@ func (c *AppConfig) load(configPath string) error {
     } else {
         c.viper.SetConfigName("config")
         c.viper.AddConfigPath(".")
-        c.viper.AddConfigPath("$HOME/.config/qbitweb")
-        c.viper.AddConfigPath("$HOME/.qbitweb")
+        c.viper.AddConfigPath("$HOME/.config/qui")
+        c.viper.AddConfigPath("$HOME/.qui")
     }
     
     if err := c.viper.ReadInConfig(); err != nil {
@@ -1031,7 +1031,7 @@ frontend:
 	cp -r web/dist internal/web/
 
 backend:
-	go build -ldflags "-X main.Version=$(VERSION)" -o qbitweb ./cmd/server
+	go build -ldflags "-X main.Version=$(VERSION)" -o qui ./cmd/server
 
 dev-backend:
 	air -c .air.toml
@@ -1040,7 +1040,7 @@ dev-frontend:
 	cd web && pnpm dev
 
 clean:
-	rm -rf web/dist internal/web/dist qbitweb
+	rm -rf web/dist internal/web/dist qui
 ```
 
 ### Phase 5: Performance Optimization for 10k+ Torrents (Days 15-16)
@@ -1320,7 +1320,7 @@ The go-qbittorrent library provides excellent support for handling large-scale d
    - Secure session cookies (HttpOnly, Secure, SameSite)
    - Session secret configuration via env/config
    - API keys for programmatic access
-   - Session configuration: `QBITWEB_SESSION_SECRET` or `sessionSecret` in config.toml
+   - Session configuration: `qui_SESSION_SECRET` or `sessionSecret` in config.toml
 
 2. **Data Protection**
    - Encrypt qBittorrent credentials in database
@@ -1335,10 +1335,10 @@ The go-qbittorrent library provides excellent support for handling large-scale d
 ## Configuration
 
 ### Configuration Management (Viper-based)
-Following autobrr's pattern, qbitweb uses Viper for flexible configuration management:
+Following autobrr's pattern, qui uses Viper for flexible configuration management:
 
 1. **Configuration Priority** (highest to lowest):
-   - Environment variables (prefixed with `QBITWEB__`)
+   - Environment variables (prefixed with `qui__`)
    - Configuration file (`config.toml`)
    - Default values in code
 
@@ -1367,7 +1367,7 @@ func (c *AppConfig) defaults() {
         Host:         "localhost",
         Port:         8080,
         LogLevel:     "INFO",
-        DatabasePath: "./data/qbitweb.db",
+        DatabasePath: "./data/qui.db",
         SessionSecret: api.GenerateSecureToken(16),
     }
 }
@@ -1392,21 +1392,21 @@ func detectContainer() bool {
 
 ### Environment Variables
 ```bash
-# All environment variables use QBITWEB__ prefix (double underscore)
+# All environment variables use qui__ prefix (double underscore)
 # Server configuration
-QBITWEB__HOST=0.0.0.0
-QBITWEB__PORT=8080
-QBITWEB__BASE_URL=/
+qui__HOST=0.0.0.0
+qui__PORT=8080
+qui__BASE_URL=/
 
 # Session secret (auto-generated if not set)
-QBITWEB__SESSION_SECRET=your-secret-key-here
+qui__SESSION_SECRET=your-secret-key-here
 
 # Database
-QBITWEB__DATABASE_PATH=/path/to/qbitweb.db
+qui__DATABASE_PATH=/path/to/qui.db
 
 # Logging
-QBITWEB__LOG_LEVEL=INFO  # Options: ERROR, DEBUG, INFO, WARN, TRACE
-QBITWEB__LOG_PATH=/path/to/qbitweb.log  # If not set, logs to stdout
+qui__LOG_LEVEL=INFO  # Options: ERROR, DEBUG, INFO, WARN, TRACE
+qui__LOG_PATH=/path/to/qui.log  # If not set, logs to stdout
 ```
 
 ### Config File Template (config.toml)
@@ -1422,23 +1422,23 @@ host = "{{ .host }}"
 port = 8080
 
 # Base URL
-# Set custom baseUrl eg /qbitweb/ to serve in subdirectory.
+# Set custom baseUrl eg /qui/ to serve in subdirectory.
 # Not needed for subdomain, or by accessing with :port directly.
 # Optional
-#baseUrl = "/qbitweb/"
+#baseUrl = "/qui/"
 
 # Session secret
 # Auto-generated if not provided
 sessionSecret = "{{ .sessionSecret }}"
 
 # Database path
-# Default: "./data/qbitweb.db"
-databasePath = "./data/qbitweb.db"
+# Default: "./data/qui.db"
+databasePath = "./data/qui.db"
 
 # Log file path
 # If not defined, logs to stdout
 # Optional
-#logPath = "log/qbitweb.log"
+#logPath = "log/qui.log"
 
 # Log level
 # Default: "INFO"
@@ -1469,13 +1469,13 @@ logLevel = "INFO"
    RUN go mod download
    COPY . .
    COPY --from=frontend-builder /app/dist ./internal/web/dist
-   RUN go build -o qbitweb ./cmd/server
+   RUN go build -o qui ./cmd/server
 
    FROM alpine:latest
    RUN apk --no-cache add ca-certificates
-   COPY --from=backend-builder /app/qbitweb /qbitweb
+   COPY --from=backend-builder /app/qui /qui
    EXPOSE 8080
-   CMD ["/qbitweb"]
+   CMD ["/qui"]
    ```
 
 2. **Cross-platform Builds**

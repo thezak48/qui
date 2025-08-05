@@ -7,7 +7,7 @@ This document tracks the implementation progress of the qBittorrent Alternative 
 
 ### Completed Tasks
 - [x] Created progress.md to track implementation
-- [x] Initialized Go module with `go mod init github.com/autobrr/qbitweb`
+- [x] Initialized Go module with `go mod init github.com/autobrr/qui`
 - [x] Installed all backend dependencies
 - [x] Created complete project directory structure
 - [x] Created Vite project with React TypeScript template
@@ -35,7 +35,7 @@ This document tracks the implementation progress of the qBittorrent Alternative 
 ### Key Features Implemented
 - **Database**: SQLite with embedded migrations, WAL mode for performance
 - **Authentication**: Single-user setup with session-based auth and API key support
-- **Configuration**: Viper-based with environment variables (QBITWEB__ prefix) and TOML config
+- **Configuration**: Viper-based with environment variables (qui__ prefix) and TOML config
 - **qBittorrent Integration**: Connection pooling, health checks, SyncMainData support
 - **API**: RESTful endpoints for auth, instances, and torrent management
 - **Performance**: Ristretto cache, ants goroutine pool, optimized for 10k+ torrents

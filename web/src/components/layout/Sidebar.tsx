@@ -57,7 +57,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <div className="flex h-full w-64 flex-col border-r bg-sidebar border-sidebar-border">
       <div className="p-6">
-        <h2 className="text-lg font-semibold text-sidebar-foreground">qbitwebui</h2>
+        <h2 className="text-lg font-semibold text-sidebar-foreground">qui</h2>
       </div>
       
       <nav className="flex-1 space-y-1 px-3">

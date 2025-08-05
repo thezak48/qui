@@ -5,7 +5,7 @@ export function usePersistedColumnSizing(
   instanceId: number,
   defaultSizing: ColumnSizingState = {}
 ) {
-  const storageKey = `qbitweb-column-sizing-${instanceId}`
+  const storageKey = `qui-column-sizing-${instanceId}`
   
   // Initialize state from localStorage or default values
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() => {

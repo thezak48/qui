@@ -5,7 +5,7 @@ export function usePersistedColumnOrder(
   instanceId: number,
   defaultOrder: ColumnOrderState = []
 ) {
-  const storageKey = `qbitweb-column-order-${instanceId}`
+  const storageKey = `qui-column-order-${instanceId}`
   
   // Initialize state from localStorage or default values
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>(() => {

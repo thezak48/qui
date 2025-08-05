@@ -101,7 +101,7 @@ func TestCacheInvalidation_RealWorldScenario(t *testing.T) {
 
 	// Simulate multiple instances with cached data
 	instances := []int{1, 2, 3}
-	
+
 	// Pre-populate cache with realistic data for all instances
 	for _, instanceID := range instances {
 		// Torrent lists with different pagination
@@ -144,10 +144,10 @@ func TestCacheInvalidation_RealWorldScenario(t *testing.T) {
 		tags := []string{fmt.Sprintf("tag1-%d", instanceID), fmt.Sprintf("tag2-%d", instanceID)}
 		sm.cache.SetWithTTL(fmt.Sprintf("tags:%d", instanceID), tags, 1, 60*time.Second)
 
-		// Individual torrent data 
+		// Individual torrent data
 		for i := 0; i < 10; i++ {
 			hash := fmt.Sprintf("hash%d_%d", instanceID, i)
-			
+
 			// Properties
 			props := &qbt.TorrentProperties{
 				Hash: hash,
@@ -175,12 +175,12 @@ func TestCacheInvalidation_RealWorldScenario(t *testing.T) {
 	// Count total cache entries
 	totalEntries := 0
 	testKeys := []string{}
-	
+
 	for _, instanceID := range instances {
 		// Count entries we expect for each instance
 		entriesPerInstance := 4 + 3 + 1 + 1 + 1 + 10 + 10 + 1 + 1 // rough count
 		totalEntries += entriesPerInstance
-		
+
 		// Add some test keys to verify
 		testKeys = append(testKeys, fmt.Sprintf("torrents:%d:0:50", instanceID))
 		testKeys = append(testKeys, fmt.Sprintf("categories:%d", instanceID))
@@ -243,7 +243,7 @@ func TestCacheInvalidation_CoordinatedUpdates(t *testing.T) {
 		Torrents: createTestTorrents(50),
 		Total:    100,
 	}
-	
+
 	// Set with 2-second TTL as per the system design
 	sm.cache.SetWithTTL(torrentsKey, initialTorrents, 1, 2*time.Second)
 	sm.cache.Wait()
@@ -257,7 +257,7 @@ func TestCacheInvalidation_CoordinatedUpdates(t *testing.T) {
 	// Phase 2: Simulate bulk action (pause/resume/delete)
 	// This would be called immediately after the action in the handler
 	sm.InvalidateCache(instanceID)
-	
+
 	// Verify cache is cleared immediately (good for consistency)
 	time.Sleep(50 * time.Millisecond)
 	_, found = sm.cache.Get(torrentsKey)
@@ -302,7 +302,7 @@ func TestCacheInvalidation_MultipleInstances(t *testing.T) {
 	// Setup multiple instances
 	instances := map[int]string{
 		1: "Home Server qBittorrent",
-		2: "Seedbox qBittorrent", 
+		2: "Seedbox qBittorrent",
 		3: "VPS qBittorrent",
 	}
 
@@ -367,34 +367,34 @@ func TestCacheInvalidation_CacheKeyPatterns(t *testing.T) {
 	// Test the cache key patterns used throughout the system
 	instanceID := 1
 	hash := "abcdef123456"
-	
+
 	expectedPatterns := map[string]string{
 		// Basic torrent lists
-		"InitialLoad":           fmt.Sprintf("torrents:%d:0:50", instanceID),
-		"Paginated":             fmt.Sprintf("torrents:%d:50:25", instanceID),
-		
+		"InitialLoad": fmt.Sprintf("torrents:%d:0:50", instanceID),
+		"Paginated":   fmt.Sprintf("torrents:%d:50:25", instanceID),
+
 		// Search results
-		"SearchWithQuery":       fmt.Sprintf("torrents:search:%d:0:25:name:asc:movie", instanceID),
-		"SearchEmpty":           fmt.Sprintf("torrents:search:%d:0:25:size:desc:", instanceID),
-		
-		// Filtered results  
-		"FilteredComplex":       fmt.Sprintf("torrents:filtered:%d:0:50:added_on:desc:action:{\"status\":[\"downloading\"],\"categories\":[\"movies\"]}", instanceID),
-		"FilteredBasic":         fmt.Sprintf("torrents:filtered:%d:25:25:name:asc::", instanceID),
-		
+		"SearchWithQuery": fmt.Sprintf("torrents:search:%d:0:25:name:asc:movie", instanceID),
+		"SearchEmpty":     fmt.Sprintf("torrents:search:%d:0:25:size:desc:", instanceID),
+
+		// Filtered results
+		"FilteredComplex": fmt.Sprintf("torrents:filtered:%d:0:50:added_on:desc:action:{\"status\":[\"downloading\"],\"categories\":[\"movies\"]}", instanceID),
+		"FilteredBasic":   fmt.Sprintf("torrents:filtered:%d:25:25:name:asc::", instanceID),
+
 		// Metadata
-		"Categories":            fmt.Sprintf("categories:%d", instanceID),
-		"Tags":                  fmt.Sprintf("tags:%d", instanceID),
-		
+		"Categories": fmt.Sprintf("categories:%d", instanceID),
+		"Tags":       fmt.Sprintf("tags:%d", instanceID),
+
 		// Individual torrent data
-		"TorrentProperties":     fmt.Sprintf("torrent:properties:%d:%s", instanceID, hash),
-		"TorrentTrackers":       fmt.Sprintf("torrent:trackers:%d:%s", instanceID, hash),
-		"TorrentFiles":          fmt.Sprintf("torrent:files:%d:%s", instanceID, hash), 
-		"TorrentWebSeeds":       fmt.Sprintf("torrent:webseeds:%d:%s", instanceID, hash),
-		
+		"TorrentProperties": fmt.Sprintf("torrent:properties:%d:%s", instanceID, hash),
+		"TorrentTrackers":   fmt.Sprintf("torrent:trackers:%d:%s", instanceID, hash),
+		"TorrentFiles":      fmt.Sprintf("torrent:files:%d:%s", instanceID, hash),
+		"TorrentWebSeeds":   fmt.Sprintf("torrent:webseeds:%d:%s", instanceID, hash),
+
 		// Counts and stats
-		"TorrentCount":          fmt.Sprintf("torrent_count:%d", instanceID),
-		"AllTorrentsEmpty":      fmt.Sprintf("all_torrents:%d:", instanceID),
-		"AllTorrentsSearch":     fmt.Sprintf("all_torrents:%d:movie", instanceID),
+		"TorrentCount":      fmt.Sprintf("torrent_count:%d", instanceID),
+		"AllTorrentsEmpty":  fmt.Sprintf("all_torrents:%d:", instanceID),
+		"AllTorrentsSearch": fmt.Sprintf("all_torrents:%d:movie", instanceID),
 	}
 
 	// Verify key patterns are unique and follow expected format
@@ -407,15 +407,15 @@ func TestCacheInvalidation_CacheKeyPatterns(t *testing.T) {
 		usedKeys[key] = testName
 
 		// Verify key format
-		assert.Contains(t, key, fmt.Sprintf("%d", instanceID), 
+		assert.Contains(t, key, fmt.Sprintf("%d", instanceID),
 			"Key should contain instance ID: %s", key)
-		
+
 		// Verify no spaces in keys (would break caching)
-		assert.NotContains(t, key, " ", 
+		assert.NotContains(t, key, " ",
 			"Key should not contain spaces: %s", key)
-		
+
 		// Verify reasonable length (Ristretto has limits)
-		assert.LessOrEqual(t, len(key), 250, 
+		assert.LessOrEqual(t, len(key), 250,
 			"Key should be reasonable length: %s", key)
 	}
 
@@ -423,9 +423,9 @@ func TestCacheInvalidation_CacheKeyPatterns(t *testing.T) {
 	for testName, baseKey := range expectedPatterns {
 		key1 := baseKey
 		key2 := fmt.Sprintf(baseKey, 2, hash) // Different instance
-		
+
 		if key1 != key2 { // Only test if they would actually be different
-			assert.NotEqual(t, key1, key2, 
+			assert.NotEqual(t, key1, key2,
 				"Keys for different instances should not collide in test: %s", testName)
 		}
 	}
@@ -460,7 +460,7 @@ func BenchmarkCacheInvalidation_Clear(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Call Clear directly to avoid logging during benchmarks
 		cache.Clear()
-		
+
 		// Re-populate for next iteration
 		if i < b.N-1 {
 			for j := 0; j < 100; j++ { // Smaller repopulation for speed

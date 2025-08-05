@@ -28,7 +28,7 @@ export function Header({ children, sidebarCollapsed = false }: HeaderProps) {
           "text-xl font-semibold transition-opacity duration-300",
           "lg:opacity-0 lg:pointer-events-none", // Hidden on desktop by default
           sidebarCollapsed && "lg:opacity-100 lg:pointer-events-auto" // Visible on desktop when sidebar collapsed
-        )}>qbitwebui</h1>
+        )}>qui</h1>
       </div>
       
       <div className="flex items-center gap-4">

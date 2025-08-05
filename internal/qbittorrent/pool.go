@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/autobrr/qbitweb/internal/models"
+	"github.com/autobrr/qui/internal/models"
 	"github.com/dgraph-io/ristretto"
 	"github.com/panjf2000/ants/v2"
 	"github.com/rs/zerolog/log"

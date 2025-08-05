@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/autobrr/qbitweb/internal/models"
+	"github.com/autobrr/qui/internal/models"
 	"github.com/gorilla/sessions"
 	"github.com/rs/zerolog/log"
 )

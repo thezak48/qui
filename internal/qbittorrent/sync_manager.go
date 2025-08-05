@@ -14,14 +14,13 @@ import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/rs/zerolog/log"
-
 )
 
 // TorrentResponse represents a response containing torrents with stats
 type TorrentResponse struct {
 	Torrents []qbt.Torrent `json:"torrents"`
-	Total    int                  `json:"total"`
-	Stats    *TorrentStats        `json:"stats,omitempty"`
+	Total    int           `json:"total"`
+	Stats    *TorrentStats `json:"stats,omitempty"`
 }
 
 // TorrentStats represents aggregated torrent statistics
@@ -1055,14 +1054,14 @@ func (sm *SyncManager) SetTags(ctx context.Context, instanceID int, hashes []str
 	if err != nil {
 		return fmt.Errorf("failed to get client: %w", err)
 	}
-	
+
 	// Try to use the new SetTags method (qBittorrent 5.1+)
 	if err := client.Client.SetTags(ctx, hashes, tags); err != nil {
 		// If it fails due to version requirement, return the error
 		// The frontend will handle the fallback to addTags
 		return err
 	}
-	
+
 	return nil
 }
 

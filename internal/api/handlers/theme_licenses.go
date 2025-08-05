@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/autobrr/qbitweb/internal/services"
+	"github.com/autobrr/qui/internal/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
 )
@@ -148,7 +148,6 @@ func (h *ThemeLicenseHandler) GetAllLicenses(w http.ResponseWriter, r *http.Requ
 
 	RespondJSON(w, http.StatusOK, licenseInfos)
 }
-
 
 // DeleteLicense removes a license from the system
 func (h *ThemeLicenseHandler) DeleteLicense(w http.ResponseWriter, r *http.Request) {
