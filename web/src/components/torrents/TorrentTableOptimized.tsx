@@ -856,9 +856,9 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       {/* Table container */}
       <div className="rounded-md border flex flex-col flex-1 min-h-0 mt-3">
         <div className="relative flex-1 overflow-auto" ref={parentRef}>
-          <div>
+          <div style={{ position: 'relative', minWidth: 'min-content' }}>
             {/* Header */}
-            <div className="sticky top-0 bg-background z-10 border-b">
+            <div className="sticky top-0 bg-background border-b" style={{ zIndex: 50, position: 'sticky' }}>
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -869,13 +869,18 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                   const headers = headerGroup.headers
                   const headerIds = headers.map(h => h.column.id)
                   
+                  // Calculate minimum table width based on visible columns
+                  const minTableWidth = table.getVisibleLeafColumns().reduce((width, col) => {
+                    return width + col.getSize()
+                  }, 0)
+                  
                   return (
                     <SortableContext
                       key={headerGroup.id}
                       items={headerIds}
                       strategy={horizontalListSortingStrategy}
                     >
-                      <div className="flex">
+                      <div className="flex" style={{ minWidth: `${minTableWidth}px` }}>
                         {headers.map(header => (
                           <DraggableTableHeader
                             key={header.id}
