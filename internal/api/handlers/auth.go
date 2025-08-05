@@ -86,8 +86,13 @@ func (h *AuthHandler) Setup(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   86400 * 7, // 7 days
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
 		SameSite: http.SameSiteLaxMode,
+	}
+	
+	// If behind reverse proxy with HTTPS, upgrade security
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		session.Options.Secure = true
+		session.Options.SameSite = http.SameSiteStrictMode
 	}
 
 	if err := session.Save(r, w); err != nil {
@@ -140,8 +145,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   86400 * 7, // 7 days
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
 		SameSite: http.SameSiteLaxMode,
+	}
+	
+	// If behind reverse proxy with HTTPS, upgrade security
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		session.Options.Secure = true
+		session.Options.SameSite = http.SameSiteStrictMode
 	}
 
 	if err := session.Save(r, w); err != nil {

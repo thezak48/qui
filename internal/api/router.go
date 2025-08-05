@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
 	"github.com/autobrr/qbitweb/internal/api/handlers"
 	apimiddleware "github.com/autobrr/qbitweb/internal/api/middleware"
@@ -64,6 +65,9 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 
 		// Public routes (no auth required)
 		r.Route("/auth", func(r chi.Router) {
+			// Apply rate limiting to auth endpoints
+			r.Use(middleware.ThrottleBacklog(1, 1, time.Second))
+			
 			r.Post("/setup", authHandler.Setup)
 			r.Post("/login", authHandler.Login)
 			r.Get("/check-setup", authHandler.CheckSetupRequired)
