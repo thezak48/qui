@@ -4,9 +4,9 @@ import {
   getCurrentTheme,
   setTheme,
   setThemeMode,
-  themes,
   type ThemeMode,
 } from "@/utils/theme";
+import { themes, isThemePremium } from "@/config/themes";
 import { Sun, Moon, Monitor, Check, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -20,10 +20,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useHasPremiumAccess } from "@/hooks/useThemeLicense";
-import { isThemePremium } from "@/config/themes";
 
 // Constants
 const THEME_CHANGE_EVENT = "themechange";
+
+// Helper to extract primary color from theme
+function getThemePrimaryColor(theme: typeof themes[0]) {
+  // Check if dark mode is active by looking at the document element
+  const isDark = document.documentElement.classList.contains('dark');
+  const cssVars = isDark ? theme.cssVars.dark : theme.cssVars.light;
+  
+  // Extract the primary color value from the theme
+  return cssVars['--primary'] || '';
+}
 
 // Custom hook for theme change detection
 const useThemeChange = () => {
@@ -135,7 +144,9 @@ export const ThemeToggle: React.FC = () => {
           .sort((a, b) => {
             const aIsPremium = isThemePremium(a.id);
             const bIsPremium = isThemePremium(b.id);
+            // If both are premium or both are free, maintain existing order
             if (aIsPremium === bIsPremium) return 0;
+            // Premium themes go last
             return aIsPremium ? 1 : -1;
           })
           .map((theme) => {
@@ -154,22 +165,12 @@ export const ThemeToggle: React.FC = () => {
             >
               <div className="flex items-center gap-2 flex-1">
                 <div
-                  className={cn(
-                    "h-4 w-4 rounded-full ring-2 ring-offset-2 ring-offset-background transition-all duration-300 ease-out",
-                    theme.id === "default" && "bg-gray-500 ring-gray-500",
-                    theme.id === "catppuccin" && "bg-indigo-400 ring-indigo-400",
-                    theme.id === "purple" && "bg-purple-500 ring-purple-500",
-                    theme.id === "amber-minimal" && "bg-amber-500 ring-amber-500",
-                    theme.id === "bubblegum" && "bg-pink-500 ring-pink-500",
-                    theme.id === "perpetuity" && "bg-cyan-500 ring-cyan-500",
-                    theme.id === "kyle" && "bg-rose-500 ring-rose-500",
-                    theme.id === "tangerine" && "bg-orange-500 ring-orange-500",
-                    theme.id === "autobrr" && "bg-blue-500 ring-blue-500",
-                    theme.id === "nightwalker" && "bg-slate-800 ring-slate-800",
-                    theme.id === "matrix" && "bg-green-500 ring-green-500",
-                    theme.id === "synthwave" && "bg-fuchsia-500 ring-fuchsia-500",
-                    theme.id === "cyberpunk" && "bg-red-500 ring-red-500",
-                  )}
+                  className="h-4 w-4 rounded-full ring-1 ring-black/10 dark:ring-white/10 transition-all duration-300 ease-out"
+                  style={{ 
+                    backgroundColor: getThemePrimaryColor(theme),
+                    backgroundImage: 'none',
+                    background: getThemePrimaryColor(theme) + ' !important'
+                  }}
                 />
                 <div className="flex items-center gap-1.5 flex-1">
                   <span>{theme.name}</span>

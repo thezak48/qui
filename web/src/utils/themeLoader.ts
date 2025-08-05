@@ -50,6 +50,18 @@ export function loadThemes(): Theme[] {
     themes.push(getDefaultTheme());
   }
   
+  // Sort themes to ensure "minimal" is first
+  themes.sort((a, b) => {
+    if (a.id === 'minimal') return -1;
+    if (b.id === 'minimal') return 1;
+    return a.name.localeCompare(b.name);
+  });
+  
+  // Debug log in development
+  if (import.meta.env.DEV) {
+    console.log('Loaded themes:', themes.map(t => ({ id: t.id, name: t.name })));
+  }
+  
   return themes;
 }
 
