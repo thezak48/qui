@@ -50,3 +50,9 @@ cpu.pprof
 !.gitkeep
 config.toml
 .env
+.mcp.json
+.claude/commands/*
+.claude/hooks/*
+ai_docs/*
+output/*
+qbitweb
