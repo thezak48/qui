@@ -129,10 +129,10 @@ Environment variables use `qui__` prefix:
 - `qui__HOST` (default: localhost or 0.0.0.0 in containers)
 - `qui__PORT` (default: 8080)
 - `qui__SESSION_SECRET` (auto-generated if not set)
-- `qui__DATABASE_PATH` (default: ./data/qui.db)
 - `qui__LOG_LEVEL` (ERROR, DEBUG, INFO, WARN, TRACE)
 
 Config file: `config.toml` (auto-created on first run)
+Database file: `qui.db` (always created next to config.toml)
 
 ## API Endpoints
 

@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS frontend-builder
+FROM node:22.18-alpine AS frontend-builder
 
 WORKDIR /app/web
 COPY web/package*.json ./
@@ -9,7 +9,7 @@ COPY web/ ./
 RUN npm run build
 
 # Go build stage
-FROM golang:1.21-alpine AS go-builder
+FROM golang:1.24-alpine3.22 AS go-builder
 
 # Install build dependencies
 RUN apk add --no-cache git
@@ -36,7 +36,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o qui ./cmd/server
 
 # Final stage
-FROM alpine:latest
+FROM alpine:3.22
 
 # Install CA certificates for HTTPS requests to Polar API
 RUN apk --no-cache add ca-certificates tzdata

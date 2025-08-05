@@ -47,7 +47,7 @@ multiple qBittorrent instances with support for 10k+ torrents.`,
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.qui/config.toml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is OS-specific: ~/.config/qui/config.toml or %APPDATA%\\qui\\config.toml)")
 	rootCmd.Version = Version
 }
 
@@ -67,8 +67,10 @@ func runServer() {
 		log.Fatal().Err(err).Msg("Failed to initialize configuration")
 	}
 
+	cfg.ApplyLogConfig()
+
 	// Initialize database
-	db, err := database.New(cfg.Config.DatabasePath)
+	db, err := database.New(cfg.GetDatabasePath())
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize database")
 	}

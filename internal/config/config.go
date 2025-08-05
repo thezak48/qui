@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 
@@ -17,8 +18,9 @@ import (
 )
 
 type AppConfig struct {
-	Config *domain.Config
-	viper  *viper.Viper
+	Config       *domain.Config
+	viper        *viper.Viper
+	databasePath string
 }
 
 func New(configPath string) (*AppConfig, error) {
@@ -65,36 +67,56 @@ func (c *AppConfig) defaults() {
 	c.viper.SetDefault("sessionSecret", sessionSecret)
 	c.viper.SetDefault("logLevel", "INFO")
 	c.viper.SetDefault("logPath", "")
-	c.viper.SetDefault("databasePath", "./data/qui.db")
 }
 
 func (c *AppConfig) load(configPath string) error {
 	c.viper.SetConfigType("toml")
 
 	if configPath != "" {
-		// Use provided config path
-		if err := c.writeDefaultConfig(filepath.Join(configPath, "config.toml")); err != nil {
-			return err
+		// Use provided config path from --config flag
+		c.viper.SetConfigFile(configPath)
+
+		// Try to read the config
+		if err := c.viper.ReadInConfig(); err != nil {
+			// If file doesn't exist, create it
+			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+				if err := c.writeDefaultConfig(configPath); err != nil {
+					return err
+				}
+				// Re-read after creating
+				return c.viper.ReadInConfig()
+			}
+			return fmt.Errorf("failed to read config: %w", err)
 		}
-		c.viper.SetConfigFile(filepath.Join(configPath, "config.toml"))
 	} else {
 		// Search for config in standard locations
 		c.viper.SetConfigName("config")
-		c.viper.AddConfigPath(".")
-		c.viper.AddConfigPath("$HOME/.config/qui")
-		c.viper.AddConfigPath("$HOME/.qui")
+		c.viper.AddConfigPath(".")                   // Current directory
+		c.viper.AddConfigPath(getDefaultConfigDir()) // OS-specific config directory
 
-		// Create default config if doesn't exist
-		if err := c.writeDefaultConfig("config.toml"); err != nil {
-			return err
+		// Try to read existing config
+		if err := c.viper.ReadInConfig(); err != nil {
+			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+				// No config found, create in OS-specific location
+				defaultConfigPath := filepath.Join(getDefaultConfigDir(), "config.toml")
+				if err := c.writeDefaultConfig(defaultConfigPath); err != nil {
+					return err
+				}
+				// Set the config file explicitly and read it
+				c.viper.SetConfigFile(defaultConfigPath)
+				return c.viper.ReadInConfig()
+			}
+			return fmt.Errorf("failed to read config: %w", err)
 		}
 	}
 
-	if err := c.viper.ReadInConfig(); err != nil {
-		// It's okay if config doesn't exist, we'll use defaults
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return fmt.Errorf("failed to read config: %w", err)
-		}
+	// Set database path to be next to the config file
+	if c.viper.ConfigFileUsed() != "" {
+		configDir := filepath.Dir(c.viper.ConfigFileUsed())
+		c.databasePath = filepath.Join(configDir, "qui.db")
+	} else {
+		// Fallback to current directory if no config file
+		c.databasePath = "qui.db"
 	}
 
 	return nil
@@ -168,10 +190,6 @@ port = {{ .port }}
 # Auto-generated if not provided
 sessionSecret = "{{ .sessionSecret }}"
 
-# Database path
-# Default: "./data/qui.db"
-databasePath = "{{ .databasePath }}"
-
 # Log file path
 # If not defined, logs to stdout
 # Optional
@@ -188,7 +206,6 @@ logLevel = "{{ .logLevel }}"
 		"host":          c.viper.GetString("host"),
 		"port":          c.viper.GetInt("port"),
 		"sessionSecret": c.viper.GetString("sessionSecret"),
-		"databasePath":  c.viper.GetString("databasePath"),
 		"logLevel":      c.viper.GetString("logLevel"),
 	}
 
@@ -214,6 +231,27 @@ logLevel = "{{ .logLevel }}"
 }
 
 // Helper functions
+
+// getDefaultConfigDir returns the OS-specific config directory
+func getDefaultConfigDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		// Use %APPDATA%\qui on Windows
+		if appData := os.Getenv("APPDATA"); appData != "" {
+			return filepath.Join(appData, "qui")
+		}
+		// Fallback to home directory
+		home, _ := os.UserHomeDir()
+		return filepath.Join(home, "AppData", "Roaming", "qui")
+	default:
+		// Use XDG_CONFIG_HOME or ~/.config/qui for Unix-like systems
+		if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
+			return filepath.Join(xdgConfig, "qui")
+		}
+		home, _ := os.UserHomeDir()
+		return filepath.Join(home, ".config", "qui")
+	}
+}
 
 func detectContainer() bool {
 	// Check Docker
@@ -244,15 +282,15 @@ func generateSecureToken(length int) string {
 func setLogLevel(level string) {
 	switch strings.ToUpper(level) {
 	case "TRACE":
-		log.Logger = log.Level(5)
+		log.Logger = log.Level(-1) // zerolog.TraceLevel
 	case "DEBUG":
-		log.Logger = log.Level(0)
+		log.Logger = log.Level(0) // zerolog.DebugLevel
 	case "INFO":
-		log.Logger = log.Level(1)
+		log.Logger = log.Level(1) // zerolog.InfoLevel
 	case "WARN":
-		log.Logger = log.Level(2)
+		log.Logger = log.Level(2) // zerolog.WarnLevel
 	case "ERROR":
-		log.Logger = log.Level(3)
+		log.Logger = log.Level(3) // zerolog.ErrorLevel
 	default:
 		log.Logger = log.Level(1) // Default to INFO
 	}
@@ -274,6 +312,24 @@ func setupLogFile(path string) error {
 	// Update logger output
 	log.Logger = log.Output(f)
 	return nil
+}
+
+// GetDatabasePath returns the path to the database file
+func (c *AppConfig) GetDatabasePath() string {
+	return c.databasePath
+}
+
+// ApplyLogConfig applies the log level and log file configuration
+func (c *AppConfig) ApplyLogConfig() {
+	// Set log level
+	setLogLevel(c.Config.LogLevel)
+
+	// Set log file if configured
+	if c.Config.LogPath != "" {
+		if err := setupLogFile(c.Config.LogPath); err != nil {
+			log.Error().Err(err).Msg("Failed to setup log file")
+		}
+	}
 }
 
 // GetEncryptionKey derives a 32-byte encryption key from the session secret
