@@ -41,27 +41,28 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="\
 # Final stage
 FROM alpine:3.22
 
+LABEL org.opencontainers.image.source="https://github.com/autobrr/qui"
+
+# Set environment variables for config paths
+ENV HOME="/config" \
+    XDG_CONFIG_HOME="/config" \
+    XDG_DATA_HOME="/config"
+
 # Install runtime dependencies
 RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /app
 
-# Create non-root user
-RUN addgroup -g 1001 -S qui && \
-    adduser -S -D -H -u 1001 -h /app -s /sbin/nologin -G qui -g qui qui
+# Declare volume for persistent data
+VOLUME /config
 
 # Copy binary from build stage
-COPY --from=go-builder /app/qui .
-
-# Create data directory
-RUN mkdir -p /app/data && chown -R qui:qui /app
-
-USER qui
+COPY --from=go-builder /app/qui /usr/local/bin/
 
 EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
-CMD ["./qui"]
+ENTRYPOINT ["/usr/local/bin/qui"]

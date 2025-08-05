@@ -8,7 +8,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./data:/data
+      - ./config:/config
     environment:
       # Server configuration
       # Default: 0.0.0.0 in containers
@@ -35,4 +35,4 @@ services:
       
       # Log file path (inside container)
       # If not defined, logs to stdout
-      #QUI__LOG_PATH: "/data/logs/qui.log"
+      #QUI__LOG_PATH: "/config/logs/qui.log"

@@ -234,6 +234,16 @@ logLevel = "{{ .logLevel }}"
 
 // getDefaultConfigDir returns the OS-specific config directory
 func getDefaultConfigDir() string {
+	// First check if XDG_CONFIG_HOME is set (Docker containers set this to /config)
+	if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
+		// If XDG_CONFIG_HOME is /config (Docker), use it directly
+		if xdgConfig == "/config" {
+			return xdgConfig
+		}
+		// Otherwise append qui subdirectory
+		return filepath.Join(xdgConfig, "qui")
+	}
+
 	switch runtime.GOOS {
 	case "windows":
 		// Use %APPDATA%\qui on Windows
@@ -244,10 +254,7 @@ func getDefaultConfigDir() string {
 		home, _ := os.UserHomeDir()
 		return filepath.Join(home, "AppData", "Roaming", "qui")
 	default:
-		// Use XDG_CONFIG_HOME or ~/.config/qui for Unix-like systems
-		if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
-			return filepath.Join(xdgConfig, "qui")
-		}
+		// Use ~/.config/qui for Unix-like systems
 		home, _ := os.UserHomeDir()
 		return filepath.Join(home, ".config", "qui")
 	}
