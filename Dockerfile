@@ -48,7 +48,7 @@ ENV HOME="/config" \
 # Install runtime dependencies
 RUN apk --no-cache add ca-certificates tzdata
 
-WORKDIR /app
+WORKDIR /config
 
 # Declare volume for persistent data
 VOLUME /config
