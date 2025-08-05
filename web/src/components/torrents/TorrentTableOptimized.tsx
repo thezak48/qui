@@ -483,6 +483,8 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     data: sortedTorrents,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    // Use torrent hash as stable row ID
+    getRowId: (row) => row.hash,
     // State management
     state: {
       sorting,
@@ -509,17 +511,14 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const selectedHashes = useMemo(() => {
     return Object.keys(rowSelection)
       .filter(key => rowSelection[key as keyof typeof rowSelection])
-      .map(index => sortedTorrents[parseInt(index)]?.hash)
-      .filter(Boolean)
-  }, [rowSelection, sortedTorrents])
+  }, [rowSelection])
   
   // Get selected torrents
   const selectedTorrents = useMemo(() => {
-    return Object.keys(rowSelection)
-      .filter(key => rowSelection[key as keyof typeof rowSelection])
-      .map(index => sortedTorrents[parseInt(index)])
+    return selectedHashes
+      .map(hash => sortedTorrents.find(t => t.hash === hash))
       .filter(Boolean) as Torrent[]
-  }, [rowSelection, sortedTorrents])
+  }, [selectedHashes, sortedTorrents])
 
   // Load more rows as user scrolls (progressive loading)
   const loadMore = useCallback(() => {
@@ -580,18 +579,6 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     }
   }, [filters])
 
-  // Debug logging
-  useEffect(() => {
-    console.log('TorrentTable Debug:', {
-      torrentsCount: torrents.length,
-      sortedTorrentsCount: sortedTorrents.length,
-      rowsCount: rows.length,
-      loadedRows,
-      virtualRowsCount: virtualRows.length,
-      virtualizerTotalSize: virtualizer.getTotalSize(),
-      firstTorrent: sortedTorrents[0]?.name
-    })
-  }, [torrents, sortedTorrents, rows, loadedRows, virtualRows, virtualizer])
 
   // Mutation for bulk actions
   const mutation = useMutation({
@@ -939,7 +926,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                   const isSelected = selectedTorrent?.hash === torrent.hash
                 
                   return (
-                    <ContextMenu key={row.id}>
+                    <ContextMenu key={torrent.hash}>
                       <ContextMenuTrigger asChild>
                         <div
                           className={`flex border-b cursor-pointer hover:bg-muted/50 ${row.getIsSelected() ? 'bg-muted/50' : ''} ${isSelected ? 'bg-accent' : ''}`}

@@ -132,19 +132,6 @@ export function useTorrentCounts({ torrents, allCategories = {}, allTags = [] }:
       counts[`tracker:${tracker}`] = count
     })
 
-    // Debug logging
-    console.log('useTorrentCounts debug:', {
-      torrentCount: torrents.length,
-      categoryCount: Object.keys(allCategories).length,
-      tagCount: allTags.length,
-      sampleCategories: Object.keys(allCategories).slice(0, 5),
-      sampleTorrents: torrents.slice(0, 3).map(t => ({ name: t.name, category: t.category, tags: t.tags })),
-      categoryCounts: Object.keys(counts).filter(k => k.startsWith('category:')).reduce((acc, key) => {
-        acc[key] = counts[key]
-        return acc
-      }, {} as Record<string, number>)
-    })
-
     return counts
   }, [torrents, allCategories, allTags])
 }
