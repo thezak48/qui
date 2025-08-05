@@ -1,78 +1,109 @@
-# qBittorrent WebUI
+# qui
 
-A modern, self-hosted alternative web interface for qBittorrent designed for personal use. Supports multiple qBittorrent instances and handles large-scale deployments (10k+ torrents) while maintaining simplicity and ease of deployment.
+A fast, modern web interface for qBittorrent designed for personal use. Manage multiple qBittorrent instances from a single, lightweight application.
 
 ## Features
 
-- **Self-Hosted**: Run on your personal server, NAS, or homelab
-- **Single User**: Simple authentication without complex user management
-- **Multi-Instance**: Manage multiple qBittorrent instances from one interface
-- **Performance**: Optimized for 10k+ torrents using SyncMainData API
-- **Single Binary**: Easy deployment with embedded frontend assets
+- **Single Binary**: No dependencies, just download and run
+- **Multi-Instance Support**: Manage all your qBittorrent instances from one place
+- **Fast & Responsive**: Optimized for performance with large torrent collections
+- **Real-time Updates**: Live torrent progress and status updates
+- **Clean Interface**: Modern UI built with React and shadcn/ui components
 
-## Quick Start
+## Installation
 
-### Prerequisites
+### Download
 
-- Go 1.21+ (for building from source)
-- Node.js 20+ and pnpm (for frontend development)
-- Running qBittorrent instance(s) with Web UI enabled
+Download the latest release for your platform from the [releases page](https://github.com/autobrr/qui/releases).
 
-### Installation
+### Run
 
 ```bash
-# Clone the repository
-git clone https://github.com/autobrr/qui.git
-cd qui
+# Make it executable (Linux/macOS)
+chmod +x qui
 
-# Build the application
-make build
-
-# Run the application
+# Run
 ./qui
 ```
 
-The application will be available at http://localhost:8080
+The web interface will be available at http://localhost:8080
 
-### Configuration
+### First Setup
 
-On first run, a `config.toml` file will be created with default settings. You can also use environment variables:
+1. Open your browser to http://localhost:8080
+2. Create your admin account
+3. Add your qBittorrent instance(s)
+4. Start managing your torrents
+
+## Configuration
+
+Configuration is stored in `config.toml` (created on first run). You can also use environment variables:
 
 ```bash
-qui__HOST=0.0.0.0
-qui__PORT=8080
-qui__SESSION_SECRET=your-secret-key
+# Server
+QUI__HOST=0.0.0.0        # Listen address
+QUI__PORT=8080           # Port number
+
+# Security
+QUI__SESSION_SECRET=...  # Auto-generated if not set
+
+# Paths
+QUI__DATABASE_PATH=./data/qui.db  # Database location
+```
+
+## Docker
+
+```bash
+# Using Docker Compose
+docker compose up -d
+
+# Or standalone
+docker run -d \
+  -p 8080:8080 \
+  -v $(pwd)/data:/data \
+  ghcr.io/autobrr/qui:latest
 ```
 
 ## Development
 
-### Backend Development
+### Quick Start for Developers
 
 ```bash
-# Install dependencies
-go mod download
+# Requirements: Go 1.24+ and Node.js 22+
 
-# Run with hot reload
+# Run both frontend and backend in dev mode
+make dev
+
+# Run backend only (with hot reload)
 make dev-backend
-```
 
-### Frontend Development
-
-```bash
-# Install dependencies
-cd web && pnpm install
-
-# Run development server
+# Run frontend only  
 make dev-frontend
 ```
 
-## Architecture
+## Features in Detail
 
-- **Backend**: Go with Chi router, SQLite database, and embedded frontend
-- **Frontend**: React 19 with Vite, TanStack libraries, and shadcn/ui
-- **API**: RESTful with session-based authentication
-- **Performance**: SyncMainData API for efficient updates with large torrent counts
+### Instance Management
+- Add unlimited qBittorrent instances
+- Health monitoring and auto-reconnection
+- Secure credential storage
+
+### Torrent Management
+- Bulk operations (pause, resume, delete)
+- Advanced filtering and search
+- Category and tag management
+- Real-time progress tracking
+
+### Performance
+- Efficient data sync for large collections
+- Minimal memory footprint
+- Fast search and filtering
+- Responsive UI with virtual scrolling
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-[Add your license here]
+MIT
