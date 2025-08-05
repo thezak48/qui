@@ -29,7 +29,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { usePersistedColumnVisibility } from '@/hooks/usePersistedColumnVisibility'
 import { usePersistedColumnOrder } from '@/hooks/usePersistedColumnOrder'
 import { usePersistedColumnSizing } from '@/hooks/usePersistedColumnSizing'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -66,10 +66,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Label } from '@/components/ui/label'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
 import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3 } from 'lucide-react'
+import { SetTagsDialog, SetCategoryDialog } from './TorrentDialogs'
 import { DraggableTableHeader } from './DraggableTableHeader'
 import type { Torrent } from '@/types'
 
@@ -363,10 +363,9 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [contextMenuHashes, setContextMenuHashes] = useState<string[]>([])
+  const [contextMenuTorrents, setContextMenuTorrents] = useState<Torrent[]>([])
   const [showTagsDialog, setShowTagsDialog] = useState(false)
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
-  const [tagsInput, setTagsInput] = useState('')
-  const [categoryInput, setCategoryInput] = useState('')
   
   // Column visibility with persistence
   const defaultColumnVisibility: VisibilityState = {
@@ -402,6 +401,20 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   
   // Query client for invalidating queries
   const queryClient = useQueryClient()
+
+  // Fetch available tags
+  const { data: availableTags = [] } = useQuery({
+    queryKey: ['tags', instanceId],
+    queryFn: () => api.getTags(instanceId),
+    staleTime: 60000,
+  })
+
+  // Fetch available categories
+  const { data: availableCategories = {} } = useQuery({
+    queryKey: ['categories', instanceId],
+    queryFn: () => api.getCategories(instanceId),
+    staleTime: 60000,
+  })
 
   // Debounce search to prevent excessive filtering (1 second delay)
   const debouncedSearch = useDebounce(globalFilter, 1000)
@@ -496,6 +509,14 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       .map(index => sortedTorrents[parseInt(index)]?.hash)
       .filter(Boolean)
   }, [rowSelection, sortedTorrents])
+  
+  // Get selected torrents
+  const selectedTorrents = useMemo(() => {
+    return Object.keys(rowSelection)
+      .filter(key => rowSelection[key as keyof typeof rowSelection])
+      .map(index => sortedTorrents[parseInt(index)])
+      .filter(Boolean) as Torrent[]
+  }, [rowSelection, sortedTorrents])
 
   // Load more rows as user scrolls (progressive loading)
   const loadMore = useCallback(() => {
@@ -572,7 +593,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   // Mutation for bulk actions
   const mutation = useMutation({
     mutationFn: (data: {
-      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'addTags' | 'setCategory'
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'addTags' | 'removeTags' | 'setTags' | 'setCategory'
       deleteFiles?: boolean
       hashes: string[]
       tags?: string
@@ -608,37 +629,85 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     setDeleteFiles(false)
     setContextMenuHashes([])
   }
+  
+  const handleSetTags = async (tags: string[]) => {
+    // Use setTags action (with fallback to addTags for older versions)
+    // The backend will handle the version check
+    try {
+      await mutation.mutateAsync({ 
+        hashes: contextMenuHashes,
+        action: 'setTags', 
+        tags: tags.join(',') 
+      })
+    } catch (error: any) {
+      // If setTags fails due to version requirement, fall back to addTags
+      if (error.message?.includes('requires qBittorrent')) {
+        await mutation.mutateAsync({ 
+          hashes: contextMenuHashes,
+          action: 'addTags', 
+          tags: tags.join(',') 
+        })
+      } else {
+        throw error
+      }
+    }
+    
+    setShowTagsDialog(false)
+    setContextMenuHashes([])
+  }
+  
+  const handleSetCategory = async (category: string) => {
+    await mutation.mutateAsync({ 
+      action: 'setCategory',
+      category,
+      hashes: contextMenuHashes,
+    })
+    setShowCategoryDialog(false)
+    setContextMenuHashes([])
+  }
 
   const handleContextMenuAction = (action: 'pause' | 'resume' | 'recheck', hashes: string[]) => {
     setContextMenuHashes(hashes)
     mutation.mutate({ action, hashes })
   }
 
-  const handleAddTags = async () => {
-    if (!tagsInput.trim()) return
-    await mutation.mutateAsync({ 
-      action: 'addTags', 
-      hashes: contextMenuHashes, 
-      tags: tagsInput.trim() 
-    })
-    setShowTagsDialog(false)
-    setTagsInput('')
-    setContextMenuHashes([])
-  }
-
-  const handleSetCategory = async () => {
-    await mutation.mutateAsync({ 
-      action: 'setCategory', 
-      hashes: contextMenuHashes, 
-      category: categoryInput 
-    })
-    setShowCategoryDialog(false)
-    setCategoryInput('')
-    setContextMenuHashes([])
-  }
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
+  }
+  
+  // Get common tags from selected torrents (tags that ALL selected torrents have)
+  const getCommonTags = (torrents: Torrent[]): string[] => {
+    if (torrents.length === 0) return []
+    
+    // Get tags from first torrent
+    const firstTorrentTags = torrents[0].tags
+      ? torrents[0].tags.split(',').map(t => t.trim()).filter(t => t)
+      : []
+    
+    // If only one torrent, return its tags
+    if (torrents.length === 1) return firstTorrentTags
+    
+    // Find common tags across all torrents
+    return firstTorrentTags.filter(tag => 
+      torrents.every(torrent => {
+        const torrentTags = torrent.tags
+          ? torrent.tags.split(',').map(t => t.trim())
+          : []
+        return torrentTags.includes(tag)
+      })
+    )
+  }
+  
+  // Get common category from selected torrents (if all have the same category)
+  const getCommonCategory = (torrents: Torrent[]): string => {
+    if (torrents.length === 0) return ''
+    
+    const firstCategory = torrents[0].category || ''
+    
+    // Check if all torrents have the same category
+    const allSameCategory = torrents.every(t => (t.category || '') === firstCategory)
+    
+    return allSameCategory ? firstCategory : ''
   }
   
   // Drag and drop setup
@@ -737,6 +806,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
             <TorrentActions 
               instanceId={instanceId} 
               selectedHashes={selectedHashes}
+              selectedTorrents={selectedTorrents}
               onComplete={() => setRowSelection({})}
             />
           )}
@@ -945,18 +1015,22 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                         <ContextMenuItem 
                           onClick={() => {
                             const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            const torrents = row.getIsSelected() ? selectedTorrents : [torrent]
                             setContextMenuHashes(hashes)
+                            setContextMenuTorrents(torrents)
                             setShowTagsDialog(true)
                           }}
                           disabled={mutation.isPending}
                         >
                           <Tag className="mr-2 h-4 w-4" />
-                          Add Tags {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                          Set Tags {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
                         </ContextMenuItem>
                         <ContextMenuItem 
                           onClick={() => {
                             const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            const torrents = row.getIsSelected() ? selectedTorrents : [torrent]
                             setContextMenuHashes(hashes)
+                            setContextMenuTorrents(torrents)
                             setShowCategoryDialog(true)
                           }}
                           disabled={mutation.isPending}
@@ -1054,67 +1128,27 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Add Tags Dialog */}
-      <AlertDialog open={showTagsDialog} onOpenChange={setShowTagsDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Add Tags to {contextMenuHashes.length} torrent(s)</AlertDialogTitle>
-            <AlertDialogDescription>
-              Enter tags separated by commas (e.g., "music, flac, 2024")
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Label htmlFor="tagsInputContext">Tags</Label>
-            <Input
-              id="tagsInputContext"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              placeholder="Enter tags separated by commas"
-              className="mt-2"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleAddTags}
-              disabled={!tagsInput.trim() || mutation.isPending}
-            >
-              Add Tags
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Set Tags Dialog */}
+      <SetTagsDialog
+        open={showTagsDialog}
+        onOpenChange={setShowTagsDialog}
+        availableTags={availableTags || []}
+        hashCount={contextMenuHashes.length}
+        onConfirm={handleSetTags}
+        isPending={mutation.isPending}
+        initialTags={getCommonTags(contextMenuTorrents)}
+      />
 
       {/* Set Category Dialog */}
-      <AlertDialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Set Category for {contextMenuHashes.length} torrent(s)</AlertDialogTitle>
-            <AlertDialogDescription>
-              Enter a category name or leave empty to remove category
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Label htmlFor="categoryInputContext">Category</Label>
-            <Input
-              id="categoryInputContext"
-              value={categoryInput}
-              onChange={(e) => setCategoryInput(e.target.value)}
-              placeholder="Enter category name (or leave empty)"
-              className="mt-2"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleSetCategory}
-              disabled={mutation.isPending}
-            >
-              Set Category
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <SetCategoryDialog
+        open={showCategoryDialog}
+        onOpenChange={setShowCategoryDialog}
+        availableCategories={availableCategories || {}}
+        hashCount={contextMenuHashes.length}
+        onConfirm={handleSetCategory}
+        isPending={mutation.isPending}
+        initialCategory={getCommonCategory(contextMenuTorrents)}
+      />
     </div>
   )
 }

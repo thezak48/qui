@@ -1026,6 +1026,24 @@ func (sm *SyncManager) RemoveTags(ctx context.Context, instanceID int, hashes []
 	return client.Client.RemoveTagsCtx(ctx, hashes, tags)
 }
 
+// SetTags sets tags on the specified torrents (replaces all existing tags)
+// This uses the new qBittorrent 5.1+ API if available, otherwise returns error
+func (sm *SyncManager) SetTags(ctx context.Context, instanceID int, hashes []string, tags string) error {
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get client: %w", err)
+	}
+	
+	// Try to use the new SetTags method (qBittorrent 5.1+)
+	if err := client.Client.SetTags(ctx, hashes, tags); err != nil {
+		// If it fails due to version requirement, return the error
+		// The frontend will handle the fallback to addTags
+		return err
+	}
+	
+	return nil
+}
+
 // SetCategory sets the category for the specified torrents
 func (sm *SyncManager) SetCategory(ctx context.Context, instanceID int, hashes []string, category string) error {
 	client, err := sm.clientPool.GetClient(instanceID)

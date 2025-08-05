@@ -227,7 +227,7 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 	validActions := []string{
 		"pause", "resume", "delete", "deleteWithFiles",
 		"recheck", "reannounce", "increasePriority", "decreasePriority",
-		"topPriority", "bottomPriority", "addTags", "removeTags", "setCategory",
+		"topPriority", "bottomPriority", "addTags", "removeTags", "setTags", "setCategory",
 	}
 
 	valid := false
@@ -257,6 +257,12 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		err = h.syncManager.RemoveTags(r.Context(), instanceID, req.Hashes, req.Tags)
+	case "setTags":
+		if req.Tags == "" {
+			RespondError(w, http.StatusBadRequest, "Tags parameter is required for setTags action")
+			return
+		}
+		err = h.syncManager.SetTags(r.Context(), instanceID, req.Hashes, req.Tags)
 	case "setCategory":
 		err = h.syncManager.SetCategory(r.Context(), instanceID, req.Hashes, req.Category)
 	case "delete":

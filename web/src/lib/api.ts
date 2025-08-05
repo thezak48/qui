@@ -217,7 +217,7 @@ class ApiClient {
     instanceId: number,
     data: {
       hashes: string[]
-      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'setCategory' | 'addTags' | 'removeTags'
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'setCategory' | 'addTags' | 'removeTags' | 'setTags'
       deleteFiles?: boolean
       category?: string
       tags?: string  // Comma-separated tags string
