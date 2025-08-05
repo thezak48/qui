@@ -56,3 +56,4 @@ config.toml
 ai_docs/*
 output/*
 qbitweb
+.claude/agents/*
