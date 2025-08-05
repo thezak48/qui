@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Accordion,
@@ -41,6 +41,7 @@ import {
   DeleteCategoryDialog,
   DeleteUnusedTagsDialog,
 } from './TagCategoryManagement'
+import { LINUX_CATEGORIES, LINUX_TAGS, LINUX_TRACKERS, useIncognitoMode } from '@/lib/incognito'
 
 interface FilterSidebarProps {
   instanceId: number
@@ -58,6 +59,7 @@ interface FilterSidebarProps {
   }) => void
   torrentCounts?: Record<string, number>
 }
+
 
 // Define torrent states based on qBittorrent
 const TORRENT_STATES: Array<{ value: string; label: string; icon: LucideIcon }> = [
@@ -81,6 +83,9 @@ export function FilterSidebar({
   onFilterChange,
   torrentCounts = {},
 }: FilterSidebarProps) {
+  // Use incognito mode hook
+  const [incognitoMode] = useIncognitoMode()
+  
   // Persist accordion state
   const [expandedItems, setExpandedItems] = usePersistedAccordion(instanceId)
   
@@ -97,18 +102,27 @@ export function FilterSidebar({
   const [categoryToDelete, setCategoryToDelete] = useState('')
 
   // Fetch categories
-  const { data: categories = {} } = useQuery({
+  const { data: realCategories = {} } = useQuery({
     queryKey: ['categories', instanceId],
     queryFn: () => api.getCategories(instanceId),
     staleTime: 60000, // 1 minute
   })
 
   // Fetch tags
-  const { data: tags = [] } = useQuery({
+  const { data: realTags = [] } = useQuery({
     queryKey: ['tags', instanceId],
     queryFn: () => api.getTags(instanceId),
     staleTime: 60000, // 1 minute
   })
+  
+  // Use fake data if in incognito mode
+  const categories = useMemo(() => {
+    return incognitoMode ? LINUX_CATEGORIES : realCategories
+  }, [incognitoMode, realCategories])
+  
+  const tags = useMemo(() => {
+    return incognitoMode ? LINUX_TAGS : realTags
+  }, [incognitoMode, realTags])
 
 
   const handleStatusToggle = (status: string) => {
@@ -156,11 +170,16 @@ export function FilterSidebar({
   }
 
   // Extract unique trackers from torrentCounts
-  const trackers = Object.keys(torrentCounts)
+  const realTrackers = Object.keys(torrentCounts)
     .filter(key => key.startsWith('tracker:'))
     .map(key => key.replace('tracker:', ''))
     .filter(tracker => torrentCounts[`tracker:${tracker}`] > 0)
     .sort()
+  
+  // Use fake trackers if in incognito mode
+  const trackers = useMemo(() => {
+    return incognitoMode ? LINUX_TRACKERS : realTrackers
+  }, [incognitoMode, realTrackers])
 
   const clearFilters = () => {
     onFilterChange({
@@ -288,7 +307,7 @@ export function FilterSidebar({
                             {name}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {torrentCounts[`category:${name}`] || 0}
+                            {incognitoMode ? Math.floor(Math.random() * 50) + 1 : (torrentCounts[`category:${name}`] || 0)}
                           </span>
                         </label>
                       </ContextMenuTrigger>
@@ -371,7 +390,7 @@ export function FilterSidebar({
                             {tag}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {torrentCounts[`tag:${tag}`] || 0}
+                            {incognitoMode ? Math.floor(Math.random() * 30) + 1 : (torrentCounts[`tag:${tag}`] || 0)}
                           </span>
                         </label>
                       </ContextMenuTrigger>
@@ -444,7 +463,7 @@ export function FilterSidebar({
                         {tracker}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {torrentCounts[`tracker:${tracker}`] || 0}
+                        {incognitoMode ? Math.floor(Math.random() * 100) + 10 : (torrentCounts[`tracker:${tracker}`] || 0)}
                       </span>
                     </label>
                   ))}

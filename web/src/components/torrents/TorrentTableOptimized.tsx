@@ -68,10 +68,19 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, X } from 'lucide-react'
+import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, X, Eye, EyeOff } from 'lucide-react'
 import { SetTagsDialog, SetCategoryDialog, RemoveTagsDialog } from './TorrentDialogs'
 import { DraggableTableHeader } from './DraggableTableHeader'
 import type { Torrent } from '@/types'
+import {
+  getLinuxIsoName,
+  getLinuxCategory,
+  getLinuxTags,
+  getLinuxSavePath,
+  getLinuxTracker,
+  getLinuxRatio,
+  useIncognitoMode,
+} from '@/lib/incognito'
 
 interface TorrentTableOptimizedProps {
   instanceId: number
@@ -128,7 +137,8 @@ function calculateMinWidth(text: string, padding: number = 48): number {
   return Math.max(60, Math.ceil(text.length * charWidth) + padding + extraPadding)
 }
 
-const columns: ColumnDef<Torrent>[] = [
+
+const createColumns = (incognitoMode: boolean): ColumnDef<Torrent>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -153,11 +163,14 @@ const columns: ColumnDef<Torrent>[] = [
   {
     accessorKey: 'name',
     header: 'Name',
-    cell: ({ row }) => (
-      <div className="truncate text-sm" title={row.original.name}>
-        {row.original.name}
-      </div>
-    ),
+    cell: ({ row }) => {
+      const displayName = incognitoMode ? getLinuxIsoName(row.original.hash) : row.original.name
+      return (
+        <div className="truncate text-sm" title={displayName}>
+          {displayName}
+        </div>
+      )
+    },
     size: 300,
   },
   {
@@ -219,7 +232,7 @@ const columns: ColumnDef<Torrent>[] = [
     accessorKey: 'ratio',
     header: 'Ratio',
     cell: ({ row }) => {
-      const ratio = row.original.ratio
+      const ratio = incognitoMode ? getLinuxRatio(row.original.hash) : row.original.ratio
       const displayRatio = ratio === -1 ? "∞" : ratio.toFixed(2)
       
       let colorVar = ''
@@ -279,21 +292,25 @@ const columns: ColumnDef<Torrent>[] = [
   {
     accessorKey: 'category',
     header: 'Category',
-    cell: ({ row }) => (
-      <div className="truncate text-sm" title={row.original.category || '-'}>
-        {row.original.category || '-'}
-      </div>
-    ),
+    cell: ({ row }) => {
+      const displayCategory = incognitoMode ? getLinuxCategory(row.original.hash) : row.original.category
+      return (
+        <div className="truncate text-sm" title={displayCategory || '-'}>
+          {displayCategory || '-'}
+        </div>
+      )
+    },
     size: 150,
   },
   {
     accessorKey: 'tags',
     header: 'Tags',
     cell: ({ row }) => {
-      const tags = row.original.tags
+      const tags = incognitoMode ? getLinuxTags(row.original.hash) : row.original.tags
+      const displayTags = Array.isArray(tags) ? tags.join(', ') : tags || '-'
       return (
-        <div className="truncate text-sm" title={Array.isArray(tags) ? tags.join(', ') : tags || '-'}>
-          {Array.isArray(tags) ? tags.join(', ') : tags || '-'}
+        <div className="truncate text-sm" title={displayTags}>
+          {displayTags}
         </div>
       )
     },
@@ -314,18 +331,21 @@ const columns: ColumnDef<Torrent>[] = [
   {
     accessorKey: 'save_path',
     header: 'Save Path',
-    cell: ({ row }) => (
-      <div className="truncate text-sm" title={row.original.save_path}>
-        {row.original.save_path}
-      </div>
-    ),
+    cell: ({ row }) => {
+      const displayPath = incognitoMode ? getLinuxSavePath(row.original.hash) : row.original.save_path
+      return (
+        <div className="truncate text-sm" title={displayPath}>
+          {displayPath}
+        </div>
+      )
+    },
     size: 250,
   },
   {
     accessorKey: 'tracker',
     header: 'Tracker',
     cell: ({ row }) => {
-      const tracker = row.original.tracker
+      const tracker = incognitoMode ? getLinuxTracker(row.original.hash) : row.original.tracker
       // Extract domain from tracker URL
       let displayTracker = tracker
       try {
@@ -360,6 +380,9 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
   const [showRemoveTagsDialog, setShowRemoveTagsDialog] = useState(false)
   
+  // Use incognito mode hook
+  const [incognitoMode, setIncognitoMode] = useIncognitoMode()
+  
   // Column visibility with persistence
   const defaultColumnVisibility: VisibilityState = {
     downloaded: false,
@@ -373,11 +396,14 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   )
   
   // Column order with persistence
-  const defaultColumnOrder = columns.map(col => {
-    if ('id' in col && col.id) return col.id
-    if ('accessorKey' in col && typeof col.accessorKey === 'string') return col.accessorKey
-    return null
-  }).filter(Boolean) as string[]
+  const defaultColumnOrder = useMemo(() => {
+    const cols = createColumns(false) // Use non-incognito columns for default order
+    return cols.map(col => {
+      if ('id' in col && col.id) return col.id
+      if ('accessorKey' in col && typeof col.accessorKey === 'string') return col.accessorKey
+      return null
+    }).filter(Boolean) as string[]
+  }, [])
   const [columnOrder, setColumnOrder] = usePersistedColumnOrder(
     instanceId,
     defaultColumnOrder
@@ -469,6 +495,8 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     return sorted
   }, [torrents, sorting])
 
+  const columns = useMemo(() => createColumns(incognitoMode), [incognitoMode])
+  
   const table = useReactTable({
     data: sortedTorrents,
     columns,
@@ -1101,7 +1129,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                           Set Category {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
                         </ContextMenuItem>
                         <ContextMenuSeparator />
-                        <ContextMenuItem onClick={() => copyToClipboard(torrent.name)}>
+                        <ContextMenuItem onClick={() => copyToClipboard(incognitoMode ? getLinuxIsoName(torrent.hash) : torrent.name)}>
                           <Copy className="mr-2 h-4 w-4" />
                           Copy Name
                         </ContextMenuItem>
@@ -1150,11 +1178,27 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
             )}
           </div>
           
-          {virtualRows.length > 0 && (
-            <div className="text-sm text-muted-foreground">
-              Rendering rows {virtualRows[0].index + 1} - {virtualRows[virtualRows.length - 1].index + 1}
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {virtualRows.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                Rendering rows {virtualRows[0].index + 1} - {virtualRows[virtualRows.length - 1].index + 1}
+              </div>
+            )}
+            
+            {/* Incognito mode toggle - barely visible */}
+            <button
+              onClick={() => setIncognitoMode(!incognitoMode)}
+              className="p-1 rounded-sm transition-all hover:bg-muted/50"
+              style={{ opacity: incognitoMode ? 0.5 : 0.2 }}
+              title={incognitoMode ? "Exit incognito mode" : "Enable incognito mode"}
+            >
+              {incognitoMode ? (
+                <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
       
