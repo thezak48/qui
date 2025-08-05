@@ -30,34 +30,34 @@ export interface Torrent {
   dlspeed: number
   upspeed: number
   priority: number
-  numSeeds: number
-  numLeechs: number
+  num_seeds: number
+  num_leechs: number
   ratio: number
   eta: number
   state: string
   category: string
-  tags: string[]
-  addedOn: number
-  completionOn: number
+  tags: string
+  added_on: number
+  completion_on: number
   tracker: string
-  dlLimit: number
-  upLimit: number
+  dl_limit: number
+  up_limit: number
   downloaded: number
   uploaded: number
-  downloadedSession: number
-  uploadedSession: number
-  amountLeft: number
-  saveLocation: string
+  downloaded_session: number
+  uploaded_session: number
+  amount_left: number
+  save_path: string
   completed: number
-  ratioLimit: number
-  seenComplete: number
-  lastActivity: number
-  timeActive: number
-  autoTmm: boolean
-  totalSize: number
-  maxRatio: number
-  maxSeedingTime: number
-  seedingTimeLimit: number
+  ratio_limit: number
+  seen_complete: number
+  last_activity: number
+  time_active: number
+  auto_tmm: boolean
+  total_size: number
+  max_ratio: number
+  max_seeding_time: number
+  seeding_time_limit: number
 }
 
 export interface TorrentStats {
@@ -90,19 +90,19 @@ export interface MainData {
 
 export interface Category {
   name: string
-  savePath: string
+  save_path: string
 }
 
 export interface ServerState {
-  connectionStatus: string
-  dhtNodes: number
-  dlInfoData: number
-  dlInfoSpeed: number
-  dlRateLimit: number
-  upInfoData: number
-  upInfoSpeed: number
-  upRateLimit: number
+  connection_status: string
+  dht_nodes: number
+  dl_info_data: number
+  dl_info_speed: number
+  dl_rate_limit: number
+  up_info_data: number
+  up_info_speed: number
+  up_rate_limit: number
   queueing: boolean
-  useAltSpeedLimits: boolean
-  refreshInterval: number
+  use_alt_speed_limits: boolean
+  refresh_interval: number
 }

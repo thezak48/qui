@@ -250,10 +250,10 @@ const columns: ColumnDef<Torrent>[] = [
     size: 80,
   },
   {
-    accessorKey: 'addedOn',
+    accessorKey: 'added_on',
     header: 'Added',
     cell: ({ row }) => {
-      const addedOn = row.original.addedOn
+      const addedOn = row.original.added_on
       if (!addedOn || addedOn === 0) {
         return '-'
       }
@@ -318,11 +318,11 @@ const columns: ColumnDef<Torrent>[] = [
     minSize: 80,
   },
   {
-    accessorKey: 'saveLocation',
+    accessorKey: 'save_path',
     header: 'Save Path',
     cell: ({ row }) => (
-      <div className="truncate text-sm" title={row.original.saveLocation}>
-        {row.original.saveLocation}
+      <div className="truncate text-sm" title={row.original.save_path}>
+        {row.original.save_path}
       </div>
     ),
     size: 250,

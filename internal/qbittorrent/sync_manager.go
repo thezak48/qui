@@ -14,12 +14,11 @@ import (
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/rs/zerolog/log"
 
-	"github.com/autobrr/qbitweb/internal/api/converters"
 )
 
 // TorrentResponse represents a response containing torrents with stats
 type TorrentResponse struct {
-	Torrents []converters.Torrent `json:"torrents"`
+	Torrents []qbt.Torrent `json:"torrents"`
 	Total    int                  `json:"total"`
 	Stats    *TorrentStats        `json:"stats,omitempty"`
 }
@@ -87,7 +86,7 @@ func (sm *SyncManager) InitialLoad(ctx context.Context, instanceID int, limit, o
 	total := sm.getTotalCount(ctx, instanceID)
 
 	response := &TorrentResponse{
-		Torrents: converters.ConvertTorrents(torrents),
+		Torrents: torrents,
 		Total:    total,
 	}
 
@@ -145,7 +144,7 @@ func (sm *SyncManager) GetTorrentsWithSearch(ctx context.Context, instanceID int
 	}
 
 	response := &TorrentResponse{
-		Torrents: converters.ConvertTorrents(paginatedTorrents),
+		Torrents: paginatedTorrents,
 		Total:    len(filteredTorrents),
 		Stats:    stats,
 	}
@@ -205,7 +204,7 @@ func (sm *SyncManager) GetTorrentsWithFilters(ctx context.Context, instanceID in
 	}
 
 	response := &TorrentResponse{
-		Torrents: converters.ConvertTorrents(paginatedTorrents),
+		Torrents: paginatedTorrents,
 		Total:    len(filteredTorrents),
 		Stats:    stats,
 	}
@@ -295,7 +294,7 @@ func (sm *SyncManager) GetFilteredTorrents(ctx context.Context, instanceID int, 
 	}
 
 	response := &TorrentResponse{
-		Torrents: converters.ConvertTorrents(torrents),
+		Torrents: torrents,
 		Total:    total,
 	}
 

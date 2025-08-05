@@ -137,57 +137,57 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Total Size:</span>
-                    <span className="ml-2">{formatBytes(properties.totalSize || torrent.size)}</span>
+                    <span className="ml-2">{formatBytes(properties.total_size || torrent.size)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Pieces:</span>
-                    <span className="ml-2">{properties.piecesHave || 0} / {properties.piecesNum || 0} ({formatBytes(properties.pieceSize || 0)})</span>
+                    <span className="ml-2">{properties.pieces_have || 0} / {properties.pieces_num || 0} ({formatBytes(properties.piece_size || 0)})</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Downloaded:</span>
-                    <span className="ml-2">{formatBytes(properties.totalDownloaded || 0)}</span>
+                    <span className="ml-2">{formatBytes(properties.total_downloaded || 0)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Uploaded:</span>
-                    <span className="ml-2">{formatBytes(properties.totalUploaded || 0)}</span>
+                    <span className="ml-2">{formatBytes(properties.total_uploaded || 0)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Share Ratio:</span>
-                    <span className="ml-2">{(properties.shareRatio || 0).toFixed(2)}</span>
+                    <span className="ml-2">{(properties.share_ratio || 0).toFixed(2)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Seeds:</span>
-                    <span className="ml-2">{properties.seeds || 0} ({properties.seedsTotal || 0})</span>
+                    <span className="ml-2">{properties.seeds || 0} ({properties.seeds_total || 0})</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Peers:</span>
-                    <span className="ml-2">{properties.peers || 0} ({properties.peersTotal || 0})</span>
+                    <span className="ml-2">{properties.peers || 0} ({properties.peers_total || 0})</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Wasted:</span>
-                    <span className="ml-2">{formatBytes(properties.totalWasted || 0)}</span>
+                    <span className="ml-2">{formatBytes(properties.total_wasted || 0)}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div>
                     <span className="text-sm text-muted-foreground">Download Speed:</span>
-                    <span className="ml-2 text-sm">{formatSpeed(properties.dlSpeed || 0)} (avg: {formatSpeed(properties.dlSpeedAvg || 0)})</span>
+                    <span className="ml-2 text-sm">{formatSpeed(properties.dl_speed || 0)} (avg: {formatSpeed(properties.dl_speed_avg || 0)})</span>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Upload Speed:</span>
-                    <span className="ml-2 text-sm">{formatSpeed(properties.upSpeed || 0)} (avg: {formatSpeed(properties.upSpeedAvg || 0)})</span>
+                    <span className="ml-2 text-sm">{formatSpeed(properties.up_speed || 0)} (avg: {formatSpeed(properties.up_speed_avg || 0)})</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div>
                     <span className="text-sm text-muted-foreground">Time Active:</span>
-                    <span className="ml-2 text-sm">{formatDuration(properties.timeElapsed || 0)}</span>
+                    <span className="ml-2 text-sm">{formatDuration(properties.time_elapsed || 0)}</span>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Seeding Time:</span>
-                    <span className="ml-2 text-sm">{formatDuration(properties.seedingTime || 0)}</span>
+                    <span className="ml-2 text-sm">{formatDuration(properties.seeding_time || 0)}</span>
                   </div>
                 </div>
 
@@ -195,13 +195,13 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
                   <div>
                     <span className="text-sm text-muted-foreground">Save Path:</span>
                     <div className="text-sm mt-1 font-mono text-xs bg-muted/50 hover:bg-muted transition-colors p-2 rounded break-all">
-                      {properties.savePath || 'N/A'}
+                      {properties.save_path || 'N/A'}
                     </div>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Download Path:</span>
                     <div className="text-sm mt-1 font-mono text-xs bg-muted/50 hover:bg-muted transition-colors p-2 rounded break-all">
-                      {properties.downloadPath || properties.savePath || 'N/A'}
+                      {properties.download_path || properties.save_path || 'N/A'}
                     </div>
                   </div>
                 </div>
@@ -209,15 +209,15 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
                 <div className="space-y-2">
                   <div>
                     <span className="text-sm text-muted-foreground">Added On:</span>
-                    <span className="ml-2 text-sm">{formatTimestamp(properties.additionDate)}</span>
+                    <span className="ml-2 text-sm">{formatTimestamp(properties.addition_date)}</span>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Completed On:</span>
-                    <span className="ml-2 text-sm">{formatTimestamp(properties.completionDate)}</span>
+                    <span className="ml-2 text-sm">{formatTimestamp(properties.completion_date)}</span>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Created On:</span>
-                    <span className="ml-2 text-sm">{formatTimestamp(properties.creationDate)}</span>
+                    <span className="ml-2 text-sm">{formatTimestamp(properties.creation_date)}</span>
                   </div>
                 </div>
 
@@ -230,10 +230,10 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
                   </div>
                 )}
 
-                {properties.createdBy && (
+                {properties.created_by && (
                   <div>
                     <span className="text-sm text-muted-foreground">Created By:</span>
-                    <span className="ml-2 text-sm">{properties.createdBy}</span>
+                    <span className="ml-2 text-sm">{properties.created_by}</span>
                   </div>
                 )}
               </div>
@@ -254,10 +254,10 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
                       {getTrackerStatusBadge(tracker.status)}
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                      <div>Seeds: {tracker.numSeeds}</div>
-                      <div>Peers: {tracker.numPeers}</div>
-                      <div>Leechers: {tracker.numLeechers}</div>
-                      <div>Downloaded: {tracker.numDownloaded}</div>
+                      <div>Seeds: {tracker.num_seeds}</div>
+                      <div>Peers: {tracker.num_peers}</div>
+                      <div>Leechers: {tracker.num_leechers}</div>
+                      <div>Downloaded: {tracker.num_downloaded}</div>
                     </div>
                     {tracker.msg && (
                       <div className="text-xs text-muted-foreground">{tracker.msg}</div>

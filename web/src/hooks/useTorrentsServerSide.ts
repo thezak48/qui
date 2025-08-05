@@ -86,8 +86,8 @@ export function useTorrentsServerSide(
         if (updates.serverState) {
           setStats(prev => ({
             ...prev,
-            totalDownloadSpeed: updates.serverState?.dlInfoSpeed || 0,
-            totalUploadSpeed: updates.serverState?.upInfoSpeed || 0,
+            totalDownloadSpeed: updates.serverState?.dl_info_speed || 0,
+            totalUploadSpeed: updates.serverState?.up_info_speed || 0,
           }))
         }
         

@@ -1,18 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { Torrent } from '@/types'
-
-interface MainData {
-  rid: number
-  fullUpdate?: boolean
-  torrents?: Record<string, Torrent>
-  torrentsRemoved?: string[]
-  serverState?: {
-    dlInfoSpeed?: number
-    upInfoSpeed?: number
-  }
-}
+import type { Torrent, MainData } from '@/types'
 
 interface UseTorrentsSyncOptions {
   enabled?: boolean
@@ -53,7 +42,7 @@ export function useTorrentsSync(
     queryFn: () => api.getTorrents(instanceId, { 
       page: 0, 
       limit: 200, // Get more initially for better UX
-      sort: 'addedOn',
+      sort: 'added_on',
       order: 'desc'
     }),
     staleTime: Infinity, // Never refetch initial data
@@ -123,8 +112,8 @@ export function useTorrentsSync(
         if (updates.serverState) {
           setStats(prev => ({
             ...prev,
-            totalDownloadSpeed: updates.serverState?.dlInfoSpeed || 0,
-            totalUploadSpeed: updates.serverState?.upInfoSpeed || 0,
+            totalDownloadSpeed: updates.serverState?.dl_info_speed || 0,
+            totalUploadSpeed: updates.serverState?.up_info_speed || 0,
           }))
         }
         
@@ -188,7 +177,7 @@ export function useTorrentsSync(
     }
     
     // Sort by added date (newest first)
-    result.sort((a, b) => (b.addedOn || 0) - (a.addedOn || 0))
+    result.sort((a, b) => (b.added_on || 0) - (a.added_on || 0))
     
     setFilteredTorrents(result)
     

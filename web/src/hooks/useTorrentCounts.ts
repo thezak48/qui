@@ -91,11 +91,13 @@ export function useTorrentCounts({ torrents, allCategories = {}, allTags = [] }:
     
     // Count actual torrents
     torrents.forEach(torrent => {
-      if (!torrent.tags || torrent.tags.length === 0) {
+      if (!torrent.tags || torrent.tags === '') {
         // Count untagged torrents
         tagMap.set('', (tagMap.get('') || 0) + 1)
       } else {
-        torrent.tags.forEach(tag => {
+        // Handle tags as comma-separated string
+        const tagArray = torrent.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
+        tagArray.forEach(tag => {
           tagMap.set(tag, (tagMap.get(tag) || 0) + 1)
         })
       }
