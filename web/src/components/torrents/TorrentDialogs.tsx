@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 
 interface SetTagsDialogProps {
   open: boolean
@@ -265,6 +265,120 @@ export function SetCategoryDialog({
             disabled={isPending}
           >
             Set Category
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+interface RemoveTagsDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  availableTags: string[]
+  hashCount: number
+  onConfirm: (tags: string[]) => void
+  isPending?: boolean
+  currentTags?: string[]
+}
+
+export function RemoveTagsDialog({
+  open,
+  onOpenChange,
+  availableTags,
+  hashCount,
+  onConfirm,
+  isPending = false,
+  currentTags = [],
+}: RemoveTagsDialogProps) {
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const wasOpen = useRef(false)
+  
+  // Initialize with current tags when dialog opens
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      // Reset selection when dialog opens
+      setSelectedTags([])
+    }
+    wasOpen.current = open
+  }, [open, currentTags, availableTags])
+
+  const handleConfirm = () => {
+    if (selectedTags.length > 0) {
+      onConfirm(selectedTags)
+      setSelectedTags([])
+    }
+  }
+
+  const handleCancel = () => {
+    setSelectedTags([])
+    onOpenChange(false)
+  }
+
+  // Filter available tags to only show those that are on the selected torrents
+  const relevantTags = availableTags.filter(tag => currentTags.includes(tag))
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove Tags from {hashCount} torrent(s)</AlertDialogTitle>
+          <AlertDialogDescription>
+            Select which tags to remove from the selected torrents.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-4 space-y-4">
+          {relevantTags.length > 0 ? (
+            <div className="space-y-2">
+              <Label>Tags to Remove</Label>
+              <ScrollArea className="h-48 border rounded-md p-3">
+                <div className="space-y-2">
+                  {relevantTags.map((tag) => (
+                    <div key={tag} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`remove-tag-${tag}`}
+                        checked={selectedTags.includes(tag)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedTags([...selectedTags, tag])
+                          } else {
+                            setSelectedTags(selectedTags.filter(t => t !== tag))
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`remove-tag-${tag}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {tag}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No tags found on the selected torrents.
+            </div>
+          )}
+          
+          {/* Selected tags summary */}
+          {selectedTags.length > 0 && (
+            <div className="text-sm text-muted-foreground">
+              Will remove: {selectedTags.join(', ')}
+            </div>
+          )}
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirm}
+            disabled={selectedTags.length === 0 || isPending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            <X className="mr-2 h-4 w-4" />
+            Remove Tags
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

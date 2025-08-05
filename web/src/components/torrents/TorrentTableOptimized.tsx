@@ -68,8 +68,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3 } from 'lucide-react'
-import { SetTagsDialog, SetCategoryDialog } from './TorrentDialogs'
+import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, X } from 'lucide-react'
+import { SetTagsDialog, SetCategoryDialog, RemoveTagsDialog } from './TorrentDialogs'
 import { DraggableTableHeader } from './DraggableTableHeader'
 import type { Torrent } from '@/types'
 
@@ -366,6 +366,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const [contextMenuTorrents, setContextMenuTorrents] = useState<Torrent[]>([])
   const [showTagsDialog, setShowTagsDialog] = useState(false)
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
+  const [showRemoveTagsDialog, setShowRemoveTagsDialog] = useState(false)
   
   // Column visibility with persistence
   const defaultColumnVisibility: VisibilityState = {
@@ -593,7 +594,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   // Mutation for bulk actions
   const mutation = useMutation({
     mutationFn: (data: {
-      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'addTags' | 'removeTags' | 'setTags' | 'setCategory'
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'addTags' | 'removeTags' | 'setTags' | 'setCategory'
       deleteFiles?: boolean
       hashes: string[]
       tags?: string
@@ -665,8 +666,18 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     setShowCategoryDialog(false)
     setContextMenuHashes([])
   }
+  
+  const handleRemoveTags = async (tags: string[]) => {
+    await mutation.mutateAsync({ 
+      action: 'removeTags',
+      tags: tags.join(','),
+      hashes: contextMenuHashes,
+    })
+    setShowRemoveTagsDialog(false)
+    setContextMenuHashes([])
+  }
 
-  const handleContextMenuAction = (action: 'pause' | 'resume' | 'recheck', hashes: string[]) => {
+  const handleContextMenuAction = (action: 'pause' | 'resume' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority', hashes: string[]) => {
     setContextMenuHashes(hashes)
     mutation.mutate({ action, hashes })
   }
@@ -1011,6 +1022,57 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                           <CheckCircle className="mr-2 h-4 w-4" />
                           Force Recheck {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
                         </ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            handleContextMenuAction('reannounce', hashes)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <Radio className="mr-2 h-4 w-4" />
+                          Reannounce {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            handleContextMenuAction('topPriority', hashes)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <ChevronsUp className="mr-2 h-4 w-4" />
+                          Top Priority {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            handleContextMenuAction('increasePriority', hashes)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <ArrowUp className="mr-2 h-4 w-4" />
+                          Increase Priority {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            handleContextMenuAction('decreasePriority', hashes)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <ArrowDown className="mr-2 h-4 w-4" />
+                          Decrease Priority {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            handleContextMenuAction('bottomPriority', hashes)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <ChevronsDown className="mr-2 h-4 w-4" />
+                          Bottom Priority {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
                         <ContextMenuSeparator />
                         <ContextMenuItem 
                           onClick={() => {
@@ -1024,6 +1086,19 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                         >
                           <Tag className="mr-2 h-4 w-4" />
                           Set Tags {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                        </ContextMenuItem>
+                        <ContextMenuItem 
+                          onClick={() => {
+                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                            const torrents = row.getIsSelected() ? selectedTorrents : [torrent]
+                            setContextMenuHashes(hashes)
+                            setContextMenuTorrents(torrents)
+                            setShowRemoveTagsDialog(true)
+                          }}
+                          disabled={mutation.isPending}
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Remove Tags {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
                         </ContextMenuItem>
                         <ContextMenuItem 
                           onClick={() => {
@@ -1148,6 +1223,17 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
         onConfirm={handleSetCategory}
         isPending={mutation.isPending}
         initialCategory={getCommonCategory(contextMenuTorrents)}
+      />
+
+      {/* Remove Tags Dialog */}
+      <RemoveTagsDialog
+        open={showRemoveTagsDialog}
+        onOpenChange={setShowRemoveTagsDialog}
+        availableTags={availableTags || []}
+        hashCount={contextMenuHashes.length}
+        onConfirm={handleRemoveTags}
+        isPending={mutation.isPending}
+        currentTags={getCommonTags(contextMenuTorrents)}
       />
     </div>
   )

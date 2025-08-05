@@ -20,8 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ChevronDown, Play, Pause, Trash2, CheckCircle, Tag, Folder } from 'lucide-react'
-import { SetTagsDialog, SetCategoryDialog } from './TorrentDialogs'
+import { ChevronDown, Play, Pause, Trash2, CheckCircle, Tag, Folder, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, X } from 'lucide-react'
+import { SetTagsDialog, SetCategoryDialog, RemoveTagsDialog } from './TorrentDialogs'
 
 interface TorrentActionsProps {
   instanceId: number
@@ -35,6 +35,7 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [showTagsDialog, setShowTagsDialog] = useState(false)
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
+  const [showRemoveTagsDialog, setShowRemoveTagsDialog] = useState(false)
   const queryClient = useQueryClient()
 
   // Fetch available tags
@@ -53,7 +54,7 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
 
   const mutation = useMutation({
     mutationFn: (data: {
-      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'addTags' | 'removeTags' | 'setTags' | 'setCategory'
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'addTags' | 'removeTags' | 'setTags' | 'setCategory'
       deleteFiles?: boolean
       tags?: string
       category?: string
@@ -93,8 +94,26 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
         case 'recheck':
           toast.success(`Started recheck for ${count} ${torrentText}`)
           break
+        case 'reannounce':
+          toast.success(`Reannounced ${count} ${torrentText}`)
+          break
+        case 'increasePriority':
+          toast.success(`Increased priority for ${count} ${torrentText}`)
+          break
+        case 'decreasePriority':
+          toast.success(`Decreased priority for ${count} ${torrentText}`)
+          break
+        case 'topPriority':
+          toast.success(`Set ${count} ${torrentText} to top priority`)
+          break
+        case 'bottomPriority':
+          toast.success(`Set ${count} ${torrentText} to bottom priority`)
+          break
         case 'addTags':
           toast.success(`Added tags to ${count} ${torrentText}`)
+          break
+        case 'removeTags':
+          toast.success(`Removed tags from ${count} ${torrentText}`)
           break
         case 'setTags':
           toast.success(`Updated tags for ${count} ${torrentText}`)
@@ -141,6 +160,11 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
   const handleSetCategory = async (category: string) => {
     await mutation.mutateAsync({ action: 'setCategory', category })
     setShowCategoryDialog(false)
+  }
+  
+  const handleRemoveTags = async (tags: string[]) => {
+    await mutation.mutateAsync({ action: 'removeTags', tags: tags.join(',') })
+    setShowRemoveTagsDialog(false)
   }
   
   // Get common tags from selected torrents (tags that ALL selected torrents have)
@@ -209,6 +233,42 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
             <CheckCircle className="mr-2 h-4 w-4" />
             Force Recheck
           </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => mutation.mutate({ action: 'reannounce' })}
+            disabled={mutation.isPending}
+          >
+            <Radio className="mr-2 h-4 w-4" />
+            Reannounce
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => mutation.mutate({ action: 'topPriority' })}
+            disabled={mutation.isPending}
+          >
+            <ChevronsUp className="mr-2 h-4 w-4" />
+            Top Priority
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => mutation.mutate({ action: 'increasePriority' })}
+            disabled={mutation.isPending}
+          >
+            <ArrowUp className="mr-2 h-4 w-4" />
+            Increase Priority
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => mutation.mutate({ action: 'decreasePriority' })}
+            disabled={mutation.isPending}
+          >
+            <ArrowDown className="mr-2 h-4 w-4" />
+            Decrease Priority
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => mutation.mutate({ action: 'bottomPriority' })}
+            disabled={mutation.isPending}
+          >
+            <ChevronsDown className="mr-2 h-4 w-4" />
+            Bottom Priority
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setShowTagsDialog(true)}
@@ -216,6 +276,13 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
           >
             <Tag className="mr-2 h-4 w-4" />
             Set Tags
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setShowRemoveTagsDialog(true)}
+            disabled={mutation.isPending}
+          >
+            <X className="mr-2 h-4 w-4" />
+            Remove Tags
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setShowCategoryDialog(true)}
@@ -288,6 +355,17 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
         onConfirm={handleSetCategory}
         isPending={mutation.isPending}
         initialCategory={getCommonCategory(selectedTorrents)}
+      />
+
+      {/* Remove Tags Dialog */}
+      <RemoveTagsDialog
+        open={showRemoveTagsDialog}
+        onOpenChange={setShowRemoveTagsDialog}
+        availableTags={availableTags}
+        hashCount={selectedHashes.length}
+        onConfirm={handleRemoveTags}
+        isPending={mutation.isPending}
+        currentTags={getCommonTags(selectedTorrents)}
       />
     </>
   )
