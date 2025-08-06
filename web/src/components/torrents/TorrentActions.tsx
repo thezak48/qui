@@ -20,8 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ChevronDown, Play, Pause, Trash2, CheckCircle, Tag, Folder, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, X } from 'lucide-react'
-import { SetTagsDialog, SetCategoryDialog, RemoveTagsDialog } from './TorrentDialogs'
+import { ChevronDown, Play, Pause, Trash2, CheckCircle, Tag, Folder, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown } from 'lucide-react'
+import { SetTagsDialog, SetCategoryDialog } from './TorrentDialogs'
 
 interface TorrentActionsProps {
   instanceId: number
@@ -35,7 +35,6 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [showTagsDialog, setShowTagsDialog] = useState(false)
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
-  const [showRemoveTagsDialog, setShowRemoveTagsDialog] = useState(false)
   const queryClient = useQueryClient()
 
   // Fetch available tags
@@ -162,11 +161,6 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
     setShowCategoryDialog(false)
   }
   
-  const handleRemoveTags = async (tags: string[]) => {
-    await mutation.mutateAsync({ action: 'removeTags', tags: tags.join(',') })
-    setShowRemoveTagsDialog(false)
-  }
-  
   // Get common tags from selected torrents (tags that ALL selected torrents have)
   const getCommonTags = (torrents: any[]): string[] => {
     if (torrents.length === 0) return []
@@ -278,13 +272,6 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
             Set Tags
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => setShowRemoveTagsDialog(true)}
-            disabled={mutation.isPending}
-          >
-            <X className="mr-2 h-4 w-4" />
-            Remove Tags
-          </DropdownMenuItem>
-          <DropdownMenuItem
             onClick={() => setShowCategoryDialog(true)}
             disabled={mutation.isPending}
           >
@@ -355,17 +342,6 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
         onConfirm={handleSetCategory}
         isPending={mutation.isPending}
         initialCategory={getCommonCategory(selectedTorrents)}
-      />
-
-      {/* Remove Tags Dialog */}
-      <RemoveTagsDialog
-        open={showRemoveTagsDialog}
-        onOpenChange={setShowRemoveTagsDialog}
-        availableTags={availableTags}
-        hashCount={selectedHashes.length}
-        onConfirm={handleRemoveTags}
-        isPending={mutation.isPending}
-        currentTags={getCommonTags(selectedTorrents)}
       />
     </>
   )

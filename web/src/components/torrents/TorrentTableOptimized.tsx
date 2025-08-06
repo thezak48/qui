@@ -4,7 +4,6 @@ import {
   getCoreRowModel,
   flexRender,
   type ColumnDef,
-  type SortingState,
   type ColumnResizeMode,
   type VisibilityState,
 } from '@tanstack/react-table'
@@ -29,6 +28,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { usePersistedColumnVisibility } from '@/hooks/usePersistedColumnVisibility'
 import { usePersistedColumnOrder } from '@/hooks/usePersistedColumnOrder'
 import { usePersistedColumnSizing } from '@/hooks/usePersistedColumnSizing'
+import { usePersistedColumnSorting } from '@/hooks/usePersistedColumnSorting'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Progress } from '@/components/ui/progress'
@@ -68,7 +68,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, X, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ListOrdered } from 'lucide-react'
+import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ListOrdered } from 'lucide-react'
 import { SetTagsDialog, SetCategoryDialog, RemoveTagsDialog } from './TorrentDialogs'
 import { DraggableTableHeader } from './DraggableTableHeader'
 import type { Torrent } from '@/types'
@@ -381,7 +381,7 @@ const createColumns = (incognitoMode: boolean): ColumnDef<Torrent>[] => [
 
 export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, onTorrentSelect, addTorrentModalOpen, onAddTorrentModalChange }: TorrentTableOptimizedProps) {
   // State management
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [sorting, setSorting] = usePersistedColumnSorting(instanceId, [])
   const [globalFilter, setGlobalFilter] = useState('')
   const [immediateSearch, setImmediateSearch] = useState('')
   const [rowSelection, setRowSelection] = useState({})
@@ -1146,19 +1146,6 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                         >
                           <Tag className="mr-2 h-4 w-4" />
                           Set Tags {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
-                        </ContextMenuItem>
-                        <ContextMenuItem 
-                          onClick={() => {
-                            const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
-                            const torrents = row.getIsSelected() ? selectedTorrents : [torrent]
-                            setContextMenuHashes(hashes)
-                            setContextMenuTorrents(torrents)
-                            setShowRemoveTagsDialog(true)
-                          }}
-                          disabled={mutation.isPending}
-                        >
-                          <X className="mr-2 h-4 w-4" />
-                          Remove Tags {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
                         </ContextMenuItem>
                         <ContextMenuItem 
                           onClick={() => {
