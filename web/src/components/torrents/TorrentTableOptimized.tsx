@@ -132,8 +132,8 @@ function formatEta(seconds: number): string {
 function calculateMinWidth(text: string, padding: number = 48): number {
   // Approximate character width in pixels for text-sm (14px) with font-medium
   const charWidth = 7.5
-  // Add padding for sort indicator and drag handle
-  const extraPadding = 40
+  // Add padding for sort indicator
+  const extraPadding = 20
   return Math.max(60, Math.ceil(text.length * charWidth) + padding + extraPadding)
 }
 
@@ -990,10 +990,6 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                               }}
                               className="px-3 py-2 flex items-center overflow-hidden min-w-0"
                             >
-                              {/* Add spacing to match header drag handle */}
-                              {cell.column.id !== 'select' && (
-                                <div className="w-3 mr-1 flex-shrink-0" />
-                              )}
                               {flexRender(
                                 cell.column.columnDef.cell,
                                 cell.getContext()
