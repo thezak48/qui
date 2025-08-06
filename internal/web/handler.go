@@ -65,10 +65,9 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 
 	// Serve static assets with proper MIME types
 	r.Get("/assets/*", h.serveAssets)
-	
+
 	// Serve favicon and other root assets
-	r.Get("/vite.svg", h.serveAssets)
-	r.Get("/favicon.ico", h.serveAssets)
+	r.Get("/qui.png", h.serveAssets)
 
 	// SPA catch-all route
 	r.Get("/*", h.serveSPA)
@@ -77,13 +76,13 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 func (h *Handler) serveAssets(w http.ResponseWriter, r *http.Request) {
 	// Get the file path, removing the leading slash
 	path := strings.TrimPrefix(r.URL.Path, "/")
-	
+
 	// If we have a base URL, it might still be in the path
 	if h.baseURL != "" && h.baseURL != "/" {
 		baseWithoutSlash := strings.Trim(h.baseURL, "/")
-		path = strings.TrimPrefix(path, baseWithoutSlash + "/")
+		path = strings.TrimPrefix(path, baseWithoutSlash+"/")
 	}
-	
+
 	// Try to open the file from embedded FS
 	file, err := h.fs.Open(path)
 	if err != nil {
@@ -166,7 +165,7 @@ func (h *Handler) serveSPA(w http.ResponseWriter, r *http.Request) {
 	if baseURL == "" {
 		baseURL = "/"
 	}
-	
+
 	// Ensure baseURL ends with /
 	if !strings.HasSuffix(baseURL, "/") {
 		baseURL += "/"
@@ -174,24 +173,20 @@ func (h *Handler) serveSPA(w http.ResponseWriter, r *http.Request) {
 
 	// Create the script tag to inject
 	scriptTag := fmt.Sprintf(`<script>window.__QUI_BASE_URL__="%s";</script>`, baseURL)
-	
+
 	// Inject before the closing </head> tag
 	modifiedContent := strings.Replace(
 		string(content),
 		"</head>",
-		scriptTag + "</head>",
+		scriptTag+"</head>",
 		1,
 	)
 
 	// If we have a base URL other than /, we need to fix asset paths
 	if baseURL != "/" {
-		// Fix script src paths
 		modifiedContent = strings.ReplaceAll(modifiedContent, `src="/assets/`, `src="`+strings.TrimSuffix(baseURL, "/")+`/assets/`)
-		// Fix link href paths
 		modifiedContent = strings.ReplaceAll(modifiedContent, `href="/assets/`, `href="`+strings.TrimSuffix(baseURL, "/")+`/assets/`)
-		// Fix favicon and other root-relative paths
-		modifiedContent = strings.ReplaceAll(modifiedContent, `href="/vite.svg"`, `href="`+strings.TrimSuffix(baseURL, "/")+`/vite.svg"`)
-		modifiedContent = strings.ReplaceAll(modifiedContent, `href="/favicon`, `href="`+strings.TrimSuffix(baseURL, "/")+`/favicon`)
+		modifiedContent = strings.ReplaceAll(modifiedContent, `href="/qui.png"`, `href="`+strings.TrimSuffix(baseURL, "/")+`/qui.png"`)
 	}
 
 	// Set content type and write response
