@@ -37,29 +37,29 @@ function ThemeCard({ theme, isSelected, isLocked, onSelect }: ThemeCardProps) {
       } ${isLocked ? 'opacity-60' : ''}`}
       onClick={!isLocked ? onSelect : undefined}
     >
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2 sm:pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-sm sm:text-base flex items-center gap-1 sm:gap-2">
             {theme.name}
             {isSelected && (
-              <Check className="h-4 w-4 text-primary" />
+              <Check className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
             )}
           </CardTitle>
           {isLocked && (
-            <Lock className="h-4 w-4 text-muted-foreground" />
+            <Lock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           )}
         </div>
         {theme.description && (
-          <CardDescription className="text-xs">
+          <CardDescription className="text-xs line-clamp-2">
             {theme.description}
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent className="pt-0 space-y-3">
+      <CardContent className="pt-0 space-y-2 sm:space-y-3">
         {/* Theme preview colors */}
         <div className="flex gap-1">
           <div 
-            className="w-4 h-4 rounded-full ring-1 ring-black/10 dark:ring-white/10"
+            className="w-3 h-3 sm:w-4 sm:h-4 rounded-full ring-1 ring-black/10 dark:ring-white/10"
             style={{ 
               backgroundColor: colors.primary,
               backgroundImage: 'none',
@@ -67,7 +67,7 @@ function ThemeCard({ theme, isSelected, isLocked, onSelect }: ThemeCardProps) {
             }}
           />
           <div 
-            className="w-4 h-4 rounded-full ring-1 ring-black/10 dark:ring-white/10"
+            className="w-3 h-3 sm:w-4 sm:h-4 rounded-full ring-1 ring-black/10 dark:ring-white/10"
             style={{ 
               backgroundColor: colors.secondary,
               backgroundImage: 'none',
@@ -75,7 +75,7 @@ function ThemeCard({ theme, isSelected, isLocked, onSelect }: ThemeCardProps) {
             }}
           />
           <div 
-            className="w-4 h-4 rounded-full ring-1 ring-black/10 dark:ring-white/10"
+            className="w-3 h-3 sm:w-4 sm:h-4 rounded-full ring-1 ring-black/10 dark:ring-white/10"
             style={{ 
               backgroundColor: colors.accent,
               backgroundImage: 'none',
@@ -85,22 +85,24 @@ function ThemeCard({ theme, isSelected, isLocked, onSelect }: ThemeCardProps) {
         </div>
         
         {/* Badges */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {theme.isPremium ? (
-            <Badge variant="secondary" className="text-xs">
-              <Sparkles className="h-3 w-3 mr-1" />
-              Premium
+            <Badge variant="secondary" className="text-xs px-1.5 sm:px-2">
+              <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+              <span className="hidden sm:inline">Premium</span>
+              <span className="sm:hidden">Pro</span>
             </Badge>
           ) : (
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs px-1.5 sm:px-2">
               Free
             </Badge>
           )}
           
           {isLocked && (
-            <Badge variant="destructive" className="text-xs">
-              <Lock className="h-3 w-3 mr-1" />
-              Locked
+            <Badge variant="destructive" className="text-xs px-1.5 sm:px-2">
+              <Lock className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+              <span className="hidden sm:inline">Locked</span>
+              <span className="sm:hidden">Lock</span>
             </Badge>
           )}
         </div>
@@ -139,7 +141,7 @@ export function ThemeSelector() {
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="h-24 bg-muted rounded"></div>
               ))}
@@ -168,7 +170,7 @@ export function ThemeSelector() {
             <Badge variant="outline" className="text-xs">Free</Badge>
             Free Themes
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
             {freeThemes.map((theme) => (
               <ThemeCard
                 key={theme.id}
@@ -198,7 +200,7 @@ export function ThemeSelector() {
               No premium themes available yet. Check back later for new themes!
             </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
               {premiumThemes.map((theme) => {
                 const isLicensed = isThemeLicensed(theme.id)
                 return (

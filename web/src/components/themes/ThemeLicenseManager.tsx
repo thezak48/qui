@@ -82,13 +82,13 @@ export function ThemeLicenseManager() {
     <>
       <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Key className="h-4 w-4 sm:h-5 sm:w-5" />
               License Management
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm mt-1">
               Manage your theme licenses and premium access
             </CardDescription>
           </div>
@@ -99,16 +99,18 @@ export function ThemeLicenseManager() {
                 size="sm"
                 onClick={() => refreshLicenses.mutate()}
                 disabled={refreshLicenses.isPending}
+                className="text-xs sm:text-sm"
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshLicenses.isPending ? 'animate-spin' : ''}`} />
-                Refresh
+                <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 ${refreshLicenses.isPending ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
             )}
             <Button
               size="sm"
               onClick={() => setShowAddLicense(!showAddLicense)}
+              className="text-xs sm:text-sm"
             >
-              <Key className="h-4 w-4 mr-2" />
+              <Key className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               Add License
             </Button>
           </div>
@@ -116,10 +118,10 @@ export function ThemeLicenseManager() {
       </CardHeader>
       <CardContent className="space-y-6">
         {showAddLicense && (
-          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+          <div className="space-y-4 p-3 sm:p-4 border rounded-lg bg-muted/30">
             <div>
-              <h4 className="font-medium mb-2">Add New License</h4>
-              <p className="text-sm text-muted-foreground mb-4">
+              <h4 className="font-medium mb-2 text-sm sm:text-base">Add New License</h4>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
                 Enter your premium theme license key to unlock additional themes.
               </p>
             </div>
@@ -155,7 +157,7 @@ export function ThemeLicenseManager() {
                 )}
               </form.Field>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <form.Subscribe
                   selector={(state) => [state.canSubmit, state.isSubmitting]}
                 >
@@ -163,6 +165,7 @@ export function ThemeLicenseManager() {
                     <Button
                       type="submit"
                       disabled={!canSubmit || isSubmitting || validateLicense.isPending}
+                      className="text-xs sm:text-sm"
                     >
                       {isSubmitting || validateLicense.isPending ? 'Validating...' : 'Activate License'}
                     </Button>
@@ -172,6 +175,7 @@ export function ThemeLicenseManager() {
                   type="button"
                   variant="outline"
                   onClick={() => setShowAddLicense(false)}
+                  className="text-xs sm:text-sm"
                 >
                   Cancel
                 </Button>
@@ -185,27 +189,31 @@ export function ThemeLicenseManager() {
         {licenses && licenses.length > 0 && (
           <>
             <div>
-              <h4 className="font-medium mb-4 flex items-center gap-2">
-                <Key className="h-4 w-4" />
+              <h4 className="font-medium mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+                <Key className="h-3 w-3 sm:h-4 sm:w-4" />
                 Active Licenses
               </h4>
               <div className="space-y-2">
                 {licenses.map((license) => (
-                  <div key={license.licenseKey} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-mono text-sm">{license.licenseKey}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {license.themeName} • Added {new Date(license.createdAt).toLocaleDateString()}
+                  <div key={license.licenseKey} className="p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="font-mono text-xs leading-relaxed break-all">
+                          {license.licenseKey}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {license.themeName} • Added {new Date(license.createdAt).toLocaleDateString()}
+                        </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteLicense(license.licenseKey)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0 h-8 w-8"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteLicense(license.licenseKey)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 ))}
               </div>
@@ -215,22 +223,22 @@ export function ThemeLicenseManager() {
         )}
 
         {/* Premium Status */}
-        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-          <div className="flex items-center gap-3">
-            <Sparkles className={hasPremiumAccess ? "h-5 w-5 text-primary" : "h-5 w-5 text-muted-foreground"} />
-            <div>
-              <p className="font-medium">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-muted/30 rounded-lg gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Sparkles className={hasPremiumAccess ? "h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" : "h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0"} />
+            <div className="min-w-0">
+              <p className="font-medium text-sm sm:text-base">
                 {hasPremiumAccess ? "Premium Access Active" : "Unlock Premium Themes"}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {hasPremiumAccess 
                   ? "You have access to all current and future premium themes" 
-                  : "One-time purchase • $9.99 • All current & future themes"}
+                  : "One-time purchase • $9.99 • All themes"}
               </p>
             </div>
           </div>
           {!hasPremiumAccess && (
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="text-xs sm:text-sm self-stretch sm:self-auto">
               <a href="https://buy.polar.sh/polar_cl_yyXJesVM9pFVfAPIplspbfCukgVgXzXjXIc2N0I8WcL" target="_blank" rel="noopener noreferrer">
                 Get Access
               </a>

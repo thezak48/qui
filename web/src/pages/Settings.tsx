@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -375,41 +374,23 @@ function ApiKeysManager() {
 }
 
 export function Settings() {
-  const { user } = useAuth()
-
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your account and application preferences
+    <div className="container mx-auto p-4 sm:p-6 max-w-4xl">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
+          Manage your application preferences and security
         </p>
       </div>
 
-      <Tabs defaultValue="account" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="themes">Themes</TabsTrigger>
-          <TabsTrigger value="api">API Keys</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="account" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Information</CardTitle>
-              <CardDescription>
-                Your account details and preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Username</Label>
-                <p className="text-sm font-medium">{user?.username || 'Loading...'}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+      <Tabs defaultValue="security" className="space-y-4">
+        <div className="w-full overflow-x-auto">
+          <TabsList className="inline-flex h-auto min-w-full sm:grid sm:grid-cols-3">
+            <TabsTrigger value="security" className="text-xs px-3 py-2 min-w-fit">Security</TabsTrigger>
+            <TabsTrigger value="themes" className="text-xs px-3 py-2 min-w-fit">Themes</TabsTrigger>
+            <TabsTrigger value="api" className="text-xs px-3 py-2 min-w-fit whitespace-nowrap">API Keys</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="security" className="space-y-4">
           <Card>
