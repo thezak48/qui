@@ -3,11 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/autobrr/qui/internal/auth"
 	"github.com/autobrr/qui/internal/models"
+	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/rs/zerolog/log"
 )
@@ -36,8 +37,8 @@ type LoginRequest struct {
 
 // ChangePasswordRequest represents a password change request
 type ChangePasswordRequest struct {
-	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password"`
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
 }
 
 // Setup handles initial user setup
@@ -233,7 +234,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Change password
-	if err := h.authService.ChangePassword(req.OldPassword, req.NewPassword); err != nil {
+	if err := h.authService.ChangePassword(req.CurrentPassword, req.NewPassword); err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
 			RespondError(w, http.StatusUnauthorized, "Invalid current password")
 			return
@@ -277,11 +278,11 @@ func (h *AuthHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondJSON(w, http.StatusCreated, map[string]interface{}{
-		"id":         apiKey.ID,
-		"name":       apiKey.Name,
-		"key":        rawKey, // Only shown once
-		"created_at": apiKey.CreatedAt,
-		"message":    "Save this key securely - it will not be shown again",
+		"id":        apiKey.ID,
+		"name":      apiKey.Name,
+		"key":       rawKey, // Only shown once
+		"createdAt": apiKey.CreatedAt,
+		"message":   "Save this key securely - it will not be shown again",
 	})
 }
 
@@ -299,18 +300,15 @@ func (h *AuthHandler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
 
 // DeleteAPIKey deletes an API key
 func (h *AuthHandler) DeleteAPIKey(w http.ResponseWriter, r *http.Request) {
-	// Get API key ID from URL
-	// This assumes you're using chi router with {id} parameter
-	// Implementation depends on your router
-	// For now, we'll parse from query parameter
-	idStr := r.URL.Query().Get("id")
+	// Get API key ID from URL parameter
+	idStr := chi.URLParam(r, "id")
 	if idStr == "" {
 		RespondError(w, http.StatusBadRequest, "API key ID is required")
 		return
 	}
 
-	var id int
-	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
 		RespondError(w, http.StatusBadRequest, "Invalid API key ID")
 		return
 	}

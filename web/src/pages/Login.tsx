@@ -98,7 +98,11 @@ export function Login() {
 
             {loginError && (
               <p className="text-sm text-destructive">
-                {loginError.message || 'Invalid credentials'}
+                {typeof loginError === 'string' 
+                  ? loginError 
+                  : loginError.message?.includes('Invalid credentials') || loginError.message?.includes('401')
+                    ? 'Invalid username or password'
+                    : loginError.message || 'Login failed. Please try again.'}
               </p>
             )}
 

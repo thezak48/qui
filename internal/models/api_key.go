@@ -17,8 +17,8 @@ type APIKey struct {
 	ID         int        `json:"id"`
 	KeyHash    string     `json:"-"`
 	Name       string     `json:"name"`
-	CreatedAt  time.Time  `json:"created_at"`
-	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	LastUsedAt *time.Time `json:"lastUsedAt,omitempty"`
 }
 
 type APIKeyStore struct {
@@ -116,7 +116,7 @@ func (s *APIKeyStore) List() ([]*APIKey, error) {
 	}
 	defer rows.Close()
 
-	var keys []*APIKey
+	keys := make([]*APIKey, 0)
 	for rows.Next() {
 		apiKey := &APIKey{}
 		err := rows.Scan(

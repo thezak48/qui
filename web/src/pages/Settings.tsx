@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,19 +31,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
-interface ApiKey {
-  id: number
-  name: string
-  key?: string
-  createdAt: string
-  lastUsedAt?: string
-}
-
 function ChangePasswordForm() {
   const mutation = useMutation({
     mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
-      // This would call the change password endpoint
       return api.changePassword(data.currentPassword, data.newPassword)
+    },
+    onSuccess: () => {
+      toast.success('Password changed successfully')
+      form.reset()
+    },
+    onError: () => {
+      toast.error('Failed to change password. Please check your current password.')
     },
   })
 
@@ -57,7 +56,6 @@ function ChangePasswordForm() {
         currentPassword: value.currentPassword,
         newPassword: value.newPassword,
       })
-      form.reset()
     },
   })
 
@@ -169,36 +167,41 @@ function ApiKeysManager() {
   const [newKey, setNewKey] = useState<{ name: string; key: string } | null>(null)
   const queryClient = useQueryClient()
 
-  // Mock API keys data - in real app this would come from API
-  const apiKeys: ApiKey[] = [
-    {
-      id: 1,
-      name: 'Automation Script',
-      createdAt: '2024-01-15T10:30:00Z',
-      lastUsedAt: '2024-01-20T15:45:00Z',
-    },
-  ]
+  // Fetch API keys from backend
+  const { data: apiKeys, isLoading } = useQuery({
+    queryKey: ['apiKeys'],
+    queryFn: () => api.getApiKeys(),
+    staleTime: 30 * 1000, // 30 seconds
+  })
+  
+  // Ensure apiKeys is always an array
+  const keys = apiKeys || []
 
   const createMutation = useMutation({
     mutationFn: async (name: string) => {
-      // This would call the create API key endpoint
-      // For now, return a mock response
-      return { name, key: 'qui_' + Math.random().toString(36).substring(2, 15) }
+      return api.createApiKey(name)
     },
     onSuccess: (data) => {
       setNewKey(data)
       queryClient.invalidateQueries({ queryKey: ['apiKeys'] })
+      toast.success('API key created successfully')
+    },
+    onError: () => {
+      toast.error('Failed to create API key')
     },
   })
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      // This would call the delete API key endpoint
       return api.deleteApiKey(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys'] })
       setDeleteKeyId(null)
+      toast.success('API key deleted successfully')
+    },
+    onError: () => {
+      toast.error('Failed to delete API key')
     },
   })
 
@@ -238,13 +241,16 @@ function ApiKeysManager() {
                 <div>
                   <Label>Your new API key</Label>
                   <div className="mt-2 flex items-center gap-2">
-                    <code className="flex-1 rounded bg-muted px-2 py-1 text-sm">
+                    <code className="flex-1 rounded bg-muted px-2 py-1 text-sm font-mono break-all">
                       {newKey.key}
                     </code>
                     <Button
                       size="icon"
                       variant="outline"
-                      onClick={() => navigator.clipboard.writeText(newKey.key)}
+                      onClick={() => {
+                        navigator.clipboard.writeText(newKey.key)
+                        toast.success('API key copied to clipboard')
+                      }}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -286,6 +292,8 @@ function ApiKeysManager() {
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
+                        data-1p-ignore
+                        autoComplete='off'
                       />
                       {field.state.meta.isTouched && field.state.meta.errors[0] && (
                         <p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
@@ -314,39 +322,47 @@ function ApiKeysManager() {
       </div>
 
       <div className="space-y-2">
-        {apiKeys.map((key) => (
-          <div
-            key={key.id}
-            className="flex items-center justify-between rounded-lg border p-4"
-          >
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{key.name}</span>
-                <Badge variant="outline" className="text-xs">
-                  ID: {key.id}
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Created: {new Date(key.createdAt).toLocaleDateString()}
-                {key.lastUsedAt && (
-                  <> • Last used: {new Date(key.lastUsedAt).toLocaleDateString()}</>
-                )}
-              </p>
-            </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => setDeleteKeyId(key.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
-        
-        {apiKeys.length === 0 && (
+        {isLoading ? (
           <p className="text-center text-sm text-muted-foreground py-8">
-            No API keys created yet
+            Loading API keys...
           </p>
+        ) : (
+          <>
+            {keys.map((key) => (
+              <div
+                key={key.id}
+                className="flex items-center justify-between rounded-lg border p-4"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{key.name}</span>
+                    <Badge variant="outline" className="text-xs">
+                      ID: {key.id}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Created: {new Date(key.createdAt).toLocaleDateString()}
+                    {key.lastUsedAt && (
+                      <> • Last used: {new Date(key.lastUsedAt).toLocaleDateString()}</>
+                    )}
+                  </p>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setDeleteKeyId(key.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            
+            {keys.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-8">
+                No API keys created yet
+              </p>
+            )}
+          </>
         )}
       </div>
 

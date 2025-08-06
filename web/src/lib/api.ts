@@ -294,13 +294,19 @@ class ApiClient {
   // User endpoints
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
     return this.request('/auth/change-password', {
-      method: 'POST',
+      method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
     })
   }
 
   // API Key endpoints
-  async getApiKeys(): Promise<any[]> {
+  async getApiKeys(): Promise<{
+    id: number
+    name: string
+    key?: string
+    createdAt: string
+    lastUsedAt?: string
+  }[]> {
     return this.request('/api-keys')
   }
 
