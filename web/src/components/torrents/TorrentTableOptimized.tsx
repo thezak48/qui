@@ -68,7 +68,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, X, Eye, EyeOff, Plus, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, X, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ListOrdered } from 'lucide-react'
 import { SetTagsDialog, SetCategoryDialog, RemoveTagsDialog } from './TorrentDialogs'
 import { DraggableTableHeader } from './DraggableTableHeader'
 import type { Torrent } from '@/types'
@@ -148,6 +148,30 @@ const createColumns = (incognitoMode: boolean): ColumnDef<Torrent>[] => [
     ),
     size: 40,
     enableResizing: false,
+  },
+  {
+    accessorKey: 'priority',
+    header: () => (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center justify-center">
+            <ListOrdered className="h-4 w-4" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>Priority</TooltipContent>
+      </Tooltip>
+    ),
+    meta: {
+      headerString: 'Priority' // For the column visibility dropdown
+    },
+    cell: ({ row }) => {
+      const priority = row.original.priority
+      // Priority 0 means torrent is not queued/managed
+      if (priority === 0) return <span className="text-sm text-muted-foreground text-center block">-</span>
+      // In qBittorrent, 1 is highest priority, higher numbers are lower priority
+      return <span className="text-sm font-medium text-center block">{priority}</span>
+    },
+    size: 45,
   },
   {
     accessorKey: 'name',
@@ -378,6 +402,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     uploaded: false,
     saveLocation: false,
     tracker: false,
+    priority: false,
   }
   const [columnVisibility, setColumnVisibility] = usePersistedColumnVisibility(
     instanceId,
@@ -887,7 +912,8 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                       onSelect={(e) => e.preventDefault()}
                     >
                       <span className="truncate">
-                        {column.columnDef.header as string}
+                        {(column.columnDef.meta as any)?.headerString || 
+                         (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id)}
                       </span>
                     </DropdownMenuCheckboxItem>
                   )
