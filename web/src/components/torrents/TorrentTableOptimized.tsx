@@ -68,7 +68,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, X, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, X, Eye, EyeOff, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import { SetTagsDialog, SetCategoryDialog, RemoveTagsDialog } from './TorrentDialogs'
 import { DraggableTableHeader } from './DraggableTableHeader'
 import type { Torrent } from '@/types'
@@ -81,6 +81,7 @@ import {
   getLinuxRatio,
   useIncognitoMode,
 } from '@/lib/incognito'
+import { formatBytes, formatSpeed } from '@/lib/utils'
 
 interface TorrentTableOptimizedProps {
   instanceId: number
@@ -96,18 +97,6 @@ interface TorrentTableOptimizedProps {
   onAddTorrentModalChange?: (open: boolean) => void
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
-}
-
-function formatSpeed(bytesPerSecond: number): string {
-  if (bytesPerSecond === 0) return '0 B/s'
-  return `${formatBytes(bytesPerSecond)}/s`
-}
 
 function formatEta(seconds: number): string {
   if (seconds === 8640000) return '∞'
@@ -757,87 +746,120 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
 
   return (
     <div className="h-full flex flex-col">
-      {/* Stats bar */}
-      <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm flex-shrink-0">
+      {/* Desktop Stats bar - shown at top on desktop */}
+      <div className="hidden sm:flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm flex-shrink-0">
         <div>Total: <strong>{stats.total}</strong></div>
-        <div className="hidden sm:block">Downloading: <strong>{stats.downloading}</strong></div>
-        <div className="hidden sm:block">Seeding: <strong>{stats.seeding}</strong></div>
-        <div className="hidden sm:block">Paused: <strong>{stats.paused}</strong></div>
-        <div className="hidden sm:block">Error: <strong className={stats.error > 0 ? "text-destructive" : ""}>{stats.error}</strong></div>
-        <div className="ml-auto text-xs sm:text-sm">
-          ↓ {formatSpeed(stats.totalDownloadSpeed || 0)} | ↑ {formatSpeed(stats.totalUploadSpeed || 0)}
+        <div className="hidden lg:block">Downloading: <strong>{stats.downloading}</strong></div>
+        <div className="hidden lg:block">Seeding: <strong>{stats.seeding}</strong></div>
+        <div className="hidden lg:block">Paused: <strong>{stats.paused}</strong></div>
+        <div className="hidden lg:block">Error: <strong className={stats.error > 0 ? "text-destructive" : ""}>{stats.error}</strong></div>
+        <div className="ml-auto text-xs sm:text-sm flex items-center gap-1">
+          <ChevronDown className="h-3.5 w-3.5" />
+          {formatSpeed(stats.totalDownloadSpeed || 0)}
+          <span className="text-muted-foreground mx-1">|</span>
+          <ChevronUp className="h-3.5 w-3.5" />
+          {formatSpeed(stats.totalUploadSpeed || 0)}
         </div>
       </div>
 
       {/* Search and Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 flex-shrink-0 mt-3">
-        <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder={isGlobSearch ? "Glob pattern search..." : "Search torrents (fuzzy enabled)..."}
-            value={globalFilter ?? ''}
-            onChange={event => handleSearchChange(event.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            className={`w-full pl-9 pr-20 transition-all ${
-              effectiveSearch ? 'ring-1 ring-primary/50' : ''
-            } ${
-              isGlobSearch ? 'ring-1 ring-primary' : ''
-            }`}
-          />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            {isGlobSearch && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
-                GLOB
-              </Badge>
+      <div className="flex flex-col gap-2 flex-shrink-0 sm:mt-3">
+        {/* Search bar row */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder={isGlobSearch ? "Glob pattern..." : "Search torrents..."}
+              value={globalFilter ?? ''}
+              onChange={event => handleSearchChange(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className={`w-full pl-9 pr-9 sm:pr-20 transition-all ${
+                effectiveSearch ? 'ring-1 ring-primary/50' : ''
+              } ${
+                isGlobSearch ? 'ring-1 ring-primary' : ''
+              }`}
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {isGlobSearch && (
+                <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] px-1.5 py-0 h-5">
+                  GLOB
+                </Badge>
+              )}
+              {isLoading && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    type="button"
+                    className="p-1 hover:bg-muted rounded-sm transition-colors hidden sm:block"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <div className="space-y-2 text-xs">
+                    <p className="font-semibold">Smart Search Features:</p>
+                    <ul className="space-y-1 ml-2">
+                      <li>• <strong>Glob patterns:</strong> *.mkv, *1080p*, S??E??</li>
+                      <li>• <strong>Fuzzy matching:</strong> "breaking bad" finds "Breaking.Bad"</li>
+                      <li>• Handles dots, underscores, and brackets</li>
+                      <li>• Searches name, category, and tags</li>
+                      <li>• Press Enter for instant search</li>
+                      <li>• Auto-searches after 1 second pause</li>
+                    </ul>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+          
+          {/* Action buttons */}
+          <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+            {selectedHashes.length > 0 && (
+              <TorrentActions 
+                instanceId={instanceId} 
+                selectedHashes={selectedHashes}
+                selectedTorrents={selectedTorrents}
+                onComplete={() => setRowSelection({})}
+              />
             )}
-            {isLoading && (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            )}
+            
+            {/* Add Torrent button */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <button 
-                  type="button"
-                  className="p-1 hover:bg-muted rounded-sm transition-colors"
-                  onClick={(e) => e.preventDefault()}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onAddTorrentModalChange?.(true)}
+                  className="sm:hidden"
                 >
-                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
+                  <Plus className="h-4 w-4" />
+                  <span className="sr-only">Add Torrent</span>
+                </Button>
               </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <div className="space-y-2 text-xs">
-                  <p className="font-semibold">Smart Search Features:</p>
-                  <ul className="space-y-1 ml-2">
-                    <li>• <strong>Glob patterns:</strong> *.mkv, *1080p*, S??E??</li>
-                    <li>• <strong>Fuzzy matching:</strong> "breaking bad" finds "Breaking.Bad"</li>
-                    <li>• Handles dots, underscores, and brackets</li>
-                    <li>• Searches name, category, and tags</li>
-                    <li>• Press Enter for instant search</li>
-                    <li>• Auto-searches after 1 second pause</li>
-                  </ul>
-                </div>
-              </TooltipContent>
+              <TooltipContent>Add Torrent</TooltipContent>
             </Tooltip>
-          </div>
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          {selectedHashes.length > 0 && (
-            <TorrentActions 
-              instanceId={instanceId} 
-              selectedHashes={selectedHashes}
-              selectedTorrents={selectedTorrents}
-              onComplete={() => setRowSelection({})}
-            />
-          )}
-          
-          {/* Column visibility dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="relative"
-              >
-                <Columns3 className="h-4 w-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAddTorrentModalChange?.(true)}
+              className="hidden sm:inline-flex"
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Torrent</span>
+            </Button>
+            
+            {/* Column visibility dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="relative"
+                >
+                  <Columns3 className="h-4 w-4" />
                 {Object.values(columnVisibility).some(v => v === false) && (
                   <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full" />
                 )}
@@ -879,6 +901,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
             open={addTorrentModalOpen}
             onOpenChange={onAddTorrentModalChange}
           />
+          </div>
         </div>
       </div>
 

@@ -104,12 +104,14 @@ export function AddTorrentDialog({ instanceId, open: controlledOpen, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4 transition-transform duration-200" />
-          Add Torrent
-        </Button>
-      </DialogTrigger>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4 transition-transform duration-200" />
+            Add Torrent
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>Add New Torrent</DialogTitle>
