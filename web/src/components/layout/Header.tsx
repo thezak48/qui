@@ -21,7 +21,7 @@ export function Header({ children, sidebarCollapsed = false }: HeaderProps) {
   const { user, logout } = useAuth()
 
   return (
-    <header className="flex h-16 items-center justify-between border-b px-6">
+    <header className="flex h-16 items-center justify-between border-b px-4 sm:px-6">
       <div className="flex items-center gap-4">
         {children}
         <h1 className={cn(

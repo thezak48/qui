@@ -160,13 +160,13 @@ const createColumns = (incognitoMode: boolean): ColumnDef<Torrent>[] => [
         </div>
       )
     },
-    size: 300,
+    size: 200,
   },
   {
     accessorKey: 'size',
     header: 'Size',
     cell: ({ row }) => <span className="text-sm truncate">{formatBytes(row.original.size)}</span>,
-    size: 100,
+    size: 85,
   },
   {
     accessorKey: 'progress',
@@ -179,7 +179,7 @@ const createColumns = (incognitoMode: boolean): ColumnDef<Torrent>[] => [
         </span>
       </div>
     ),
-    size: 140,
+    size: 120,
   },
   {
     accessorKey: 'state',
@@ -906,7 +906,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       </div>
 
       {/* Table container */}
-      <div className="rounded-md border flex flex-col flex-1 min-h-0 mt-3">
+      <div className="rounded-md border flex flex-col flex-1 min-h-0 mt-2 sm:mt-3 overflow-hidden">
         <div className="relative flex-1 overflow-auto scrollbar-thin" ref={parentRef}>
           <div style={{ position: 'relative', minWidth: 'min-content' }}>
             {/* Header */}

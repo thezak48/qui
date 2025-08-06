@@ -39,7 +39,7 @@ export function DraggableTableHeader({ header }: DraggableTableHeaderProps) {
       className="group"
     >
       <div
-        className={`px-3 py-2 text-left text-sm font-medium text-muted-foreground flex items-center ${
+        className={`px-3 h-10 text-left text-sm font-medium text-muted-foreground flex items-center ${
           column.getCanSort() ? 'cursor-pointer select-none' : ''
         } ${
           column.id !== 'select' ? 'cursor-grab active:cursor-grabbing' : ''
@@ -52,7 +52,7 @@ export function DraggableTableHeader({ header }: DraggableTableHeaderProps) {
         <div 
           className={`flex items-center gap-1 flex-1 ${column.id === 'select' ? 'justify-center' : ''}`}
         >
-          <span className="truncate">
+          <span className={`truncate ${column.id === 'select' ? 'flex items-center' : ''}`}>
             {header.isPlaceholder
               ? null
               : flexRender(
