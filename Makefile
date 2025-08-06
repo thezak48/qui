@@ -62,6 +62,11 @@ test:
 	@echo "Running tests..."
 	go test -v ./...
 
+# Validate OpenAPI specification
+test-openapi:
+	@echo "Validating OpenAPI specification..."
+	go test -v ./internal/web/swagger
+
 # Format code
 fmt:
 	@echo "Formatting code..."
@@ -83,15 +88,16 @@ deps:
 # Help
 help:
 	@echo "Available targets:"
-	@echo "  make build       - Build both frontend and backend"
-	@echo "  make frontend    - Build frontend only"
-	@echo "  make backend     - Build backend only"
-	@echo "  make dev         - Run development servers"
-	@echo "  make dev-backend - Run backend with hot reload"
-	@echo "  make dev-frontend- Run frontend development server"
-	@echo "  make clean       - Clean build artifacts"
-	@echo "  make test        - Run tests"
-	@echo "  make fmt         - Format code"
-	@echo "  make lint        - Lint code"
-	@echo "  make deps        - Install dependencies"
-	@echo "  make help        - Show this help message"
+	@echo "  make build        - Build both frontend and backend"
+	@echo "  make frontend     - Build frontend only"
+	@echo "  make backend      - Build backend only"
+	@echo "  make dev          - Run development servers"
+	@echo "  make dev-backend  - Run backend with hot reload"
+	@echo "  make dev-frontend - Run frontend development server"
+	@echo "  make clean        - Clean build artifacts"
+	@echo "  make test         - Run all tests"
+	@echo "  make test-openapi - Validate OpenAPI specification"
+	@echo "  make fmt          - Format code"
+	@echo "  make lint         - Lint code"
+	@echo "  make deps         - Install dependencies"
+	@echo "  make help         - Show this help message"

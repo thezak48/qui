@@ -1,0 +1,1195 @@
+openapi: 3.1.0
+info:
+  title: qui API
+  description: qui API for managing multiple qBittorrent instances
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: /
+    description: Current server
+
+security:
+  - ApiKeyAuth: []
+  - SessionAuth: []
+
+paths:
+  /api/auth/setup:
+    post:
+      tags:
+        - Authentication
+      summary: Initial setup
+      description: Create the initial admin user (only available before first user is created)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  minLength: 1
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '201':
+          description: Setup completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Setup already completed
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login
+      description: Authenticate with username and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+
+  /api/auth/check-setup:
+    get:
+      tags:
+        - Authentication
+      summary: Check setup status
+      description: Check if initial setup is required
+      security: []
+      responses:
+        '200':
+          description: Setup status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  setupRequired:
+                    type: boolean
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout
+      description: End the current session
+      responses:
+        '200':
+          description: Logged out successfully
+
+  /api/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Get information about the authenticated user
+      responses:
+        '200':
+          description: Current user information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /api/auth/change-password:
+    put:
+      tags:
+        - Authentication
+      summary: Change password
+      description: Change the current user's password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password changed successfully
+        '401':
+          description: Invalid current password
+
+  /api/api-keys:
+    get:
+      tags:
+        - API Keys
+      summary: List API keys
+      description: Get all API keys for the current user
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiKey'
+    post:
+      tags:
+        - API Keys
+      summary: Create API key
+      description: Generate a new API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: Descriptive name for the API key
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  key:
+                    type: string
+                    description: The API key (only shown once)
+                  createdAt:
+                    type: string
+                    format: date-time
+                  message:
+                    type: string
+
+  /api/api-keys/{id}:
+    delete:
+      tags:
+        - API Keys
+      summary: Delete API key
+      description: Revoke an API key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: API key deleted successfully
+        '404':
+          description: API key not found
+
+  /api/instances:
+    get:
+      tags:
+        - Instances
+      summary: List instances
+      description: Get all configured qBittorrent instances
+      responses:
+        '200':
+          description: List of instances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Instance'
+    post:
+      tags:
+        - Instances
+      summary: Add instance
+      description: Add a new qBittorrent instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - url
+                - username
+                - password
+              properties:
+                name:
+                  type: string
+                url:
+                  type: string
+                  format: uri
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: Instance created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instance'
+
+  /api/instances/{instanceId}:
+    put:
+      tags:
+        - Instances
+      summary: Update instance
+      description: Update instance configuration
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                url:
+                  type: string
+                  format: uri
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Instance updated
+    delete:
+      tags:
+        - Instances
+      summary: Delete instance
+      description: Remove a qBittorrent instance
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      responses:
+        '204':
+          description: Instance deleted
+        '404':
+          description: Instance not found
+
+  /api/instances/{instanceId}/test:
+    post:
+      tags:
+        - Instances
+      summary: Test connection
+      description: Test connection to a qBittorrent instance
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      responses:
+        '200':
+          description: Connection successful
+        '503':
+          description: Connection failed
+
+  /api/instances/{instanceId}/stats:
+    get:
+      tags:
+        - Instances
+      summary: Get instance statistics
+      description: Get statistics for a qBittorrent instance
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      responses:
+        '200':
+          description: Instance statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceStats'
+
+  /api/instances/{instanceId}/torrents:
+    get:
+      tags:
+        - Torrents
+      summary: List torrents
+      description: Get paginated list of torrents
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [name, size, progress, priority, added_on]
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: filters
+          in: query
+          schema:
+            type: string
+            description: JSON object with filter criteria
+      responses:
+        '200':
+          description: Paginated torrent list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  torrents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Torrent'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+    post:
+      tags:
+        - Torrents
+      summary: Add torrent
+      description: Add a new torrent via file upload or magnet link
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                torrentFile:
+                  type: string
+                  format: binary
+                urls:
+                  type: array
+                  items:
+                    type: string
+                category:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                startPaused:
+                  type: boolean
+                savePath:
+                  type: string
+      responses:
+        '201':
+          description: Torrent added successfully
+
+  /api/instances/{instanceId}/torrents/sync:
+    get:
+      tags:
+        - Torrents
+      summary: Sync torrents (SyncMainData)
+      description: Get incremental torrent updates using qBittorrent's sync/maindata API
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+        - name: rid
+          in: query
+          required: true
+          schema:
+            type: integer
+            description: Request ID for incremental updates (0 for full sync)
+      responses:
+        '200':
+          description: Sync data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rid:
+                    type: integer
+                  full_update:
+                    type: boolean
+                  torrents:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/Torrent'
+                  torrents_removed:
+                    type: array
+                    items:
+                      type: string
+                  categories:
+                    type: object
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                  server_state:
+                    type: object
+
+  /api/instances/{instanceId}/torrents/filter:
+    get:
+      tags:
+        - Torrents
+      summary: Get filtered torrents
+      description: Get torrents with advanced filtering options
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+        - name: filter
+          in: query
+          schema:
+            type: string
+            enum: [all, downloading, seeding, completed, paused, active, inactive, resumed, stalled, stalled_uploading, stalled_downloading, errored]
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+        - name: reverse
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Filtered torrent list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Torrent'
+
+  /api/instances/{instanceId}/torrents/bulk-action:
+    post:
+      tags:
+        - Torrents
+      summary: Bulk torrent action
+      description: Perform bulk actions on multiple torrents
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - hashes
+                - action
+              properties:
+                hashes:
+                  type: array
+                  items:
+                    type: string
+                action:
+                  type: string
+                  enum: [pause, resume, delete]
+                deleteFiles:
+                  type: boolean
+                  description: Only for delete action
+      responses:
+        '200':
+          description: Action performed successfully
+
+  /api/instances/{instanceId}/torrents/{hash}:
+    delete:
+      tags:
+        - Torrents
+      summary: Delete torrent
+      description: Delete a specific torrent
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+        - $ref: '#/components/parameters/hash'
+        - name: deleteFiles
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '204':
+          description: Torrent deleted
+
+  /api/instances/{instanceId}/torrents/{hash}/pause:
+    put:
+      tags:
+        - Torrents
+      summary: Pause torrent
+      description: Pause a specific torrent
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+        - $ref: '#/components/parameters/hash'
+      responses:
+        '200':
+          description: Torrent paused
+
+  /api/instances/{instanceId}/torrents/{hash}/resume:
+    put:
+      tags:
+        - Torrents
+      summary: Resume torrent
+      description: Resume a specific torrent
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+        - $ref: '#/components/parameters/hash'
+      responses:
+        '200':
+          description: Torrent resumed
+
+  /api/instances/{instanceId}/torrents/{hash}/properties:
+    get:
+      tags:
+        - Torrent Details
+      summary: Get torrent properties
+      description: Get detailed properties of a torrent
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+        - $ref: '#/components/parameters/hash'
+      responses:
+        '200':
+          description: Torrent properties
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TorrentProperties'
+
+  /api/instances/{instanceId}/torrents/{hash}/trackers:
+    get:
+      tags:
+        - Torrent Details
+      summary: Get torrent trackers
+      description: Get list of trackers for a torrent
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+        - $ref: '#/components/parameters/hash'
+      responses:
+        '200':
+          description: List of trackers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tracker'
+
+  /api/instances/{instanceId}/torrents/{hash}/files:
+    get:
+      tags:
+        - Torrent Details
+      summary: Get torrent files
+      description: Get list of files in a torrent
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+        - $ref: '#/components/parameters/hash'
+      responses:
+        '200':
+          description: List of files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TorrentFile'
+
+  /api/instances/{instanceId}/torrents/{hash}/webseeds:
+    get:
+      tags:
+        - Torrent Details
+      summary: Get torrent webseeds
+      description: Get list of webseeds for a torrent
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+        - $ref: '#/components/parameters/hash'
+      responses:
+        '200':
+          description: List of webseeds
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+
+  /api/instances/{instanceId}/categories:
+    get:
+      tags:
+        - Categories
+      summary: List categories
+      description: Get all categories
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+    post:
+      tags:
+        - Categories
+      summary: Create category
+      description: Create a new category
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                savePath:
+                  type: string
+      responses:
+        '201':
+          description: Category created
+    put:
+      tags:
+        - Categories
+      summary: Edit category
+      description: Edit an existing category
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                savePath:
+                  type: string
+      responses:
+        '200':
+          description: Category updated
+    delete:
+      tags:
+        - Categories
+      summary: Delete categories
+      description: Delete one or more categories
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - categories
+              properties:
+                categories:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Categories deleted
+
+  /api/instances/{instanceId}/tags:
+    get:
+      tags:
+        - Tags
+      summary: List tags
+      description: Get all tags
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      responses:
+        '200':
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+    post:
+      tags:
+        - Tags
+      summary: Create tags
+      description: Create new tags
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tags
+              properties:
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Tags created
+    delete:
+      tags:
+        - Tags
+      summary: Delete tags
+      description: Delete one or more tags
+      parameters:
+        - $ref: '#/components/parameters/instanceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tags
+              properties:
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Tags deleted
+
+  /api/themes/license/validate:
+    post:
+      tags:
+        - Theme Licenses
+      summary: Validate theme license
+      description: Validate and activate a theme license key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - licenseKey
+              properties:
+                licenseKey:
+                  type: string
+      responses:
+        '200':
+          description: License validated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  themeName:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  message:
+                    type: string
+
+  /api/themes/licensed:
+    get:
+      tags:
+        - Theme Licenses
+      summary: Get licensed themes
+      description: Get list of themes with active licenses
+      responses:
+        '200':
+          description: List of licensed themes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    expiresAt:
+                      type: string
+                      format: date-time
+
+  /api/themes/licenses:
+    get:
+      tags:
+        - Theme Licenses
+      summary: Get all licenses
+      description: Get all theme licenses
+      responses:
+        '200':
+          description: List of licenses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    licenseKey:
+                      type: string
+                    themeName:
+                      type: string
+                    expiresAt:
+                      type: string
+                      format: date-time
+                    createdAt:
+                      type: string
+                      format: date-time
+
+  /api/themes/license/{licenseKey}:
+    delete:
+      tags:
+        - Theme Licenses
+      summary: Delete license
+      description: Remove a theme license
+      parameters:
+        - name: licenseKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: License deleted
+
+  /api/themes/license/refresh:
+    post:
+      tags:
+        - Theme Licenses
+      summary: Refresh licenses
+      description: Refresh all theme licenses
+      responses:
+        '200':
+          description: Licenses refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refreshed:
+                    type: integer
+                  failed:
+                    type: integer
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+    SessionAuth:
+      type: apiKey
+      in: cookie
+      name: user_session
+      description: Session cookie authentication
+
+  parameters:
+    instanceId:
+      name: instanceId
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: qBittorrent instance ID
+    hash:
+      name: hash
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Torrent hash
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Instance:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        isDefault:
+          type: boolean
+        status:
+          type: string
+          enum: [online, offline, error]
+        lastChecked:
+          type: string
+          format: date-time
+
+    InstanceStats:
+      type: object
+      properties:
+        torrents:
+          type: object
+          properties:
+            total:
+              type: integer
+            active:
+              type: integer
+            paused:
+              type: integer
+            completed:
+              type: integer
+        serverState:
+          type: object
+          properties:
+            downloadSpeed:
+              type: integer
+            uploadSpeed:
+              type: integer
+            downloaded:
+              type: integer
+            uploaded:
+              type: integer
+            freeSpace:
+              type: integer
+
+    Torrent:
+      type: object
+      properties:
+        hash:
+          type: string
+        name:
+          type: string
+        size:
+          type: integer
+        progress:
+          type: number
+        dlSpeed:
+          type: integer
+        upSpeed:
+          type: integer
+        priority:
+          type: integer
+        numSeeds:
+          type: integer
+        numLeechs:
+          type: integer
+        ratio:
+          type: number
+        eta:
+          type: integer
+        state:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        addedOn:
+          type: integer
+        completedOn:
+          type: integer
+        savePath:
+          type: string
+
+    TorrentProperties:
+      type: object
+      properties:
+        totalDownloaded:
+          type: integer
+        totalUploaded:
+          type: integer
+        downloadSpeed:
+          type: integer
+        uploadSpeed:
+          type: integer
+        eta:
+          type: integer
+        seedsActual:
+          type: integer
+        peersActual:
+          type: integer
+        shareRatio:
+          type: number
+        uploadLimit:
+          type: integer
+        downloadLimit:
+          type: integer
+        totalSize:
+          type: integer
+        completedSize:
+          type: integer
+        additionDate:
+          type: integer
+        completionDate:
+          type: integer
+        createdBy:
+          type: string
+        comment:
+          type: string
+
+    Tracker:
+      type: object
+      properties:
+        url:
+          type: string
+        status:
+          type: integer
+        tier:
+          type: integer
+        numPeers:
+          type: integer
+        numSeeds:
+          type: integer
+        numLeeches:
+          type: integer
+        msg:
+          type: string
+
+    TorrentFile:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        progress:
+          type: number
+        priority:
+          type: integer
+        isSeed:
+          type: boolean
+        availability:
+          type: number
+
+    Category:
+      type: object
+      properties:
+        name:
+          type: string
+        savePath:
+          type: string
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: API Keys
+    description: API key management
+  - name: Instances
+    description: qBittorrent instance management
+  - name: Torrents
+    description: Torrent operations
+  - name: Torrent Details
+    description: Individual torrent information
+  - name: Categories
+    description: Category management
+  - name: Tags
+    description: Tag management
+  - name: Theme Licenses
+    description: Theme license management (optional feature)

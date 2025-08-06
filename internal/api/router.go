@@ -5,6 +5,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/zerolog/log"
+
 	"github.com/autobrr/qui/internal/api/handlers"
 	apimiddleware "github.com/autobrr/qui/internal/api/middleware"
 	"github.com/autobrr/qui/internal/auth"
@@ -13,8 +17,7 @@ import (
 	"github.com/autobrr/qui/internal/qbittorrent"
 	"github.com/autobrr/qui/internal/services"
 	"github.com/autobrr/qui/internal/web"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/autobrr/qui/internal/web/swagger"
 )
 
 // Dependencies holds all the dependencies needed for the API
@@ -139,6 +142,13 @@ func NewRouter(deps *Dependencies) *chi.Mux {
 			}
 		})
 	})
+
+	swaggerHandler, err := swagger.NewHandler(deps.Config.Config.BaseURL)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to initialize Swagger UI")
+	} else if swaggerHandler != nil {
+		swaggerHandler.RegisterRoutes(r)
+	}
 
 	// Health check endpoint
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
