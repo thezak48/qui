@@ -884,7 +884,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
 
       {/* Table container */}
       <div className="rounded-md border flex flex-col flex-1 min-h-0 mt-3">
-        <div className="relative flex-1 overflow-auto" ref={parentRef}>
+        <div className="relative flex-1 overflow-auto scrollbar-thin" ref={parentRef}>
           <div style={{ position: 'relative', minWidth: 'min-content' }}>
             {/* Header */}
             <div className="sticky top-0 bg-background border-b" style={{ zIndex: 50, position: 'sticky' }}>
