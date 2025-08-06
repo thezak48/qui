@@ -199,8 +199,8 @@ export function FilterSidebar({
     selectedFilters.trackers.length > 0
 
   return (
-    <div className="min-w-fit max-w-xs flex-shrink-0 border-r bg-muted/10 h-full">
-      <ScrollArea className="h-full">
+    <div className="w-full h-full flex flex-col xl:min-w-fit xl:max-w-xs xl:flex-shrink-0 xl:border-r xl:bg-muted/10">
+      <ScrollArea className="h-full flex-1">
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">Filters</h3>

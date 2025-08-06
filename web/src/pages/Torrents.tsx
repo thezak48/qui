@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { TorrentTableOptimized } from '@/components/torrents/TorrentTableOptimized'
 import { FilterSidebar } from '@/components/torrents/FilterSidebar'
 import { TorrentDetailsPanel } from '@/components/torrents/TorrentDetailsPanel'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { VisuallyHidden } from '@/components/ui/visually-hidden'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Filter } from 'lucide-react'
 import { useTorrentCounts } from '@/hooks/useTorrentCounts'
 import { usePersistedFilters } from '@/hooks/usePersistedFilters'
 import { useNavigate, useSearch } from '@tanstack/react-router'
@@ -19,6 +22,7 @@ interface TorrentsProps {
 export function Torrents({ instanceId, instanceName }: TorrentsProps) {
   const [filters, setFilters] = usePersistedFilters(instanceId)
   const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null)
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const navigate = useNavigate()
   const search = useSearch({ strict: false }) as any
   
@@ -97,9 +101,17 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
     setSelectedTorrent(torrent)
   }
 
+  // Calculate total active filters for badge
+  const activeFilterCount = useMemo(() => {
+    return filters.status.length + 
+           filters.categories.length + 
+           filters.tags.length + 
+           filters.trackers.length
+  }, [filters])
+
   return (
     <div className="flex h-full">
-      {/* Sidebar - hidden on mobile */}
+      {/* Desktop Sidebar - hidden on mobile */}
       <div className="hidden xl:block">
         <FilterSidebar
           instanceId={instanceId}
@@ -109,14 +121,54 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
         />
       </div>
       
+      {/* Mobile Filter Sheet */}
+      <Sheet open={mobileFilterOpen} onOpenChange={setMobileFilterOpen}>
+        <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] xl:hidden">
+          <SheetHeader className="px-4 py-3 border-b">
+            <SheetTitle className="text-lg font-semibold">Filters</SheetTitle>
+          </SheetHeader>
+          <div className="h-[calc(100vh-3.5rem)]">
+            <FilterSidebar
+              instanceId={instanceId}
+              selectedFilters={filters}
+              onFilterChange={setFilters}
+              torrentCounts={torrentCounts}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+      
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         <div className="p-3 sm:p-4 lg:p-6 flex flex-col h-full">
           <div className="flex-shrink-0 mb-4 lg:mb-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{instanceName}</h1>
-            <p className="text-muted-foreground mt-1 lg:mt-2 text-sm lg:text-base">
-              Manage torrents for this qBittorrent instance
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{instanceName}</h1>
+                <p className="text-muted-foreground mt-1 lg:mt-2 text-sm lg:text-base">
+                  Manage torrents for this qBittorrent instance
+                </p>
+              </div>
+              
+              {/* Mobile Filter Button */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="relative xl:hidden"
+                onClick={() => setMobileFilterOpen(true)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <Badge 
+                    variant="secondary" 
+                    className="ml-2 h-5 min-w-[20px] px-1 text-xs"
+                  >
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            </div>
           </div>
           <div className="flex-1 min-h-0">
             <TorrentTableOptimized 
