@@ -176,6 +176,17 @@ func (h *TorrentsHandler) AddTorrent(w http.ResponseWriter, r *http.Request) {
 
 	if savePath := r.FormValue("savepath"); savePath != "" {
 		options["savepath"] = savePath
+		// When savepath is provided, disable autoTMM
+		options["autoTMM"] = "false"
+	}
+
+	// Handle autoTMM explicitly if provided
+	if autoTMM := r.FormValue("autoTMM"); autoTMM != "" {
+		options["autoTMM"] = autoTMM
+		// If autoTMM is true, remove savepath to let qBittorrent handle it
+		if autoTMM == "true" {
+			delete(options, "savepath")
+		}
 	}
 
 	// Add torrent
@@ -201,6 +212,7 @@ type BulkActionRequest struct {
 	DeleteFiles bool     `json:"deleteFiles,omitempty"` // For delete action
 	Tags        string   `json:"tags,omitempty"`        // For tag operations (comma-separated)
 	Category    string   `json:"category,omitempty"`    // For category operations
+	Enable      bool     `json:"enable,omitempty"`      // For toggleAutoTMM action
 }
 
 // BulkAction performs bulk operations on torrents
@@ -228,6 +240,7 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 		"pause", "resume", "delete", "deleteWithFiles",
 		"recheck", "reannounce", "increasePriority", "decreasePriority",
 		"topPriority", "bottomPriority", "addTags", "removeTags", "setTags", "setCategory",
+		"toggleAutoTMM",
 	}
 
 	valid := false
@@ -265,6 +278,8 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 		err = h.syncManager.SetTags(r.Context(), instanceID, req.Hashes, req.Tags)
 	case "setCategory":
 		err = h.syncManager.SetCategory(r.Context(), instanceID, req.Hashes, req.Category)
+	case "toggleAutoTMM":
+		err = h.syncManager.SetAutoTMM(r.Context(), instanceID, req.Hashes, req.Enable)
 	case "delete":
 		// Handle delete with deleteFiles parameter
 		action := req.Action

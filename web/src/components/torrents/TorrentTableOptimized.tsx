@@ -68,7 +68,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { AddTorrentDialog } from './AddTorrentDialog'
 import { TorrentActions } from './TorrentActions'
-import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ListOrdered } from 'lucide-react'
+import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ListOrdered, Settings2, Sparkles } from 'lucide-react'
 import { SetTagsDialog, SetCategoryDialog, RemoveTagsDialog } from './TorrentDialogs'
 import { DraggableTableHeader } from './DraggableTableHeader'
 import type { Torrent } from '@/types'
@@ -615,11 +615,12 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   // Mutation for bulk actions
   const mutation = useMutation({
     mutationFn: (data: {
-      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'addTags' | 'removeTags' | 'setTags' | 'setCategory'
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'addTags' | 'removeTags' | 'setTags' | 'setCategory' | 'toggleAutoTMM'
       deleteFiles?: boolean
       hashes: string[]
       tags?: string
       category?: string
+      enable?: boolean
     }) => {
       return api.bulkAction(instanceId, {
         hashes: data.hashes,
@@ -627,6 +628,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
         deleteFiles: data.deleteFiles,
         tags: data.tags,
         category: data.category,
+        enable: data.enable,
       })
     },
     onSuccess: async (_, variables) => {
@@ -737,9 +739,9 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     setContextMenuHashes([])
   }
 
-  const handleContextMenuAction = (action: 'pause' | 'resume' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority', hashes: string[]) => {
+  const handleContextMenuAction = (action: 'pause' | 'resume' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'toggleAutoTMM', hashes: string[], enable?: boolean) => {
     setContextMenuHashes(hashes)
-    mutation.mutate({ action, hashes })
+    mutation.mutate({ action, hashes, enable })
   }
 
   const copyToClipboard = (text: string) => {
@@ -1199,6 +1201,55 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                           <Folder className="mr-2 h-4 w-4" />
                           Set Category {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
                         </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        {(() => {
+                          const hashes = row.getIsSelected() ? selectedHashes : [torrent.hash]
+                          const torrents = row.getIsSelected() ? selectedTorrents : [torrent]
+                          const tmmStates = torrents.map(t => t.auto_tmm)
+                          const allEnabled = tmmStates.length > 0 && tmmStates.every(state => state === true)
+                          const allDisabled = tmmStates.length > 0 && tmmStates.every(state => state === false)
+                          const mixed = tmmStates.length > 0 && !allEnabled && !allDisabled
+                          
+                          if (mixed) {
+                            return (
+                              <>
+                                <ContextMenuItem
+                                  onClick={() => handleContextMenuAction('toggleAutoTMM', hashes, true)}
+                                  disabled={mutation.isPending}
+                                >
+                                  <Sparkles className="mr-2 h-4 w-4" />
+                                  Enable TMM {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length} Mixed)` : '(Mixed)'}
+                                </ContextMenuItem>
+                                <ContextMenuItem
+                                  onClick={() => handleContextMenuAction('toggleAutoTMM', hashes, false)}
+                                  disabled={mutation.isPending}
+                                >
+                                  <Settings2 className="mr-2 h-4 w-4" />
+                                  Disable TMM {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length} Mixed)` : '(Mixed)'}
+                                </ContextMenuItem>
+                              </>
+                            )
+                          }
+                          
+                          return (
+                            <ContextMenuItem
+                              onClick={() => handleContextMenuAction('toggleAutoTMM', hashes, !allEnabled)}
+                              disabled={mutation.isPending}
+                            >
+                              {allEnabled ? (
+                                <>
+                                  <Settings2 className="mr-2 h-4 w-4" />
+                                  Disable TMM {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="mr-2 h-4 w-4" />
+                                  Enable TMM {row.getIsSelected() && selectedHashes.length > 1 ? `(${selectedHashes.length})` : ''}
+                                </>
+                              )}
+                            </ContextMenuItem>
+                          )
+                        })()}
                         <ContextMenuSeparator />
                         <ContextMenuItem onClick={() => copyToClipboard(incognitoMode ? getLinuxIsoName(torrent.hash) : torrent.name)}>
                           <Copy className="mr-2 h-4 w-4" />

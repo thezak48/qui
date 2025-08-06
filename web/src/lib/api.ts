@@ -167,6 +167,7 @@ class ApiClient {
       tags?: string[]
       startPaused?: boolean
       savePath?: string
+      autoTMM?: boolean
     }
   ): Promise<{ success: boolean; message?: string }> {
     const formData = new FormData()
@@ -175,7 +176,9 @@ class ApiClient {
     if (data.category) formData.append('category', data.category)
     if (data.tags) formData.append('tags', data.tags.join(','))
     if (data.startPaused !== undefined) formData.append('paused', data.startPaused.toString())
-    if (data.savePath) formData.append('savepath', data.savePath)
+    if (data.autoTMM !== undefined) formData.append('autoTMM', data.autoTMM.toString())
+    // Only send savePath if autoTMM is false or undefined
+    if (data.savePath && !data.autoTMM) formData.append('savepath', data.savePath)
 
     const response = await fetch(`${API_BASE}/instances/${instanceId}/torrents`, {
       method: 'POST',
@@ -218,10 +221,11 @@ class ApiClient {
     instanceId: number,
     data: {
       hashes: string[]
-      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'setCategory' | 'addTags' | 'removeTags' | 'setTags'
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'setCategory' | 'addTags' | 'removeTags' | 'setTags' | 'toggleAutoTMM'
       deleteFiles?: boolean
       category?: string
       tags?: string  // Comma-separated tags string
+      enable?: boolean  // For toggleAutoTMM
     }
   ): Promise<void> {
     return this.request(`/instances/${instanceId}/torrents/bulk-action`, {

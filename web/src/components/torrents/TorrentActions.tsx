@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ChevronDown, Play, Pause, Trash2, CheckCircle, Tag, Folder, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown } from 'lucide-react'
+import { ChevronDown, Play, Pause, Trash2, CheckCircle, Tag, Folder, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, Settings2, Sparkles } from 'lucide-react'
 import { SetTagsDialog, SetCategoryDialog } from './TorrentDialogs'
 
 interface TorrentActionsProps {
@@ -53,10 +53,11 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
 
   const mutation = useMutation({
     mutationFn: (data: {
-      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'addTags' | 'removeTags' | 'setTags' | 'setCategory'
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'addTags' | 'removeTags' | 'setTags' | 'setCategory' | 'toggleAutoTMM'
       deleteFiles?: boolean
       tags?: string
       category?: string
+      enable?: boolean
     }) => {
       return api.bulkAction(instanceId, {
         hashes: selectedHashes,
@@ -64,6 +65,7 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
         deleteFiles: data.deleteFiles,
         tags: data.tags,
         category: data.category,
+        enable: data.enable,
       })
     },
     onSuccess: async (_, variables) => {
@@ -135,6 +137,9 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
           break
         case 'setCategory':
           toast.success(`Set category for ${count} ${torrentText}`)
+          break
+        case 'toggleAutoTMM':
+          toast.success(`${variables.enable ? 'Enabled' : 'Disabled'} Auto TMM for ${count} ${torrentText}`)
           break
       }
     },
@@ -294,6 +299,54 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
             <Folder className="mr-2 h-4 w-4" />
             Set Category
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {(() => {
+            // Check TMM state across selected torrents
+            const tmmStates = selectedTorrents?.map(t => t.auto_tmm) ?? []
+            const allEnabled = tmmStates.length > 0 && tmmStates.every(state => state === true)
+            const allDisabled = tmmStates.length > 0 && tmmStates.every(state => state === false)
+            const mixed = tmmStates.length > 0 && !allEnabled && !allDisabled
+            
+            if (mixed) {
+              return (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => mutation.mutate({ action: 'toggleAutoTMM', enable: true })}
+                    disabled={mutation.isPending}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Enable TMM (Mixed)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => mutation.mutate({ action: 'toggleAutoTMM', enable: false })}
+                    disabled={mutation.isPending}
+                  >
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    Disable TMM (Mixed)
+                  </DropdownMenuItem>
+                </>
+              )
+            }
+            
+            return (
+              <DropdownMenuItem
+                onClick={() => mutation.mutate({ action: 'toggleAutoTMM', enable: !allEnabled })}
+                disabled={mutation.isPending}
+              >
+                {allEnabled ? (
+                  <>
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    Disable TMM
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Enable TMM
+                  </>
+                )}
+              </DropdownMenuItem>
+            )
+          })()}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setShowDeleteDialog(true)}

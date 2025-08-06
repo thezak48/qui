@@ -1115,6 +1115,16 @@ func (sm *SyncManager) SetCategory(ctx context.Context, instanceID int, hashes [
 	return client.Client.SetCategoryCtx(ctx, hashes, category)
 }
 
+// SetAutoTMM sets the automatic torrent management for torrents
+func (sm *SyncManager) SetAutoTMM(ctx context.Context, instanceID int, hashes []string, enable bool) error {
+	client, err := sm.clientPool.GetClient(instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get client: %w", err)
+	}
+
+	return client.Client.SetAutoManagementCtx(ctx, hashes, enable)
+}
+
 // CreateTags creates new tags
 func (sm *SyncManager) CreateTags(ctx context.Context, instanceID int, tags []string) error {
 	client, err := sm.clientPool.GetClient(instanceID)

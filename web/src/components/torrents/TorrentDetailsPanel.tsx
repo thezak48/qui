@@ -198,12 +198,6 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
                       {properties.save_path || 'N/A'}
                     </div>
                   </div>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Download Path:</span>
-                    <div className="text-sm mt-1 font-mono text-xs bg-muted/50 hover:bg-muted transition-colors p-2 rounded break-all">
-                      {properties.download_path || properties.save_path || 'N/A'}
-                    </div>
-                  </div>
                 </div>
 
                 <div className="space-y-2">
