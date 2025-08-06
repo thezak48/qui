@@ -66,15 +66,31 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
         category: data.category,
       })
     },
-    onSuccess: (_, variables) => {
-      // Add small delay to allow qBittorrent to process the change
-      setTimeout(() => {
-        queryClient.invalidateQueries({ 
+    onSuccess: async (_, variables) => {
+      // For delete operations, force immediate refetch
+      if (variables.action === 'delete') {
+        // Remove the query data to force immediate UI update
+        queryClient.removeQueries({
           queryKey: ['torrents-list', instanceId],
-          exact: false 
+          exact: false
         })
-      }, 1000) // Give qBittorrent time to process
-      onComplete?.()
+        
+        // Then trigger a refetch
+        await queryClient.refetchQueries({
+          queryKey: ['torrents-list', instanceId],
+          exact: false
+        })
+        onComplete?.()
+      } else {
+        // For other operations, add delay to allow qBittorrent to process
+        setTimeout(() => {
+          queryClient.invalidateQueries({ 
+            queryKey: ['torrents-list', instanceId],
+            exact: false 
+          })
+        }, 1000)
+        onComplete?.()
+      }
       
       // Show success toast
       const count = selectedHashes.length

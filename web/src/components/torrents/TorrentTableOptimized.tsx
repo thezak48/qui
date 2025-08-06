@@ -629,15 +629,34 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
         category: data.category,
       })
     },
-    onSuccess: () => {
-      // Add small delay to allow qBittorrent to process the change
-      setTimeout(() => {
-        queryClient.invalidateQueries({ 
+    onSuccess: async (_, variables) => {
+      // For delete operations, optimistically remove from UI immediately
+      if (variables.action === 'delete') {
+        // Clear selection and context menu immediately
+        setRowSelection({})
+        setContextMenuHashes([])
+        
+        // Remove the query data to force immediate UI update
+        queryClient.removeQueries({
           queryKey: ['torrents-list', instanceId],
-          exact: false 
+          exact: false
         })
-      }, 1000) // Give qBittorrent time to process
-      setContextMenuHashes([])
+        
+        // Then trigger a refetch
+        await queryClient.refetchQueries({
+          queryKey: ['torrents-list', instanceId],
+          exact: false
+        })
+      } else {
+        // For other operations, add delay to allow qBittorrent to process
+        setTimeout(() => {
+          queryClient.invalidateQueries({ 
+            queryKey: ['torrents-list', instanceId],
+            exact: false 
+          })
+        }, 1000)
+        setContextMenuHashes([])
+      }
     },
   })
 

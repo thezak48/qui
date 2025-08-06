@@ -614,6 +614,20 @@ func (sm *SyncManager) InvalidateCache(instanceID int) {
 	sm.mu.Unlock()
 }
 
+// invalidateTagsCache invalidates the tags cache for a specific instance
+func (sm *SyncManager) invalidateTagsCache(instanceID int) {
+	cacheKey := fmt.Sprintf("tags:%d", instanceID)
+	sm.cache.Del(cacheKey)
+	log.Debug().Int("instanceID", instanceID).Msg("Invalidated tags cache")
+}
+
+// invalidateCategoriesCache invalidates the categories cache for a specific instance
+func (sm *SyncManager) invalidateCategoriesCache(instanceID int) {
+	cacheKey := fmt.Sprintf("categories:%d", instanceID)
+	sm.cache.Del(cacheKey)
+	log.Debug().Int("instanceID", instanceID).Msg("Invalidated categories cache")
+}
+
 // shouldSkipCache returns true if we should skip caching (cache was recently cleared)
 func (sm *SyncManager) shouldSkipCache() bool {
 	sm.mu.RLock()
@@ -1108,7 +1122,12 @@ func (sm *SyncManager) CreateTags(ctx context.Context, instanceID int, tags []st
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	return client.Client.CreateTagsCtx(ctx, tags)
+	if err := client.Client.CreateTagsCtx(ctx, tags); err != nil {
+		return err
+	}
+
+	sm.invalidateTagsCache(instanceID)
+	return nil
 }
 
 // DeleteTags deletes tags
@@ -1118,7 +1137,12 @@ func (sm *SyncManager) DeleteTags(ctx context.Context, instanceID int, tags []st
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	return client.Client.DeleteTagsCtx(ctx, tags)
+	if err := client.Client.DeleteTagsCtx(ctx, tags); err != nil {
+		return err
+	}
+
+	sm.invalidateTagsCache(instanceID)
+	return nil
 }
 
 // CreateCategory creates a new category
@@ -1128,7 +1152,12 @@ func (sm *SyncManager) CreateCategory(ctx context.Context, instanceID int, name 
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	return client.Client.CreateCategoryCtx(ctx, name, path)
+	if err := client.Client.CreateCategoryCtx(ctx, name, path); err != nil {
+		return err
+	}
+
+	sm.invalidateCategoriesCache(instanceID)
+	return nil
 }
 
 // EditCategory edits an existing category
@@ -1138,7 +1167,12 @@ func (sm *SyncManager) EditCategory(ctx context.Context, instanceID int, name st
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	return client.Client.EditCategoryCtx(ctx, name, path)
+	if err := client.Client.EditCategoryCtx(ctx, name, path); err != nil {
+		return err
+	}
+
+	sm.invalidateCategoriesCache(instanceID)
+	return nil
 }
 
 // RemoveCategories removes categories
@@ -1148,5 +1182,10 @@ func (sm *SyncManager) RemoveCategories(ctx context.Context, instanceID int, cat
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	return client.Client.RemoveCategoriesCtx(ctx, categories)
+	if err := client.Client.RemoveCategoriesCtx(ctx, categories); err != nil {
+		return err
+	}
+
+	sm.invalidateCategoriesCache(instanceID)
+	return nil
 }
