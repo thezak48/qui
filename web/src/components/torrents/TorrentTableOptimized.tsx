@@ -863,6 +863,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                       onCheckedChange={(value) =>
                         column.toggleVisibility(!!value)
                       }
+                      onSelect={(e) => e.preventDefault()}
                     >
                       <span className="truncate">
                         {column.columnDef.header as string}
