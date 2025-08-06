@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { withBasePath } from '@/lib/base-url'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Copy, Plus, Trash2 } from 'lucide-react'
+import { Copy, Plus, Trash2, ExternalLink } from 'lucide-react'
 import { ThemeLicenseManager } from '@/components/themes/ThemeLicenseManager'
 import { ThemeSelector } from '@/components/themes/ThemeSelector'
 import {
@@ -430,10 +431,24 @@ export function Settings() {
         <TabsContent value="api" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>API Keys</CardTitle>
-              <CardDescription>
-                Manage API keys for external access
-              </CardDescription>
+              <div className="flex items-start justify-between">
+                <div className="space-y-1.5">
+                  <CardTitle>API Keys</CardTitle>
+                  <CardDescription>
+                    Manage API keys for external access
+                  </CardDescription>
+                </div>
+                <a
+                  href={withBasePath('api/docs')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  title="View API documentation"
+                >
+                  <span className="hidden sm:inline">API Docs</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
             </CardHeader>
             <CardContent>
               <ApiKeysManager />
