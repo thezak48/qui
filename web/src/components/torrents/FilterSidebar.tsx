@@ -421,7 +421,7 @@ export function FilterSidebar({
             </AccordionItem>
 
             {/* Trackers Filter */}
-            <AccordionItem value="trackers" className="border rounded-lg">
+            <AccordionItem value="trackers" className="border rounded-lg last:border-b">
               <AccordionTrigger className="px-3 py-2 hover:no-underline">
                 <div className="flex items-center justify-between w-full">
                   <span className="text-sm font-medium">Trackers</span>
