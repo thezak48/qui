@@ -636,17 +636,37 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
         setRowSelection({})
         setContextMenuHashes([])
         
-        // Remove the query data to force immediate UI update
-        queryClient.removeQueries({
+        // Optimistically remove torrents from ALL cached queries for this instance
+        // This includes all pages, filters, and search variations
+        const cache = queryClient.getQueryCache()
+        const queries = cache.findAll({
           queryKey: ['torrents-list', instanceId],
           exact: false
         })
         
-        // Then trigger a refetch
-        await queryClient.refetchQueries({
-          queryKey: ['torrents-list', instanceId],
-          exact: false
+        queries.forEach(query => {
+          queryClient.setQueryData(query.queryKey, (oldData: any) => {
+            if (!oldData) return oldData
+            return {
+              ...oldData,
+              torrents: oldData.torrents?.filter((t: Torrent) => 
+                !variables.hashes.includes(t.hash)
+              ) || [],
+              total: Math.max(0, (oldData.total || 0) - variables.hashes.length),
+              totalCount: Math.max(0, (oldData.totalCount || oldData.total || 0) - variables.hashes.length)
+            }
+          })
         })
+        
+        // Refetch later to sync with actual server state
+        // Longer delay when deleting files from disk
+        const refetchDelay = variables.deleteFiles ? 5000 : 2000
+        setTimeout(() => {
+          queryClient.invalidateQueries({ 
+            queryKey: ['torrents-list', instanceId],
+            exact: false 
+          })
+        }, refetchDelay)
       } else {
         // For other operations, add delay to allow qBittorrent to process
         setTimeout(() => {
