@@ -765,7 +765,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       {/* Search and Actions */}
       <div className="flex flex-col gap-2 flex-shrink-0 sm:mt-3">
         {/* Search bar row */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -843,7 +843,6 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
             </Tooltip>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => onAddTorrentModalChange?.(true)}
               className="hidden sm:inline-flex"
             >
