@@ -16,20 +16,26 @@ function matchTorrentStatus(torrent: Torrent, status: string): boolean {
     case 'downloading':
       return state === 'downloading' || state === 'stalledDL' ||
         state === 'metaDL' || state === 'queuedDL' ||
-        state === 'allocating' || state === 'checkingDL'
+        state === 'allocating' || state === 'checkingDL' ||
+        state === 'forcedDL'
     case 'seeding':
       return state === 'uploading' || state === 'stalledUP' ||
-        state === 'queuedUP' || state === 'checkingUP'
+        state === 'queuedUP' || state === 'checkingUP' ||
+        state === 'forcedUP'
     case 'completed':
       return torrent.progress === 1
     case 'paused':
-      return state === 'pausedDL' || state === 'pausedUP'
+      return state === 'pausedDL' || state === 'pausedUP' ||
+        state === 'stoppedDL' || state === 'stoppedUP'
     case 'active':
-      return state === 'downloading' || state === 'uploading'
+      return state === 'downloading' || state === 'uploading' ||
+        state === 'forcedDL' || state === 'forcedUP'
     case 'inactive':
-      return state !== 'downloading' && state !== 'uploading'
+      return state !== 'downloading' && state !== 'uploading' &&
+        state !== 'forcedDL' && state !== 'forcedUP'
     case 'resumed':
-      return state !== 'pausedDL' && state !== 'pausedUP'
+      return state !== 'pausedDL' && state !== 'pausedUP' &&
+        state !== 'stoppedDL' && state !== 'stoppedUP'
     case 'stalled':
       return state === 'stalledDL' || state === 'stalledUP'
     case 'stalled_uploading':
@@ -38,6 +44,11 @@ function matchTorrentStatus(torrent: Torrent, status: string): boolean {
       return state === 'stalledDL'
     case 'errored':
       return state === 'error' || state === 'missingFiles'
+    case 'checking':
+      return state === 'checkingDL' || state === 'checkingUP' ||
+        state === 'checkingResumeData'
+    case 'moving':
+      return state === 'moving'
     default:
       // For specific states, match exactly
       return state === status
@@ -52,7 +63,8 @@ export function useTorrentCounts({ torrents, allCategories = {}, allTags = [] }:
     const statusFilters = [
       'all', 'downloading', 'seeding', 'completed', 'paused', 
       'active', 'inactive', 'resumed', 'stalled', 
-      'stalled_uploading', 'stalled_downloading', 'errored'
+      'stalled_uploading', 'stalled_downloading', 'errored',
+      'checking', 'moving'
     ]
 
     statusFilters.forEach(status => {

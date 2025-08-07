@@ -960,20 +960,26 @@ func (sm *SyncManager) matchTorrentStatus(torrent qbt.Torrent, status string) bo
 	case "downloading":
 		return state == "downloading" || state == "stalledDL" ||
 			state == "metaDL" || state == "queuedDL" ||
-			state == "allocating" || state == "checkingDL"
+			state == "allocating" || state == "checkingDL" ||
+			state == "forcedDL"
 	case "seeding":
 		return state == "uploading" || state == "stalledUP" ||
-			state == "queuedUP" || state == "checkingUP"
+			state == "queuedUP" || state == "checkingUP" ||
+			state == "forcedUP"
 	case "completed":
 		return torrent.Progress == 1
 	case "paused":
-		return state == "pausedDL" || state == "pausedUP"
+		return state == "pausedDL" || state == "pausedUP" ||
+			state == "stoppedDL" || state == "stoppedUP"
 	case "active":
-		return state == "downloading" || state == "uploading"
+		return state == "downloading" || state == "uploading" ||
+			state == "forcedDL" || state == "forcedUP"
 	case "inactive":
-		return state != "downloading" && state != "uploading"
+		return state != "downloading" && state != "uploading" &&
+			state != "forcedDL" && state != "forcedUP"
 	case "resumed":
-		return state != "pausedDL" && state != "pausedUP"
+		return state != "pausedDL" && state != "pausedUP" &&
+			state != "stoppedDL" && state != "stoppedUP"
 	case "stalled":
 		return state == "stalledDL" || state == "stalledUP"
 	case "stalled_uploading":
@@ -982,6 +988,11 @@ func (sm *SyncManager) matchTorrentStatus(torrent qbt.Torrent, status string) bo
 		return state == "stalledDL"
 	case "errored":
 		return state == "error" || state == "missingFiles"
+	case "checking":
+		return state == "checkingDL" || state == "checkingUP" ||
+			state == "checkingResumeData"
+	case "moving":
+		return state == "moving"
 	default:
 		// For specific states, match exactly
 		return state == status
@@ -1005,7 +1016,7 @@ func (sm *SyncManager) calculateStats(torrents []qbt.Torrent) *TorrentStats {
 			stats.Downloading++
 		case qbt.TorrentStateUploading, qbt.TorrentStateStalledUp, qbt.TorrentStateQueuedUp, qbt.TorrentStateForcedUp:
 			stats.Seeding++
-		case qbt.TorrentStatePausedDl, qbt.TorrentStatePausedUp:
+		case qbt.TorrentStatePausedDl, qbt.TorrentStatePausedUp, qbt.TorrentStateStoppedDl, qbt.TorrentStateStoppedUp:
 			stats.Paused++
 		case qbt.TorrentStateError, qbt.TorrentStateMissingFiles:
 			stats.Error++
