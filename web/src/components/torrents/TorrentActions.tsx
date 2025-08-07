@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
+import { applyOptimisticUpdates, applyOptimisticStateUpdates } from '@/lib/torrent-state-utils'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -76,21 +77,95 @@ export function TorrentActions({ instanceId, selectedHashes, selectedTorrents = 
           queryKey: ['torrents-list', instanceId],
           exact: false
         })
+        // Also remove counts query
+        queryClient.removeQueries({
+          queryKey: ['all-torrents-for-counts', instanceId],
+          exact: false
+        })
         
         // Then trigger a refetch
         await queryClient.refetchQueries({
           queryKey: ['torrents-list', instanceId],
           exact: false
         })
+        await queryClient.refetchQueries({
+          queryKey: ['all-torrents-for-counts', instanceId],
+          exact: false
+        })
         onComplete?.()
       } else {
+        // For pause/resume, optimistically update the cache immediately
+        if (variables.action === 'pause' || variables.action === 'resume') {
+          // Get all cached queries for this instance
+          const cache = queryClient.getQueryCache()
+          const queries = cache.findAll({
+            queryKey: ['torrents-list', instanceId],
+            exact: false
+          })
+          
+          // Optimistically update torrent states in all cached queries
+          queries.forEach(query => {
+            queryClient.setQueryData(query.queryKey, (oldData: any) => {
+              if (!oldData?.torrents) return oldData
+              
+              // Check if this query has a status filter in its key
+              // Query key structure: ['torrents-list', instanceId, currentPage, filters, search]
+              const queryKey = query.queryKey as any[]
+              const filters = queryKey[3] // filters is at index 3
+              const statusFilters = filters?.status || []
+              
+              // Apply optimistic updates using our utility function
+              const { torrents: updatedTorrents } = applyOptimisticUpdates(
+                oldData.torrents,
+                selectedHashes,
+                variables.action as 'pause' | 'resume', // Type narrowed by if condition above
+                statusFilters
+              )
+              
+              return {
+                ...oldData,
+                torrents: updatedTorrents,
+                total: updatedTorrents.length,
+                totalCount: updatedTorrents.length
+              }
+            })
+          })
+          
+          // Also optimistically update the all-torrents-for-counts query
+          const countsQueries = cache.findAll({
+            queryKey: ['all-torrents-for-counts', instanceId],
+            exact: false
+          })
+          
+          countsQueries.forEach(query => {
+            queryClient.setQueryData(query.queryKey, (oldData: any) => {
+              if (!oldData || !Array.isArray(oldData)) return oldData
+              
+              // Apply optimistic state updates without filtering
+              return applyOptimisticStateUpdates(
+                oldData,
+                selectedHashes,
+                variables.action as 'pause' | 'resume'
+              )
+            })
+          })
+        }
+        
         // For other operations, add delay to allow qBittorrent to process
+        // Resume operations need more time for state transition
+        const delay = variables.action === 'resume' ? 2000 : 1000
+        
         setTimeout(() => {
+          // Always invalidate to get the real state from server
           queryClient.invalidateQueries({ 
             queryKey: ['torrents-list', instanceId],
             exact: false 
           })
-        }, 1000)
+          queryClient.invalidateQueries({ 
+            queryKey: ['all-torrents-for-counts', instanceId],
+            exact: false 
+          })
+        }, delay)
         onComplete?.()
       }
       

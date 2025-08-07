@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { Torrent } from '@/types'
+import { matchesStatusFilter } from '@/lib/torrent-state-utils'
 
 interface UseTorrentCountsProps {
   torrents: Torrent[]
@@ -7,53 +8,6 @@ interface UseTorrentCountsProps {
   allTags?: string[]
 }
 
-// Helper function to match torrent status based on the same logic as FilterSidebar
-function matchTorrentStatus(torrent: Torrent, status: string): boolean {
-  const state = torrent.state
-  switch (status) {
-    case 'all':
-      return true
-    case 'downloading':
-      return state === 'downloading' || state === 'stalledDL' ||
-        state === 'metaDL' || state === 'queuedDL' ||
-        state === 'allocating' || state === 'checkingDL' ||
-        state === 'forcedDL'
-    case 'seeding':
-      return state === 'uploading' || state === 'stalledUP' ||
-        state === 'queuedUP' || state === 'checkingUP' ||
-        state === 'forcedUP'
-    case 'completed':
-      return torrent.progress === 1
-    case 'paused':
-      return state === 'pausedDL' || state === 'pausedUP' ||
-        state === 'stoppedDL' || state === 'stoppedUP'
-    case 'active':
-      return state === 'downloading' || state === 'uploading' ||
-        state === 'forcedDL' || state === 'forcedUP'
-    case 'inactive':
-      return state !== 'downloading' && state !== 'uploading' &&
-        state !== 'forcedDL' && state !== 'forcedUP'
-    case 'resumed':
-      return state !== 'pausedDL' && state !== 'pausedUP' &&
-        state !== 'stoppedDL' && state !== 'stoppedUP'
-    case 'stalled':
-      return state === 'stalledDL' || state === 'stalledUP'
-    case 'stalled_uploading':
-      return state === 'stalledUP'
-    case 'stalled_downloading':
-      return state === 'stalledDL'
-    case 'errored':
-      return state === 'error' || state === 'missingFiles'
-    case 'checking':
-      return state === 'checkingDL' || state === 'checkingUP' ||
-        state === 'checkingResumeData'
-    case 'moving':
-      return state === 'moving'
-    default:
-      // For specific states, match exactly
-      return state === status
-  }
-}
 
 export function useTorrentCounts({ torrents, allCategories = {}, allTags = [] }: UseTorrentCountsProps): Record<string, number> {
   return useMemo(() => {
@@ -68,7 +22,7 @@ export function useTorrentCounts({ torrents, allCategories = {}, allTags = [] }:
     ]
 
     statusFilters.forEach(status => {
-      counts[`status:${status}`] = torrents.filter(t => matchTorrentStatus(t, status)).length
+      counts[`status:${status}`] = torrents.filter(t => matchesStatusFilter(t, status)).length
     })
 
     // Category counts

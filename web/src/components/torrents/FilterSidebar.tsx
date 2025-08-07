@@ -31,6 +31,8 @@ import {
   Plus,
   Edit,
   Trash2,
+  RotateCw,
+  MoveRight,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -75,6 +77,8 @@ const TORRENT_STATES: Array<{ value: string; label: string; icon: LucideIcon }> 
   { value: 'stalled_uploading', label: 'Stalled Uploading', icon: AlertCircle },
   { value: 'stalled_downloading', label: 'Stalled Downloading', icon: AlertCircle },
   { value: 'errored', label: 'Error', icon: XCircle },
+  { value: 'checking', label: 'Checking', icon: RotateCw },
+  { value: 'moving', label: 'Moving', icon: MoveRight },
 ]
 
 export function FilterSidebar({

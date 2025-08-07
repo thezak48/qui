@@ -82,6 +82,11 @@ export function AddTorrentDialog({ instanceId, open: controlledOpen, onOpenChang
           queryKey: ['torrents-list', instanceId],
           exact: false 
         })
+        // Also invalidate the counts query to update filter sidebar immediately
+        queryClient.invalidateQueries({ 
+          queryKey: ['all-torrents-for-counts', instanceId],
+          exact: false 
+        })
       }, 500) // Give qBittorrent time to process
       setOpen(false)
       form.reset()
