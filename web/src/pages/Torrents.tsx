@@ -1,19 +1,17 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { TorrentTableOptimized } from '@/components/torrents/TorrentTableOptimized'
+import { TorrentTableResponsive } from '@/components/torrents/TorrentTableResponsive'
 import { FilterSidebar } from '@/components/torrents/FilterSidebar'
 import { TorrentDetailsPanel } from '@/components/torrents/TorrentDetailsPanel'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { VisuallyHidden } from '@/components/ui/visually-hidden'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Filter, ChevronDown, ChevronUp } from 'lucide-react'
+import { Filter } from 'lucide-react'
 import { useTorrentCounts } from '@/hooks/useTorrentCounts'
 import { usePersistedFilters } from '@/hooks/usePersistedFilters'
-import { useInstanceStats } from '@/hooks/useInstanceStats'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { api } from '@/lib/api'
-import { formatSpeed } from '@/lib/utils'
 import type { Torrent } from '@/types'
 
 interface TorrentsProps {
@@ -27,9 +25,6 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const navigate = useNavigate()
   const search = useSearch({ strict: false }) as any
-  
-  // Get instance stats for speeds
-  const { data: stats } = useInstanceStats(instanceId)
   
   // Check if add torrent modal should be open
   const isAddTorrentModalOpen = search?.modal === 'add-torrent'
@@ -128,11 +123,11 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
       
       {/* Mobile Filter Sheet */}
       <Sheet open={mobileFilterOpen} onOpenChange={setMobileFilterOpen}>
-        <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] xl:hidden">
+        <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] xl:hidden flex flex-col max-h-[100dvh]">
           <SheetHeader className="px-4 py-3 border-b">
             <SheetTitle className="text-lg font-semibold">Filters</SheetTitle>
           </SheetHeader>
-          <div className="h-[calc(100vh-3.5rem)]">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <FilterSidebar
               instanceId={instanceId}
               selectedFilters={filters}
@@ -149,19 +144,7 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
           <div className="flex-shrink-0 mb-4 sm:mb-4 lg:mb-6">
             <div className="flex items-center justify-between gap-2 sm:gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <h1 className="text-lg sm:text-xl lg:text-3xl font-bold truncate">{instanceName}</h1>
-                  {/* Mobile stats - inline with title */}
-                  <div className="sm:hidden text-[11px] text-muted-foreground ml-2 flex-shrink-0 flex items-center gap-1">
-                    <span className="font-medium text-foreground">{stats?.torrents?.total || 0}</span>
-                    <span className="text-[10px] flex items-center gap-0.5">
-                      <ChevronDown className="h-3 w-3" />
-                      {formatSpeed(stats?.serverState?.downloadSpeed || 0, true)}
-                      <ChevronUp className="h-3 w-3 ml-1" />
-                      {formatSpeed(stats?.serverState?.uploadSpeed || 0, true)}
-                    </span>
-                  </div>
-                </div>
+                <h1 className="text-lg sm:text-xl lg:text-3xl font-bold truncate">{instanceName}</h1>
                 <p className="hidden sm:block text-muted-foreground mt-1 lg:mt-2 text-sm lg:text-base">
                   Manage torrents for this qBittorrent instance
                 </p>
@@ -188,7 +171,7 @@ export function Torrents({ instanceId, instanceName }: TorrentsProps) {
             </div>
           </div>
           <div className="flex-1 min-h-0">
-            <TorrentTableOptimized 
+            <TorrentTableResponsive 
               instanceId={instanceId} 
               filters={filters}
               selectedTorrent={selectedTorrent}
