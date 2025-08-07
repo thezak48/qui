@@ -18,7 +18,16 @@ A fast, modern web interface for qBittorrent. Manage multiple qBittorrent instan
 
 ## Installation
 
-### Download
+### Quick Install (Linux x86_64)
+
+```bash
+# Download and extract the latest release
+wget $(curl -s https://api.github.com/repos/autobrr/qui/releases/latest | grep download | grep linux_x86_64 | cut -d\" -f4)
+tar -C /usr/local/bin -xzf qui*.tar.gz
+rm qui*.tar.gz
+```
+
+### Manual Download
 
 Download the latest release for your platform from the [releases page](https://github.com/autobrr/qui/releases).
 
