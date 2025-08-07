@@ -132,20 +132,24 @@ const createColumns = (incognitoMode: boolean): ColumnDef<Torrent>[] => [
   {
     id: 'select',
     header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllPageRowsSelected()}
-        onCheckedChange={(checked) => table.toggleAllPageRowsSelected(!!checked)}
-        aria-label="Select all"
-        className="hover:border-ring cursor-pointer transition-colors"
-      />
+      <div className="flex items-center justify-center p-1 -m-1">
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(checked) => table.toggleAllPageRowsSelected(!!checked)}
+          aria-label="Select all"
+          className="hover:border-ring cursor-pointer transition-colors"
+        />
+      </div>
     ),
     cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(checked) => row.toggleSelected(!!checked)}
-        aria-label="Select row"
-        className="hover:border-ring cursor-pointer transition-colors"
-      />
+      <div className="flex items-center justify-center p-1 -m-1">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(checked) => row.toggleSelected(!!checked)}
+          aria-label="Select row"
+          className="hover:border-ring cursor-pointer transition-colors"
+        />
+      </div>
     ),
     size: 40,
     enableResizing: false,
@@ -1128,9 +1132,9 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                             transform: `translateY(${virtualRow.start}px)`,
                           }}
                           onClick={(e) => {
-                            // Don't select when clicking checkbox
+                            // Don't select when clicking checkbox or its wrapper
                             const target = e.target as HTMLElement
-                            const isCheckbox = target.closest('[data-slot="checkbox"]') || target.closest('[role="checkbox"]')
+                            const isCheckbox = target.closest('[data-slot="checkbox"]') || target.closest('[role="checkbox"]') || target.closest('.p-1.-m-1')
                             if (!isCheckbox) {
                               onTorrentSelect?.(torrent)
                             }
