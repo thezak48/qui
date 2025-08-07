@@ -7,45 +7,11 @@ import { Progress } from '@/components/ui/progress'
 import { Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { Torrent } from '@/types'
+import { formatBytes, formatSpeed, formatTimestamp, formatDuration } from '@/lib/utils'
 
 interface TorrentDetailsPanelProps {
   instanceId: number
   torrent: Torrent | null
-}
-
-// Helper functions
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
-}
-
-function formatSpeed(bytesPerSecond: number): string {
-  if (bytesPerSecond === 0) return '0 B/s'
-  return `${formatBytes(bytesPerSecond)}/s`
-}
-
-function formatTimestamp(timestamp: number): string {
-  if (!timestamp || timestamp === 0) return 'N/A'
-  return new Date(timestamp * 1000).toLocaleString()
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds === 0) return '0s'
-  const days = Math.floor(seconds / 86400)
-  const hours = Math.floor((seconds % 86400) / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const secs = seconds % 60
-  
-  const parts = []
-  if (days > 0) parts.push(`${days}d`)
-  if (hours > 0) parts.push(`${hours}h`)
-  if (minutes > 0) parts.push(`${minutes}m`)
-  if (secs > 0) parts.push(`${secs}s`)
-  
-  return parts.join(' ')
 }
 
 function getTrackerStatusBadge(status: number) {
@@ -98,43 +64,43 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between p-3 border-b bg-muted/30">
-        <h3 className="text-sm font-semibold truncate flex-1" title={torrent.name}>
+      <div className="flex items-center justify-between px-4 py-3 sm:px-6 border-b bg-muted/30">
+        <h3 className="text-sm font-semibold truncate flex-1 pr-2" title={torrent.name}>
           {torrent.name}
         </h3>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="w-full justify-start rounded-none border-b h-10 bg-background p-0">
+        <TabsList className="w-full justify-start rounded-none border-b h-10 bg-background px-4 sm:px-6 py-0">
           <TabsTrigger 
             value="general" 
-            className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-accent/50 transition-all px-4 cursor-pointer"
+            className="relative text-xs rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-accent/50 transition-all px-3 sm:px-4 cursor-pointer focus-visible:outline-none focus-visible:ring-0 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:scale-x-0 data-[state=active]:after:scale-x-100 after:transition-transform"
           >
             General
           </TabsTrigger>
           <TabsTrigger 
             value="trackers" 
-            className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-accent/50 transition-all px-4 cursor-pointer"
+            className="relative text-xs rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-accent/50 transition-all px-3 sm:px-4 cursor-pointer focus-visible:outline-none focus-visible:ring-0 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:scale-x-0 data-[state=active]:after:scale-x-100 after:transition-transform"
           >
             Trackers
           </TabsTrigger>
           <TabsTrigger 
             value="content" 
-            className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-accent/50 transition-all px-4 cursor-pointer"
+            className="relative text-xs rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none hover:bg-accent/50 transition-all px-3 sm:px-4 cursor-pointer focus-visible:outline-none focus-visible:ring-0 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary after:scale-x-0 data-[state=active]:after:scale-x-100 after:transition-transform"
           >
             Content
           </TabsTrigger>
         </TabsList>
 
         <ScrollArea className="flex-1">
-          <TabsContent value="general" className="m-0 p-4">
+          <TabsContent value="general" className="m-0 p-4 sm:p-6">
             {loadingProperties ? (
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : properties ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Total Size:</span>
                     <span className="ml-2">{formatBytes(properties.total_size || torrent.size)}</span>
@@ -194,7 +160,7 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
                 <div className="space-y-2">
                   <div>
                     <span className="text-sm text-muted-foreground">Save Path:</span>
-                    <div className="text-sm mt-1 font-mono text-xs bg-muted/50 hover:bg-muted transition-colors p-2 rounded break-all">
+                    <div className="text-xs sm:text-sm mt-1 font-mono bg-muted/50 hover:bg-muted transition-colors p-2 sm:p-3 rounded break-all">
                       {properties.save_path || 'N/A'}
                     </div>
                   </div>
@@ -218,7 +184,7 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
                 {properties.comment && (
                   <div>
                     <span className="text-sm text-muted-foreground">Comment:</span>
-                    <div className="text-sm mt-1 bg-muted/50 hover:bg-muted transition-colors p-2 rounded">
+                    <div className="text-xs sm:text-sm mt-1 bg-muted/50 hover:bg-muted transition-colors p-2 sm:p-3 rounded break-words">
                       {properties.comment}
                     </div>
                   </div>
@@ -234,7 +200,7 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
             ) : null}
           </TabsContent>
 
-          <TabsContent value="trackers" className="m-0 p-4">
+          <TabsContent value="trackers" className="m-0 p-4 sm:p-6">
             {loadingTrackers ? (
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -242,9 +208,9 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
             ) : trackers && trackers.length > 0 ? (
               <div className="space-y-2">
                 {trackers.map((tracker, index) => (
-                  <div key={index} className="border border-border/50 hover:border-border bg-card/50 hover:bg-card transition-all rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-mono break-all">{tracker.url}</span>
+                  <div key={index} className="border border-border/50 hover:border-border bg-card/50 hover:bg-card transition-all rounded-lg p-3 sm:p-4 space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-mono break-all">{tracker.url}</span>
                       {getTrackerStatusBadge(tracker.status)}
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
@@ -266,7 +232,7 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
             )}
           </TabsContent>
 
-          <TabsContent value="content" className="m-0 p-4">
+          <TabsContent value="content" className="m-0 p-4 sm:p-6">
             {loadingFiles ? (
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -274,9 +240,9 @@ export function TorrentDetailsPanel({ instanceId, torrent }: TorrentDetailsPanel
             ) : files && files.length > 0 ? (
               <div className="space-y-1">
                 {files.map((file, index) => (
-                  <div key={index} className="border border-border/50 hover:border-border bg-card/50 hover:bg-card transition-all rounded p-2 space-y-1">
-                    <div className="text-sm font-mono break-all">{file.name}</div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div key={index} className="border border-border/50 hover:border-border bg-card/50 hover:bg-card transition-all rounded p-3 sm:p-2 space-y-2 sm:space-y-1">
+                    <div className="text-xs sm:text-sm font-mono break-all">{file.name}</div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 text-xs text-muted-foreground">
                       <span>{formatBytes(file.size)}</span>
                       <div className="flex items-center gap-2">
                         <Progress value={file.progress * 100} className="w-20 h-2" />

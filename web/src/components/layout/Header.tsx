@@ -10,7 +10,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { User, LogOut, Key } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { PWAStatus } from '@/components/pwa/PWAStatus'
 import { cn } from '@/lib/utils'
+import { Link } from '@tanstack/react-router'
 
 interface HeaderProps {
   children?: React.ReactNode
@@ -32,6 +34,7 @@ export function Header({ children, sidebarCollapsed = false }: HeaderProps) {
       </div>
       
       <div className="flex items-center gap-4">
+        <PWAStatus />
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -43,9 +46,11 @@ export function Header({ children, sidebarCollapsed = false }: HeaderProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Key className="mr-2 h-4 w-4" />
-              API Keys
+            <DropdownMenuItem asChild>
+              <Link to="/settings" search={{ tab: 'api' }} className="flex cursor-pointer">
+                <Key className="mr-2 h-4 w-4" />
+                API Keys
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => logout()}>
