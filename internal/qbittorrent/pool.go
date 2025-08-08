@@ -7,10 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/autobrr/qui/internal/models"
 	"github.com/dgraph-io/ristretto"
 	"github.com/panjf2000/ants/v2"
 	"github.com/rs/zerolog/log"
+
+	"github.com/autobrr/qui/internal/models"
 )
 
 var (
@@ -132,7 +133,7 @@ func (cp *ClientPool) createClient(instanceID int) (*Client, error) {
 		}
 	}()
 
-	log.Info().Int("instanceID", instanceID).Str("name", instance.Name).Msg("Created new qBittorrent client")
+	//log.Info().Int("instanceID", instanceID).Str("name", instance.Name).Msg("Created new qBittorrent client")
 	return client, nil
 }
 
@@ -175,7 +176,10 @@ func (cp *ClientPool) performHealthChecks() {
 		// Submit health check to goroutine pool
 		instanceID := client.GetInstanceID()
 		cp.pool.Submit(func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			// Use appropriate timeout for health checks
+			// Since we're now using GetWebAPIVersion instead of Login,
+			// this should be much faster even for large instances
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
 			if err := client.HealthCheck(ctx); err != nil {
