@@ -1,11 +1,9 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { memo, useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   type ColumnDef,
-  type ColumnResizeMode,
-  type VisibilityState,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
@@ -29,6 +27,27 @@ import { usePersistedColumnVisibility } from '@/hooks/usePersistedColumnVisibili
 import { usePersistedColumnOrder } from '@/hooks/usePersistedColumnOrder'
 import { usePersistedColumnSizing } from '@/hooks/usePersistedColumnSizing'
 import { usePersistedColumnSorting } from '@/hooks/usePersistedColumnSorting'
+
+// Default values for persisted state hooks (module scope for stable references)
+const DEFAULT_COLUMN_VISIBILITY = {
+  downloaded: false,
+  uploaded: false,
+  save_path: false, // Fixed: was 'saveLocation', should match column accessorKey
+  tracker: false,
+  priority: false,
+}
+const DEFAULT_COLUMN_SIZING = {}
+
+// Helper function to get default column order (module scope for stable reference)
+function getDefaultColumnOrder(): string[] {
+  const cols = createColumns(false)
+  return cols.map(col => {
+    if ('id' in col && col.id) return col.id
+    if ('accessorKey' in col && typeof col.accessorKey === 'string') return col.accessorKey
+    return null
+  }).filter((v): v is string => typeof v === 'string')
+}
+
 import { useInstanceMetadata } from '@/hooks/useInstanceMetadata'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -72,7 +91,7 @@ import { TorrentActions } from './TorrentActions'
 import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Search, Info, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ListOrdered, Settings2, Sparkles } from 'lucide-react'
 import { SetTagsDialog, SetCategoryDialog, RemoveTagsDialog } from './TorrentDialogs'
 import { DraggableTableHeader } from './DraggableTableHeader'
-import type { Torrent } from '@/types'
+import type { Torrent, TorrentCounts, Category } from '@/types'
 import {
   getLinuxIsoName,
   getLinuxCategory,
@@ -97,7 +116,7 @@ interface TorrentTableOptimizedProps {
   onTorrentSelect?: (torrent: Torrent | null) => void
   addTorrentModalOpen?: boolean
   onAddTorrentModalChange?: (open: boolean) => void
-  onFilteredDataUpdate?: (torrents: Torrent[], total: number, counts?: any, categories?: any, tags?: string[]) => void
+  onFilteredDataUpdate?: (torrents: Torrent[], total: number, counts?: TorrentCounts, categories?: Record<string, Category>, tags?: string[]) => void
   filterButton?: React.ReactNode
 }
 
@@ -129,6 +148,7 @@ function calculateMinWidth(text: string, padding: number = 48): number {
   const extraPadding = 20
   return Math.max(60, Math.ceil(text.length * charWidth) + padding + extraPadding)
 }
+
 
 
 const createColumns = (incognitoMode: boolean): ColumnDef<Torrent>[] => [
@@ -360,7 +380,7 @@ const createColumns = (incognitoMode: boolean): ColumnDef<Torrent>[] => [
           const url = new URL(tracker)
           displayTracker = url.hostname
         }
-      } catch (e) {
+      } catch {
         // If URL parsing fails, show as is
       }
       return (
@@ -373,7 +393,7 @@ const createColumns = (incognitoMode: boolean): ColumnDef<Torrent>[] => [
   },
 ]
 
-export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, onTorrentSelect, addTorrentModalOpen, onAddTorrentModalChange, onFilteredDataUpdate, filterButton }: TorrentTableOptimizedProps) {
+export const TorrentTableOptimized = memo(function TorrentTableOptimized({ instanceId, filters, selectedTorrent, onTorrentSelect, addTorrentModalOpen, onAddTorrentModalChange, onFilteredDataUpdate, filterButton }: TorrentTableOptimizedProps) {
   // State management
   const [sorting, setSorting] = usePersistedColumnSorting([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -387,39 +407,15 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const [showCategoryDialog, setShowCategoryDialog] = useState(false)
   const [showRemoveTagsDialog, setShowRemoveTagsDialog] = useState(false)
   const [showRefetchIndicator, setShowRefetchIndicator] = useState(false)
-  
-  // Use incognito mode hook
+
   const [incognitoMode, setIncognitoMode] = useIncognitoMode()
-  
+
   // Column visibility with persistence
-  const defaultColumnVisibility: VisibilityState = {
-    downloaded: false,
-    uploaded: false,
-    saveLocation: false,
-    tracker: false,
-    priority: false,
-  }
-  const [columnVisibility, setColumnVisibility] = usePersistedColumnVisibility(
-    defaultColumnVisibility
-  )
-  
-  // Column order with persistence
-  const defaultColumnOrder = useMemo(() => {
-    const cols = createColumns(false) // Use non-incognito columns for default order
-    return cols.map(col => {
-      if ('id' in col && col.id) return col.id
-      if ('accessorKey' in col && typeof col.accessorKey === 'string') return col.accessorKey
-      return null
-    }).filter(Boolean) as string[]
-  }, [])
-  const [columnOrder, setColumnOrder] = usePersistedColumnOrder(
-    defaultColumnOrder
-  )
-  
+  const [columnVisibility, setColumnVisibility] = usePersistedColumnVisibility(DEFAULT_COLUMN_VISIBILITY)
+  // Column order with persistence (get default order at runtime to avoid initialization order issues)
+  const [columnOrder, setColumnOrder] = usePersistedColumnOrder(getDefaultColumnOrder())
   // Column sizing with persistence
-  const [columnSizing, setColumnSizing] = usePersistedColumnSizing(
-    {} // Start with empty object, let columns use their default sizes
-  )
+  const [columnSizing, setColumnSizing] = usePersistedColumnSizing(DEFAULT_COLUMN_SIZING)
   
   // Progressive loading state
   const [loadedRows, setLoadedRows] = useState(100)
@@ -439,7 +435,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   const effectiveSearch = immediateSearch || debouncedSearch
   
   // Check if search contains glob patterns
-  const isGlobSearch = globalFilter && /[*?[\]]/.test(globalFilter)
+  const isGlobSearch = !!globalFilter && /[*?[\]]/.test(globalFilter)
 
   // Fetch torrents data
   const { 
@@ -467,12 +463,12 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     if (onFilteredDataUpdate && torrents && totalCount !== undefined && !isLoading) {
       onFilteredDataUpdate(torrents, totalCount, counts, categories, tags)
     }
-  }, [totalCount, isLoading, torrents.length, counts, categories, tags, onFilteredDataUpdate]) // Update when data changes
+  }, [totalCount, isLoading, torrents, counts, categories, tags, onFilteredDataUpdate]) // Update when data changes (use torrents not length to catch content changes)
   
   // Show refetch indicator only if fetching takes more than 2 seconds
   // This avoids annoying flickering for fast instances
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout
+    let timeoutId: ReturnType<typeof setTimeout>
     
     if (isFetching && !isLoading && torrents.length > 0) {
       // Only show indicator after 2 second delay
@@ -487,42 +483,44 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   }, [isFetching, isLoading, torrents.length])
   
   // Handle Enter key for immediate search
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // Memoize handlers to avoid unnecessary re-renders
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       setImmediateSearch(globalFilter)
     }
-  }
-  
-  // Clear immediate search when input changes (to allow debounced search to take over)
-  const handleSearchChange = (value: string) => {
+  }, [globalFilter]) 
+
+  const handleSearchChange = useCallback((value: string) => {
     setGlobalFilter(value)
     if (immediateSearch) {
       setImmediateSearch('')
     }
-  }
+  }, [immediateSearch]) 
+
+  // Filter torrents before sorting for better performance
+  const filteredTorrents = useMemo(() => {
+    // Example: add more advanced filtering here if needed
+    return torrents
+  }, [torrents])
 
   // Sort torrents client-side
   const sortedTorrents = useMemo(() => {
-    if (sorting.length === 0) return torrents
-    
-    const sorted = [...torrents]
+    if (sorting.length === 0) return filteredTorrents
+    const sorted = [...filteredTorrents]
     const sort = sorting[0]
-    
     sorted.sort((a, b) => {
       const aValue = a[sort.id as keyof Torrent]
       const bValue = b[sort.id as keyof Torrent]
-      
       if (aValue === null || aValue === undefined) return 1
       if (bValue === null || bValue === undefined) return -1
-      
       if (aValue < bValue) return sort.desc ? 1 : -1
       if (aValue > bValue) return sort.desc ? -1 : 1
       return 0
     })
-    
     return sorted
-  }, [torrents, sorting])
+  }, [filteredTorrents, sorting])
 
+  // Memoize columns to avoid unnecessary recalculations
   const columns = useMemo(() => createColumns(incognitoMode), [incognitoMode])
   
   const table = useReactTable({
@@ -550,38 +548,37 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     enableRowSelection: true,
     // Enable column resizing
     enableColumnResizing: true,
-    columnResizeMode: 'onChange' as ColumnResizeMode,
+    columnResizeMode: 'onChange' as const,
   })
 
   // Get selected torrent hashes
-  const selectedHashes = useMemo(() => {
+  const selectedHashes = useMemo((): string[] => {
     return Object.keys(rowSelection)
-      .filter(key => rowSelection[key as keyof typeof rowSelection])
+      .filter((key: string) => (rowSelection as Record<string, boolean>)[key])
   }, [rowSelection])
   
   // Get selected torrents
-  const selectedTorrents = useMemo(() => {
+  const selectedTorrents = useMemo((): Torrent[] => {
     return selectedHashes
-      .map(hash => sortedTorrents.find(t => t.hash === hash))
+      .map((hash: string) => sortedTorrents.find((t: Torrent) => t.hash === hash))
       .filter(Boolean) as Torrent[]
   }, [selectedHashes, sortedTorrents])
 
+  // Virtualization setup with progressive loading
+  const { rows } = table.getRowModel()
+  const parentRef = useRef<HTMLDivElement>(null)
+  
   // Load more rows as user scrolls (progressive loading)
-  const loadMore = useCallback(() => {
+  const loadMore = useCallback((): void => {
     const newLoadedRows = Math.min(loadedRows + 100, sortedTorrents.length)
     setLoadedRows(newLoadedRows)
-    
     // If we're near the end of loaded torrents and haven't loaded all from server
     if (newLoadedRows >= sortedTorrents.length - 50 && !hasLoadedAll && !isLoadingMore) {
       loadMoreTorrents()
     }
   }, [loadedRows, sortedTorrents.length, hasLoadedAll, isLoadingMore, loadMoreTorrents])
 
-  // Virtualization setup with progressive loading
-  const { rows } = table.getRowModel()
-  const parentRef = useRef<HTMLDivElement>(null)
-
-  // Only virtualize the loaded rows, not all rows
+  // useVirtualizer must be called at the top level, not inside useMemo
   const virtualizer = useVirtualizer({
     count: Math.min(loadedRows, rows.length),
     getScrollElement: () => parentRef.current,
@@ -594,9 +591,20 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       }
     },
   })
-
+  
   const virtualRows = virtualizer.getVirtualItems()
 
+  // Memoize minTableWidth to avoid recalculation on every row render
+  const minTableWidth = useMemo(() => {
+    return table.getVisibleLeafColumns().reduce((width, col) => {
+      return width + col.getSize()
+    }, 0)
+  }, [table, columnSizing, columnVisibility, columnOrder])
+
+  // Derive hidden columns state from table API for accuracy
+  const hasHiddenColumns = useMemo(() => {
+    return table.getAllLeafColumns().filter(c => c.getCanHide()).some(c => !c.getIsVisible())
+  }, [table, columnVisibility])
 
   // Reset loaded rows when data changes
   useEffect(() => {
@@ -645,7 +653,14 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
         enable: data.enable,
       })
     },
-    onSuccess: async (_, variables) => {
+    onSuccess: async (_: unknown, variables: {
+      action: 'pause' | 'resume' | 'delete' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'addTags' | 'removeTags' | 'setTags' | 'setCategory' | 'toggleAutoTMM'
+      hashes: string[]
+      deleteFiles?: boolean
+      tags?: string
+      category?: string
+      enable?: boolean
+    }) => {
       // For delete operations, optimistically remove from UI immediately
       if (variables.action === 'delete') {
         // Clear selection and context menu immediately
@@ -660,8 +675,12 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
           exact: false
         })
         
-        queries.forEach(query => {
-          queryClient.setQueryData(query.queryKey, (oldData: any) => {
+        queries.forEach((query) => {
+          queryClient.setQueryData(query.queryKey, (oldData: {
+            torrents?: Torrent[]
+            total?: number
+            totalCount?: number
+          }) => {
             if (!oldData) return oldData
             return {
               ...oldData,
@@ -702,14 +721,18 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
           })
           
           // Optimistically update torrent states in all cached queries
-          queries.forEach(query => {
-            queryClient.setQueryData(query.queryKey, (oldData: any) => {
+          queries.forEach((query) => {
+            queryClient.setQueryData(query.queryKey, (oldData: {
+              torrents?: Torrent[]
+              total?: number
+              totalCount?: number
+            }) => {
               if (!oldData?.torrents) return oldData
               
               // Check if this query has a status filter in its key
               // Query key structure: ['torrents-list', instanceId, currentPage, filters, search]
-              const queryKey = query.queryKey as any[]
-              const filters = queryKey[3] // filters is at index 3
+              const queryKey = query.queryKey as unknown[]
+              const filters = queryKey[3] as { status?: string[] } | undefined // filters is at index 3
               const statusFilters = filters?.status || []
               
               // Apply optimistic updates using our utility function
@@ -774,9 +797,9 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
         action: 'setTags', 
         tags: tags.join(',') 
       })
-    } catch (error: any) {
+    } catch (error) {
       // If setTags fails due to version requirement, fall back to addTags
-      if (error.message?.includes('requires qBittorrent')) {
+      if ((error as Error).message?.includes('requires qBittorrent')) {
         await mutation.mutateAsync({ 
           hashes: contextMenuHashes,
           action: 'addTags', 
@@ -811,14 +834,14 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     setContextMenuHashes([])
   }
 
-  const handleContextMenuAction = (action: 'pause' | 'resume' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'toggleAutoTMM', hashes: string[], enable?: boolean) => {
+  const handleContextMenuAction = useCallback((action: 'pause' | 'resume' | 'recheck' | 'reannounce' | 'increasePriority' | 'decreasePriority' | 'topPriority' | 'bottomPriority' | 'toggleAutoTMM', hashes: string[], enable?: boolean) => {
     setContextMenuHashes(hashes)
     mutation.mutate({ action, hashes, enable })
-  }
+  }, [mutation]) 
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text)
-  }
+  }, []) 
   
   // Get common tags from selected torrents (tags that ALL selected torrents have)
   const getCommonTags = (torrents: Torrent[]): string[] => {
@@ -856,6 +879,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
   }
   
   // Drag and drop setup
+  // Sensors must be called at the top level, not inside useMemo
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -870,9 +894,8 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
     })
   )
   
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event
-    
     if (active && over && active.id !== over.id) {
       setColumnOrder((currentOrder) => {
         const oldIndex = currentOrder.indexOf(active.id as string)
@@ -880,7 +903,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
         return arrayMove(currentOrder, oldIndex, newIndex)
       })
     }
-  }
+  }, [setColumnOrder]) 
 
   return (
     <div className="h-full flex flex-col">
@@ -1091,7 +1114,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                   className="relative"
                 >
                   <Columns3 className="h-4 w-4" />
-                {Object.values(columnVisibility).some(v => v === false) && (
+                {hasHiddenColumns && (
                   <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full" />
                 )}
                 <span className="sr-only">Toggle columns</span>
@@ -1142,7 +1165,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
         <div className="relative flex-1 overflow-auto scrollbar-thin" ref={parentRef}>
           <div style={{ position: 'relative', minWidth: 'min-content' }}>
             {/* Header */}
-            <div className="sticky top-0 bg-background border-b" style={{ zIndex: 50, position: 'sticky' }}>
+            <div className="sticky top-0 bg-background border-b" style={{ zIndex: 50 }}>
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -1153,10 +1176,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                   const headers = headerGroup.headers
                   const headerIds = headers.map(h => h.column.id)
                   
-                  // Calculate minimum table width based on visible columns
-                  const minTableWidth = table.getVisibleLeafColumns().reduce((width, col) => {
-                    return width + col.getSize()
-                  }, 0)
+                  // Use memoized minTableWidth
                   
                   return (
                     <SortableContext
@@ -1204,10 +1224,7 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                   const torrent = row.original
                   const isSelected = selectedTorrent?.hash === torrent.hash
                   
-                  // Calculate minimum table width based on visible columns
-                  const minTableWidth = table.getVisibleLeafColumns().reduce((width, col) => {
-                    return width + col.getSize()
-                  }, 0)
+                  // Use memoized minTableWidth
                 
                   return (
                     <ContextMenu key={torrent.hash}>
@@ -1231,8 +1248,8 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
                             }
                           }}
                           onContextMenu={() => {
-                            // Select this row if not already selected
-                            if (!row.getIsSelected()) {
+                            // Only select this row if not already selected and not part of a multi-selection
+                            if (!row.getIsSelected() && selectedHashes.length <= 1) {
                               setRowSelection({ [row.id]: true })
                             }
                           }}
@@ -1575,4 +1592,4 @@ export function TorrentTableOptimized({ instanceId, filters, selectedTorrent, on
       />
     </div>
   )
-}
+});
