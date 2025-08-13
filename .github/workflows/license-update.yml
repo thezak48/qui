@@ -41,8 +41,7 @@ jobs:
              - Create a new branch: git checkout -b chore/missing-license-headers-$(date +%Y%m%d)
 
           4. Run the license update script:
-             - Make the script executable: chmod +x license.sh
-             - Run it: ./license.sh
+             - Run it: python3 update_headers.pyh
              - Check the output to see if any files were updated
 
           5. If files were updated:
