@@ -32,63 +32,114 @@ import (
 )
 
 var (
-	Version   = "dev"
+	Version = "dev"
+
+	// PolarOrgID Publisher credentials - set during build via ldflags
+	PolarOrgID = "" // Set via: -X main.PolarOrgID=your-org-id
+)
+
+func main() {
+	var rootCmd = &cobra.Command{
+		Use:   "qui",
+		Short: "A self-hosted qBittorrent WebUI alternative",
+		Long: `qBittorrent WebUI - A modern, self-hosted web interface for managing 
+multiple qBittorrent instances with support for 10k+ torrents.`,
+	}
+
+	// Initialize logger
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	rootCmd.Version = Version
+
+	rootCmd.AddCommand(RunServeCommand())
+	rootCmd.AddCommand(RunVersionCommand(Version))
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func RunServeCommand() *cobra.Command {
+	var (
+		configDir string
+		dataDir   string
+		logPath   string
+		pprofFlag bool
+	)
+
+	var command = &cobra.Command{
+		Use:   "serve",
+		Short: "Start the server",
+	}
+
+	command.Flags().StringVar(&configDir, "config-dir", "", "config directory path (default is OS-specific: ~/.config/qui/ or %APPDATA%\\qui\\). For backward compatibility, can also be a direct path to a .toml file")
+	command.Flags().StringVar(&dataDir, "data-dir", "", "data directory for database and other files (default is next to config file)")
+	command.Flags().StringVar(&logPath, "log-path", "", "log file path (default is stdout)")
+	command.Flags().BoolVar(&pprofFlag, "pprof", false, "enable pprof server on :6060")
+
+	command.Run = func(cmd *cobra.Command, args []string) {
+		app := NewApplication(Version, configDir, dataDir, logPath, pprofFlag, PolarOrgID)
+		app.runServer()
+	}
+
+	return command
+}
+
+func RunVersionCommand(version string) *cobra.Command {
+	var command = &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number of qui",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(version)
+		},
+	}
+
+	return command
+}
+
+type Application struct {
+	version   string
 	configDir string
 	dataDir   string
 	logPath   string
 	pprofFlag bool
 
 	// Publisher credentials - set during build via ldflags
-	PolarOrgID = "" // Set via: -X main.PolarOrgID=your-org-id
-)
-
-var rootCmd = &cobra.Command{
-	Use:   "qui",
-	Short: "A self-hosted qBittorrent WebUI alternative",
-	Long: `qBittorrent WebUI - A modern, self-hosted web interface for managing 
-multiple qBittorrent instances with support for 10k+ torrents.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// Start the server
-		runServer()
-	},
+	polarOrgID string // Set via: -X main.PolarOrgID=your-org-id
 }
 
-func init() {
-	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&configDir, "config-dir", "", "config directory path (default is OS-specific: ~/.config/qui/ or %APPDATA%\\qui\\). For backward compatibility, can also be a direct path to a .toml file")
-	rootCmd.PersistentFlags().StringVar(&dataDir, "data-dir", "", "data directory for database and other files (default is next to config file)")
-	rootCmd.PersistentFlags().StringVar(&logPath, "log-path", "", "log file path (default is stdout)")
-	rootCmd.PersistentFlags().BoolVar(&pprofFlag, "pprof", false, "enable pprof server on :6060")
-	rootCmd.Version = Version
+func NewApplication(version, configDir, dataDir, logPath string, pprofFlag bool, polarOrgID string) *Application {
+	return &Application{
+		version:    version,
+		configDir:  configDir,
+		dataDir:    dataDir,
+		logPath:    logPath,
+		pprofFlag:  pprofFlag,
+		polarOrgID: polarOrgID,
+	}
 }
 
-func initConfig() {
-	// Initialize logger
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
-	// Config initialization will be implemented later
-}
-
-func runServer() {
-	log.Info().Str("version", Version).Msg("Starting qBittorrent WebUI")
+func (app *Application) runServer() {
+	log.Info().Str("version", app.version).Msg("Starting qBittorrent WebUI")
 
 	// Initialize configuration
-	cfg, err := config.New(configDir)
+	cfg, err := config.New(app.configDir)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize configuration")
 	}
 
 	// Override with CLI flags if provided
-	if dataDir != "" {
-		os.Setenv("QUI__DATA_DIR", dataDir)
-		cfg.SetDataDir(dataDir)
+	if app.dataDir != "" {
+		os.Setenv("QUI__DATA_DIR", app.dataDir)
+		cfg.SetDataDir(app.dataDir)
 	}
-	if logPath != "" {
-		os.Setenv("QUI__LOG_PATH", logPath)
-		cfg.Config.LogPath = logPath
+	if app.logPath != "" {
+		os.Setenv("QUI__LOG_PATH", app.logPath)
+		cfg.Config.LogPath = app.logPath
 	}
 
-	if pprofFlag {
+	if app.pprofFlag {
 		cfg.Config.PprofEnabled = true
 	}
 
@@ -129,12 +180,12 @@ func runServer() {
 	// Initialize Polar client and theme license service
 	var themeLicenseService *services.ThemeLicenseService
 
-	if PolarOrgID != "" {
+	if app.polarOrgID != "" {
 		log.Trace().
 			Msg("Initializing Polar client for license validation")
 
 		polarClient := polar.NewClient()
-		polarClient.SetOrganizationID(PolarOrgID)
+		polarClient.SetOrganizationID(app.polarOrgID)
 
 		themeLicenseService = services.NewThemeLicenseService(db, polarClient)
 		log.Info().Msg("Theme licensing service initialized")
@@ -250,11 +301,4 @@ func runServer() {
 	}
 
 	log.Info().Msg("Server stopped")
-}
-
-func main() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
 }

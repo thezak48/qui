@@ -49,7 +49,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="\
     -X main.buildTime=${BUILDTIME} \
     -X main.commit=${REVISION} \
     -X main.PolarOrgID=${POLAR_ORG_ID}" \
-    -o qui ./cmd/server
+    -o qui ./cmd/qui
 
 # Final stage
 FROM alpine:3.22
@@ -79,3 +79,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["/usr/local/bin/qui"]
+CMD ["serve"]
