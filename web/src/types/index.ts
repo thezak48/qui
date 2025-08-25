@@ -105,16 +105,11 @@ export interface TorrentResponse {
   cacheMetadata?: CacheMetadata
 }
 
+// Simplified MainData - only used for Dashboard server stats
 export interface MainData {
   rid: number
-  fullUpdate: boolean
-  torrents?: Record<string, Torrent>
-  torrentsRemoved?: string[]
-  categories?: Record<string, Category>
-  categoriesRemoved?: string[]
-  tags?: string[]
-  tagsRemoved?: string[]
   serverState?: ServerState
+  server_state?: ServerState
 }
 
 export interface Category {

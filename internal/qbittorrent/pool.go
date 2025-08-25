@@ -275,34 +275,6 @@ func (cp *ClientPool) Close() error {
 	return nil
 }
 
-// Stats returns statistics about the pool
-func (cp *ClientPool) Stats() map[string]interface{} {
-	cp.mu.RLock()
-	defer cp.mu.RUnlock()
-
-	healthyCount := 0
-	for _, client := range cp.clients {
-		if client.IsHealthy() {
-			healthyCount++
-		}
-	}
-
-	// Count instances in backoff
-	backoffCount := 0
-	for _, info := range cp.failureTracker {
-		if time.Now().Before(info.nextRetry) {
-			backoffCount++
-		}
-	}
-
-	return map[string]interface{}{
-		"total_clients":   len(cp.clients),
-		"healthy_clients": healthyCount,
-		"backoff_clients": backoffCount,
-		"cache_hits":      cp.cache.Metrics.Hits(),
-		"cache_misses":    cp.cache.Metrics.Misses(),
-	}
-}
 
 // isInBackoff checks if an instance is in backoff period
 func (cp *ClientPool) isInBackoff(instanceID int) bool {
@@ -348,10 +320,7 @@ func (cp *ClientPool) trackFailure(instanceID int, err error) {
 
 // calculateBackoff returns exponential backoff duration with limits
 func (cp *ClientPool) calculateBackoff(attempts int, initialDuration, maxDuration time.Duration) time.Duration {
-	backoff := time.Duration(1<<(attempts-1)) * initialDuration
-	if backoff > maxDuration {
-		backoff = maxDuration
-	}
+	backoff := min(time.Duration(1<<(attempts-1))*initialDuration, maxDuration)
 	return backoff
 }
 
@@ -386,16 +355,3 @@ func (cp *ClientPool) isBanError(err error) bool {
 		strings.Contains(errorStr, "forbidden")
 }
 
-// GetBackoffStatus returns the backoff status for an instance (useful for debugging)
-func (cp *ClientPool) GetBackoffStatus(instanceID int) (inBackoff bool, nextRetry time.Time, attempts int) {
-	cp.mu.RLock()
-	defer cp.mu.RUnlock()
-
-	info, exists := cp.failureTracker[instanceID]
-	if !exists {
-		return false, time.Time{}, 0
-	}
-
-	inBackoff = time.Now().Before(info.nextRetry)
-	return inBackoff, info.nextRetry, info.attempts
-}

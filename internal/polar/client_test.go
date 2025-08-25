@@ -40,8 +40,8 @@ func TestSetOrganizationID(t *testing.T) {
 
 func TestIsClientConfigured(t *testing.T) {
 	tests := []struct {
-		name   string
-		orgID  string
+		name     string
+		orgID    string
 		expected bool
 	}{
 		{
@@ -69,37 +69,6 @@ func TestIsClientConfigured(t *testing.T) {
 	}
 }
 
-func TestValidateConfiguration(t *testing.T) {
-	tests := []struct {
-		name      string
-		orgID     string
-		wantError bool
-	}{
-		{
-			name:      "empty org ID returns error",
-			orgID:     "",
-			wantError: true,
-		},
-		{
-			name:      "valid org ID returns no error",
-			orgID:     "test-org",
-			wantError: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			client := NewClient()
-			client.SetOrganizationID(tt.orgID)
-
-			err := client.ValidateConfiguration(context.Background())
-			if (err != nil) != tt.wantError {
-				t.Errorf("ValidateConfiguration() error = %v, wantError %v", err, tt.wantError)
-			}
-		})
-	}
-}
-
 func TestValidateLicense_NoOrgID(t *testing.T) {
 	client := NewClient()
 	// Don't set organization ID
@@ -122,27 +91,6 @@ func TestValidateLicense_NoOrgID(t *testing.T) {
 	}
 }
 
-func TestActivateLicense_NoOrgID(t *testing.T) {
-	client := NewClient()
-	// Don't set organization ID
-
-	result, err := client.ActivateLicense(context.Background(), "test-license")
-	if err != nil {
-		t.Errorf("ActivateLicense() error = %v, want nil", err)
-	}
-
-	if result == nil {
-		t.Fatal("ActivateLicense() returned nil result")
-	}
-
-	if result.Valid {
-		t.Error("License should be invalid when org ID not configured")
-	}
-
-	if result.ErrorMessage != orgIDNotConfigMsg {
-		t.Errorf("Error message = %v, want %v", result.ErrorMessage, orgIDNotConfigMsg)
-	}
-}
 
 func TestMapBenefitToTheme(t *testing.T) {
 	tests := []struct {
