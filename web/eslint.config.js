@@ -7,7 +7,7 @@ import { globalIgnores } from 'eslint/config'
 import stylistic from '@stylistic/eslint-plugin'
 
 export default tseslint.config([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', '@web/pnpm-lock.yaml']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
