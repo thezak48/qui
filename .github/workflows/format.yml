@@ -54,6 +54,7 @@ jobs:
             
             if [ -n "$EXISTING_PR" ]; then
               echo "Existing PR #$EXISTING_PR found, updating it..."
+              git fetch origin chore/auto-format || true
               git checkout -B chore/auto-format
             else
               echo "Creating new branch and PR..."
