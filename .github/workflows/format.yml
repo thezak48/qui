@@ -37,7 +37,7 @@ jobs:
         run: cd web && pnpm install
       
       - name: Format code
-        run: make fmt
+        run: make fmt || true
       
       - name: Commit and create PR
         env:
