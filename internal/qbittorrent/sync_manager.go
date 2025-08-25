@@ -1382,7 +1382,7 @@ func (sm *SyncManager) AddTags(ctx context.Context, instanceID int, hashes []str
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	if err := client.Client.AddTagsCtx(ctx, hashes, tags); err != nil {
+	if err := client.AddTagsCtx(ctx, hashes, tags); err != nil {
 		return err
 	}
 
@@ -1398,7 +1398,7 @@ func (sm *SyncManager) RemoveTags(ctx context.Context, instanceID int, hashes []
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	if err := client.Client.RemoveTagsCtx(ctx, hashes, tags); err != nil {
+	if err := client.RemoveTagsCtx(ctx, hashes, tags); err != nil {
 		return err
 	}
 
@@ -1408,18 +1408,63 @@ func (sm *SyncManager) RemoveTags(ctx context.Context, instanceID int, hashes []
 }
 
 // SetTags sets tags on the specified torrents (replaces all existing tags)
-// This uses the new qBittorrent 5.1+ API if available, otherwise returns error
+// This uses the new qBittorrent 5.1+ API if available, otherwise falls back to RemoveTags + AddTags
 func (sm *SyncManager) SetTags(ctx context.Context, instanceID int, hashes []string, tags string) error {
 	client, err := sm.clientPool.GetClient(ctx, instanceID)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	// Try to use the new SetTags method (qBittorrent 5.1+)
-	if err := client.Client.SetTags(ctx, hashes, tags); err != nil {
-		// If it fails due to version requirement, return the error
-		// The frontend will handle the fallback to addTags
-		return err
+	// Check version support before attempting API call
+	if client.SupportsSetTags() {
+		if err := client.SetTags(ctx, hashes, tags); err != nil {
+			return err
+		}
+		log.Debug().Str("webAPIVersion", client.GetWebAPIVersion()).Msg("Used SetTags API directly")
+	} else {
+		log.Debug().
+			Str("webAPIVersion", client.GetWebAPIVersion()).
+			Msg("SetTags: qBittorrent version < 2.11.4, using fallback RemoveTags + AddTags")
+
+		torrents, err := client.GetTorrentsCtx(ctx, qbt.TorrentFilterOptions{
+			Hashes: hashes,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to get torrents for fallback: %w", err)
+		}
+
+		existingTagsSet := make(map[string]bool)
+		for _, torrent := range torrents {
+			if torrent.Tags != "" {
+				torrentTags := strings.SplitSeq(torrent.Tags, ", ")
+				for tag := range torrentTags {
+					if strings.TrimSpace(tag) != "" {
+						existingTagsSet[strings.TrimSpace(tag)] = true
+					}
+				}
+			}
+		}
+
+		var existingTags []string
+		for tag := range existingTagsSet {
+			existingTags = append(existingTags, tag)
+		}
+
+		if len(existingTags) > 0 {
+			existingTagsStr := strings.Join(existingTags, ",")
+			if err := client.RemoveTagsCtx(ctx, hashes, existingTagsStr); err != nil {
+				return fmt.Errorf("failed to remove existing tags during fallback: %w", err)
+			}
+			log.Debug().Strs("removedTags", existingTags).Msg("SetTags fallback: removed existing tags")
+		}
+
+		if tags != "" {
+			if err := client.AddTagsCtx(ctx, hashes, tags); err != nil {
+				return fmt.Errorf("failed to add new tags during fallback: %w", err)
+			}
+			newTags := strings.Split(tags, ",")
+			log.Debug().Strs("addedTags", newTags).Msg("SetTags fallback: added new tags")
+		}
 	}
 
 	// Apply optimistic update to cache
@@ -1434,7 +1479,7 @@ func (sm *SyncManager) SetCategory(ctx context.Context, instanceID int, hashes [
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	if err := client.Client.SetCategoryCtx(ctx, hashes, category); err != nil {
+	if err := client.SetCategoryCtx(ctx, hashes, category); err != nil {
 		return err
 	}
 
@@ -1450,7 +1495,7 @@ func (sm *SyncManager) SetAutoTMM(ctx context.Context, instanceID int, hashes []
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	if err := client.Client.SetAutoManagementCtx(ctx, hashes, enable); err != nil {
+	if err := client.SetAutoManagementCtx(ctx, hashes, enable); err != nil {
 		return err
 	}
 
@@ -1466,7 +1511,7 @@ func (sm *SyncManager) CreateTags(ctx context.Context, instanceID int, tags []st
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	if err := client.Client.CreateTagsCtx(ctx, tags); err != nil {
+	if err := client.CreateTagsCtx(ctx, tags); err != nil {
 		return err
 	}
 
@@ -1484,7 +1529,7 @@ func (sm *SyncManager) DeleteTags(ctx context.Context, instanceID int, tags []st
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	if err := client.Client.DeleteTagsCtx(ctx, tags); err != nil {
+	if err := client.DeleteTagsCtx(ctx, tags); err != nil {
 		return err
 	}
 
@@ -1502,7 +1547,7 @@ func (sm *SyncManager) CreateCategory(ctx context.Context, instanceID int, name 
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	if err := client.Client.CreateCategoryCtx(ctx, name, path); err != nil {
+	if err := client.CreateCategoryCtx(ctx, name, path); err != nil {
 		return err
 	}
 
@@ -1520,7 +1565,7 @@ func (sm *SyncManager) EditCategory(ctx context.Context, instanceID int, name st
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	if err := client.Client.EditCategoryCtx(ctx, name, path); err != nil {
+	if err := client.EditCategoryCtx(ctx, name, path); err != nil {
 		return err
 	}
 
@@ -1538,7 +1583,7 @@ func (sm *SyncManager) RemoveCategories(ctx context.Context, instanceID int, cat
 		return fmt.Errorf("failed to get client: %w", err)
 	}
 
-	if err := client.Client.RemoveCategoriesCtx(ctx, categories); err != nil {
+	if err := client.RemoveCategoriesCtx(ctx, categories); err != nil {
 		return err
 	}
 
