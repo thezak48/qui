@@ -31,6 +31,7 @@ import { usePersistedColumnVisibility } from "@/hooks/usePersistedColumnVisibili
 import { usePersistedColumnOrder } from "@/hooks/usePersistedColumnOrder"
 import { usePersistedColumnSizing } from "@/hooks/usePersistedColumnSizing"
 import { usePersistedColumnSorting } from "@/hooks/usePersistedColumnSorting"
+import { usePersistedDeleteFiles } from "@/hooks/usePersistedDeleteFiles"
 
 // Default values for persisted state hooks (module scope for stable references)
 const DEFAULT_COLUMN_VISIBILITY = {
@@ -55,6 +56,7 @@ function getDefaultColumnOrder(): string[] {
 import { useInstanceMetadata } from "@/hooks/useInstanceMetadata"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   ContextMenu,
@@ -81,6 +83,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@/components/ui/tooltip"
 import { AddTorrentDialog } from "./AddTorrentDialog"
 import { TorrentActions } from "./TorrentActions"
 import { Loader2, Play, Pause, Trash2, CheckCircle, Copy, Tag, Folder, Columns3, Radio, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, Eye, EyeOff, ChevronDown, ChevronUp, Settings2, Sparkles } from "lucide-react"
@@ -122,7 +129,7 @@ export const TorrentTableOptimized = memo(function TorrentTableOptimized({ insta
   const [immediateSearch] = useState("")
   const [rowSelection, setRowSelection] = useState({})
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [deleteFiles, setDeleteFiles] = useState(false)
+  const [deleteFiles, setDeleteFiles] = usePersistedDeleteFiles()
   const [contextMenuHashes, setContextMenuHashes] = useState<string[]>([])
   const [contextMenuTorrents, setContextMenuTorrents] = useState<Torrent[]>([])
   const [showTagsDialog, setShowTagsDialog] = useState(false)
@@ -161,8 +168,8 @@ export const TorrentTableOptimized = memo(function TorrentTableOptimized({ insta
 
   // Debounce search to prevent excessive filtering (200ms delay for faster response)
   const debouncedSearch = useDebounce(globalFilter, 200)
-  const routeSearch = useSearch({ strict: false }) as any
-  const searchFromRoute = (routeSearch?.q as string) || ""
+  const routeSearch = useSearch({ strict: false }) as { q?: string }
+  const searchFromRoute = routeSearch?.q || ""
 
   // Use route search if present, otherwise fall back to local immediate/debounced search
   const effectiveSearch = searchFromRoute || immediateSearch || debouncedSearch
@@ -357,12 +364,12 @@ export const TorrentTableOptimized = memo(function TorrentTableOptimized({ insta
     return table.getVisibleLeafColumns().reduce((width, col) => {
       return width + col.getSize()
     }, 0)
-  }, [table, columnSizing, columnVisibility, columnOrder])
+  }, [table])
 
   // Derive hidden columns state from table API for accuracy
   const hasHiddenColumns = useMemo(() => {
     return table.getAllLeafColumns().filter(c => c.getCanHide()).some(c => !c.getIsVisible())
-  }, [table, columnVisibility])
+  }, [table])
 
   // Reset loaded rows when data changes significantly
   useEffect(() => {
@@ -406,7 +413,7 @@ export const TorrentTableOptimized = memo(function TorrentTableOptimized({ insta
       virtualizer.scrollToOffset(0)
       virtualizer.measure()
     }, 0)
-  }, [filters, effectiveSearch, instanceId, virtualizer])
+  }, [filters, effectiveSearch, instanceId, virtualizer, sortedTorrents.length])
 
 
   // Mutation for bulk actions
@@ -614,8 +621,14 @@ export const TorrentTableOptimized = memo(function TorrentTableOptimized({ insta
     mutation.mutate({ action, hashes, enable })
   }, [mutation]) 
 
-  const copyToClipboard = useCallback((text: string) => {
-    navigator.clipboard.writeText(text)
+  const copyToClipboard = useCallback(async (text: string, type: "name" | "hash") => {
+    try {
+      await navigator.clipboard.writeText(text)
+      const message = type === "name" ? "Torrent name copied!" : "Torrent hash copied!"
+      toast.success(message)
+    } catch {
+      toast.error("Failed to copy to clipboard")
+    }
   }, []) 
   
   // Synchronous version for immediate use (backwards compatibility)
@@ -757,19 +770,30 @@ export const TorrentTableOptimized = memo(function TorrentTableOptimized({ insta
               const container = typeof document !== "undefined" ? document.getElementById("header-search-actions") : null
               const dropdown = (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="relative"
+                  <Tooltip disableHoverableContent={true}>
+                    <TooltipTrigger 
+                      asChild
+                      onFocus={(e) => {
+                        // Prevent tooltip from showing on focus - only show on hover
+                        e.preventDefault()
+                      }}
                     >
-                      <Columns3 className="h-4 w-4" />
-                      {hasHiddenColumns && (
-                        <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full" />
-                      )}
-                      <span className="sr-only">Toggle columns</span>
-                    </Button>
-                  </DropdownMenuTrigger>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="relative"
+                        >
+                          <Columns3 className="h-4 w-4" />
+                          {hasHiddenColumns && (
+                            <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full" />
+                          )}
+                          <span className="sr-only">Toggle columns</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Toggle columns</TooltipContent>
+                  </Tooltip>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -792,7 +816,7 @@ export const TorrentTableOptimized = memo(function TorrentTableOptimized({ insta
                             onSelect={(e) => e.preventDefault()}
                           >
                             <span className="truncate">
-                              {(column.columnDef.meta as any)?.headerString || 
+                              {(column.columnDef.meta as { headerString?: string })?.headerString || 
                                (typeof column.columnDef.header === "string" ? column.columnDef.header : column.id)}
                             </span>
                           </DropdownMenuCheckboxItem>
@@ -1087,11 +1111,11 @@ export const TorrentTableOptimized = memo(function TorrentTableOptimized({ insta
                           )
                         })()}
                         <ContextMenuSeparator />
-                        <ContextMenuItem onClick={() => copyToClipboard(incognitoMode ? getLinuxIsoName(torrent.hash) : torrent.name)}>
+                        <ContextMenuItem onClick={() => copyToClipboard(incognitoMode ? getLinuxIsoName(torrent.hash) : torrent.name, "name")}>
                           <Copy className="mr-2 h-4 w-4" />
                           Copy Name
                         </ContextMenuItem>
-                        <ContextMenuItem onClick={() => copyToClipboard(torrent.hash)}>
+                        <ContextMenuItem onClick={() => copyToClipboard(torrent.hash, "hash")}>
                           <Copy className="mr-2 h-4 w-4" />
                           Copy Hash
                         </ContextMenuItem>
