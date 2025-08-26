@@ -532,7 +532,7 @@ function GlobalAllTimeStats({ statsData }: { statsData: Array<{ instance: Instan
         <div className="border-t">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent bg-muted/50">
+              <TableRow className="bg-muted/50">
                 <TableHead className="text-center">Instance</TableHead>
                 <TableHead className="text-center">
                   <div className="flex items-center justify-center gap-1">
