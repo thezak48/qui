@@ -373,17 +373,21 @@ func (h *TorrentsHandler) AddTorrent(w http.ResponseWriter, r *http.Request) {
 
 // BulkActionRequest represents a bulk action request
 type BulkActionRequest struct {
-	Hashes                   []string `json:"hashes"`
-	Action                   string   `json:"action"`
-	DeleteFiles              bool     `json:"deleteFiles,omitempty"`              // For delete action
-	Tags                     string   `json:"tags,omitempty"`                     // For tag operations (comma-separated)
-	Category                 string   `json:"category,omitempty"`                 // For category operations
-	Enable                   bool     `json:"enable,omitempty"`                   // For toggleAutoTMM action
-	RatioLimit               float64  `json:"ratioLimit,omitempty"`               // For setShareLimit action
-	SeedingTimeLimit         int64    `json:"seedingTimeLimit,omitempty"`         // For setShareLimit action
-	InactiveSeedingTimeLimit int64    `json:"inactiveSeedingTimeLimit,omitempty"` // For setShareLimit action
-	UploadLimit              int64    `json:"uploadLimit,omitempty"`              // For setUploadLimit action (KB/s)
-	DownloadLimit            int64    `json:"downloadLimit,omitempty"`            // For setDownloadLimit action (KB/s)
+	Hashes                   []string                   `json:"hashes"`
+	Action                   string                     `json:"action"`
+	DeleteFiles              bool                       `json:"deleteFiles,omitempty"`              // For delete action
+	Tags                     string                     `json:"tags,omitempty"`                     // For tag operations (comma-separated)
+	Category                 string                     `json:"category,omitempty"`                 // For category operations
+	Enable                   bool                       `json:"enable,omitempty"`                   // For toggleAutoTMM action
+	SelectAll                bool                       `json:"selectAll,omitempty"`                // When true, apply to all torrents matching filters
+	Filters                  *qbittorrent.FilterOptions `json:"filters,omitempty"`                  // Filters to apply when selectAll is true
+	Search                   string                     `json:"search,omitempty"`                   // Search query when selectAll is true
+	ExcludeHashes            []string                   `json:"excludeHashes,omitempty"`            // Hashes to exclude when selectAll is true
+	RatioLimit               float64                    `json:"ratioLimit,omitempty"`               // For setShareLimit action
+	SeedingTimeLimit         int64                      `json:"seedingTimeLimit,omitempty"`         // For setShareLimit action
+	InactiveSeedingTimeLimit int64                      `json:"inactiveSeedingTimeLimit,omitempty"` // For setShareLimit action
+	UploadLimit              int64                      `json:"uploadLimit,omitempty"`              // For setUploadLimit action (KB/s)
+	DownloadLimit            int64                      `json:"downloadLimit,omitempty"`            // For setDownloadLimit action (KB/s)
 }
 
 // BulkAction performs bulk operations on torrents
@@ -401,9 +405,14 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate input
-	if len(req.Hashes) == 0 {
+	// Validate input - either specific hashes or selectAll mode
+	if !req.SelectAll && len(req.Hashes) == 0 {
 		RespondError(w, http.StatusBadRequest, "No torrents selected")
+		return
+	}
+
+	if req.SelectAll && len(req.Hashes) > 0 {
+		RespondError(w, http.StatusBadRequest, "Cannot specify both hashes and selectAll")
 		return
 	}
 
@@ -421,6 +430,46 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// If selectAll is true, get all torrent hashes matching the filters
+	var targetHashes []string
+	if req.SelectAll {
+		// Default to empty filters if not provided
+		filters := qbittorrent.FilterOptions{}
+		if req.Filters != nil {
+			filters = *req.Filters
+		}
+
+		// Get all torrents matching the current filters and search
+		// Use a very large limit to get all torrents (backend will handle this properly)
+		response, err := h.syncManager.GetTorrentsWithFilters(r.Context(), instanceID, 100000, 0, "added_on", "desc", req.Search, filters)
+		if err != nil {
+			log.Error().Err(err).Int("instanceID", instanceID).Msg("Failed to get torrents for selectAll operation")
+			RespondError(w, http.StatusInternalServerError, "Failed to get torrents for bulk action")
+			return
+		}
+
+		// Extract all hashes and filter out excluded ones
+		excludeSet := make(map[string]bool)
+		for _, hash := range req.ExcludeHashes {
+			excludeSet[hash] = true
+		}
+
+		for _, torrent := range response.Torrents {
+			if !excludeSet[torrent.Hash] {
+				targetHashes = append(targetHashes, torrent.Hash)
+			}
+		}
+
+		log.Debug().Int("instanceID", instanceID).Int("totalFound", len(response.Torrents)).Int("excluded", len(req.ExcludeHashes)).Int("targetCount", len(targetHashes)).Str("action", req.Action).Msg("SelectAll bulk action")
+	} else {
+		targetHashes = req.Hashes
+	}
+
+	if len(targetHashes) == 0 {
+		RespondError(w, http.StatusBadRequest, "No torrents match the selection criteria")
+		return
+	}
+
 	// Perform bulk action based on type
 	switch req.Action {
 	case "addTags":
@@ -428,20 +477,20 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 			RespondError(w, http.StatusBadRequest, "Tags parameter is required for addTags action")
 			return
 		}
-		err = h.syncManager.AddTags(r.Context(), instanceID, req.Hashes, req.Tags)
+		err = h.syncManager.AddTags(r.Context(), instanceID, targetHashes, req.Tags)
 	case "removeTags":
 		if req.Tags == "" {
 			RespondError(w, http.StatusBadRequest, "Tags parameter is required for removeTags action")
 			return
 		}
-		err = h.syncManager.RemoveTags(r.Context(), instanceID, req.Hashes, req.Tags)
+		err = h.syncManager.RemoveTags(r.Context(), instanceID, targetHashes, req.Tags)
 	case "setTags":
 		// allow empty tags to clear all tags from torrents
-		err = h.syncManager.SetTags(r.Context(), instanceID, req.Hashes, req.Tags)
+		err = h.syncManager.SetTags(r.Context(), instanceID, targetHashes, req.Tags)
 	case "setCategory":
-		err = h.syncManager.SetCategory(r.Context(), instanceID, req.Hashes, req.Category)
+		err = h.syncManager.SetCategory(r.Context(), instanceID, targetHashes, req.Category)
 	case "toggleAutoTMM":
-		err = h.syncManager.SetAutoTMM(r.Context(), instanceID, req.Hashes, req.Enable)
+		err = h.syncManager.SetAutoTMM(r.Context(), instanceID, targetHashes, req.Enable)
 	case "setShareLimit":
 		err = h.syncManager.SetTorrentShareLimit(r.Context(), instanceID, req.Hashes, req.RatioLimit, req.SeedingTimeLimit, req.InactiveSeedingTimeLimit)
 	case "setUploadLimit":
@@ -454,10 +503,10 @@ func (h *TorrentsHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 		if req.DeleteFiles {
 			action = "deleteWithFiles"
 		}
-		err = h.syncManager.BulkAction(r.Context(), instanceID, req.Hashes, action)
+		err = h.syncManager.BulkAction(r.Context(), instanceID, targetHashes, action)
 	default:
 		// Handle other standard actions
-		err = h.syncManager.BulkAction(r.Context(), instanceID, req.Hashes, req.Action)
+		err = h.syncManager.BulkAction(r.Context(), instanceID, targetHashes, req.Action)
 	}
 
 	if err != nil {

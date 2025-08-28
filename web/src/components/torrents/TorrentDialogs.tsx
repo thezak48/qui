@@ -47,7 +47,17 @@ interface SetTagsDialogProps {
   initialTags?: string[]
 }
 
-export const SetTagsDialog = memo(function SetTagsDialog({
+interface AddTagsDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  availableTags: string[]
+  hashCount: number
+  onConfirm: (tags: string[]) => void
+  isPending?: boolean
+  initialTags?: string[]
+}
+
+export const AddTagsDialog = memo(function AddTagsDialog({
   open,
   onOpenChange,
   availableTags,
@@ -55,18 +65,23 @@ export const SetTagsDialog = memo(function SetTagsDialog({
   onConfirm,
   isPending = false,
   initialTags = [],
-}: SetTagsDialogProps) {
+}: AddTagsDialogProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
+  const [temporaryTags, setTemporaryTags] = useState<string[]>([])
   const wasOpen = useRef(false)
   
   // Initialize selected tags only when dialog transitions from closed to open
   useEffect(() => {
     if (open && !wasOpen.current) {
-      setSelectedTags(initialTags)
+      setSelectedTags([]) // Start with empty selection for add operation
+      setTemporaryTags([])
     }
     wasOpen.current = open
   }, [open, initialTags])
+
+  // Combine server tags with temporary tags for display
+  const displayTags = [...availableTags, ...temporaryTags].sort()
 
   const handleConfirm = useCallback((): void => {
     const allTags = [...selectedTags]
@@ -76,26 +91,41 @@ export const SetTagsDialog = memo(function SetTagsDialog({
     onConfirm(allTags)
     setSelectedTags([])
     setNewTag("")
-  }, [selectedTags, newTag, onConfirm]) // empty array will clear all tags
+    setTemporaryTags([])
+  }, [selectedTags, newTag, onConfirm])
 
   const handleCancel = useCallback((): void => {
     setSelectedTags([])
     setNewTag("")
+    setTemporaryTags([])
     onOpenChange(false)
   }, [onOpenChange])
+
+  const addNewTag = useCallback((tagToAdd: string): void => {
+    const trimmedTag = tagToAdd.trim()
+    if (trimmedTag && !displayTags.includes(trimmedTag)) {
+      // Add to temporary tags if it's not already in server tags
+      if (!availableTags.includes(trimmedTag)) {
+        setTemporaryTags(prev => [...prev, trimmedTag])
+      }
+      // Add to selected tags
+      setSelectedTags(prev => [...prev, trimmedTag])
+      setNewTag("")
+    }
+  }, [displayTags, availableTags])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Manage Tags for {hashCount} torrent(s)</DialogTitle>
+          <DialogTitle>Add Tags to {hashCount} torrent(s)</DialogTitle>
           <DialogDescription>
-            Select tags from the list or add a new one. Selected tags will replace all existing tags on the torrents. Leave all unchecked to remove all tags.
+            Select tags to add to the selected torrents. These tags will be added to any existing tags on each torrent.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
           {/* Existing tags */}
-          {availableTags && availableTags.length > 0 && (
+          {displayTags && displayTags.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Available Tags</Label>
@@ -111,27 +141,198 @@ export const SetTagsDialog = memo(function SetTagsDialog({
               </div>
               <ScrollArea className="h-48 border rounded-md p-3">
                 <div className="space-y-2">
-                  {availableTags.map((tag) => (
-                    <div key={tag} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`tag-${tag}`}
-                        checked={selectedTags.includes(tag)}
-                        onCheckedChange={(checked: boolean | string) => {
-                          if (checked) {
-                            setSelectedTags([...selectedTags, tag])
-                          } else {
-                            setSelectedTags(selectedTags.filter((t: string) => t !== tag))
-                          }
-                        }}
-                      />
-                      <label
-                        htmlFor={`tag-${tag}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                      >
-                        {tag}
-                      </label>
-                    </div>
-                  ))}
+                  {displayTags.map((tag) => {
+                    const isTemporary = temporaryTags.includes(tag)
+                    return (
+                      <div key={tag} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`add-tag-${tag}`}
+                          checked={selectedTags.includes(tag)}
+                          onCheckedChange={(checked: boolean | string) => {
+                            if (checked) {
+                              setSelectedTags([...selectedTags, tag])
+                            } else {
+                              setSelectedTags(selectedTags.filter((t: string) => t !== tag))
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`add-tag-${tag}`}
+                          className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer ${
+                            isTemporary ? "text-primary italic" : ""
+                          }`}
+                        >
+                          {tag}
+                          {isTemporary && <span className="ml-1 text-xs text-muted-foreground">(new)</span>}
+                        </label>
+                      </div>
+                    )
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+          
+          {/* Add new tag */}
+          <div className="space-y-2">
+            <Label htmlFor="newTag">Create New Tag</Label>
+            <div className="flex gap-2">
+              <Input
+                id="newTag"
+                value={newTag}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setNewTag(e.target.value)}
+                placeholder="Enter new tag"
+                onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === "Enter" && newTag.trim()) {
+                    e.preventDefault()
+                    addNewTag(newTag)
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => addNewTag(newTag)}
+                disabled={!newTag.trim() || displayTags.includes(newTag.trim())}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Selected tags summary */}
+          {selectedTags.length > 0 && (
+            <div className="text-sm text-muted-foreground">
+              Tags to add: {selectedTags.join(", ")}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={handleCancel}>Cancel</Button>
+          <Button
+            onClick={handleConfirm}
+            disabled={isPending || selectedTags.length === 0}
+          >
+            Add Tags
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+})
+
+export const SetTagsDialog = memo(function SetTagsDialog({
+  open,
+  onOpenChange,
+  availableTags,
+  hashCount,
+  onConfirm,
+  isPending = false,
+  initialTags = [],
+}: SetTagsDialogProps) {
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [newTag, setNewTag] = useState("")
+  const [temporaryTags, setTemporaryTags] = useState<string[]>([]) // New state for temporarily created tags
+  const wasOpen = useRef(false)
+  
+  // Initialize selected tags only when dialog transitions from closed to open
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      setSelectedTags(initialTags)
+      setTemporaryTags([]) // Clear temporary tags when opening dialog
+    }
+    wasOpen.current = open
+  }, [open, initialTags])
+
+  // Combine server tags with temporary tags for display
+  const displayTags = [...availableTags, ...temporaryTags].sort()
+
+  const handleConfirm = useCallback((): void => {
+    const allTags = [...selectedTags]
+    if (newTag.trim() && !allTags.includes(newTag.trim())) {
+      allTags.push(newTag.trim())
+    }
+    onConfirm(allTags)
+    setSelectedTags([])
+    setNewTag("")
+    setTemporaryTags([]) // Clear temporary tags after confirming
+  }, [selectedTags, newTag, onConfirm])
+
+  const handleCancel = useCallback((): void => {
+    setSelectedTags([])
+    setNewTag("")
+    setTemporaryTags([]) // Clear temporary tags when cancelling
+    onOpenChange(false)
+  }, [onOpenChange])
+
+  const addNewTag = useCallback((tagToAdd: string): void => {
+    const trimmedTag = tagToAdd.trim()
+    if (trimmedTag && !displayTags.includes(trimmedTag)) {
+      // Add to temporary tags if it's not already in server tags
+      if (!availableTags.includes(trimmedTag)) {
+        setTemporaryTags(prev => [...prev, trimmedTag])
+      }
+      // Add to selected tags
+      setSelectedTags(prev => [...prev, trimmedTag])
+      setNewTag("")
+    }
+  }, [displayTags, availableTags])
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Replace Tags for {hashCount} torrent(s)</DialogTitle>
+          <DialogDescription>
+            Select tags from the list or add a new one. Selected tags will replace all existing tags on the torrents. Leave all unchecked to remove all tags.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          {/* Existing tags */}
+          {displayTags && displayTags.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Available Tags</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSelectedTags([])}
+                  disabled={selectedTags.length === 0}
+                >
+                  Deselect All
+                </Button>
+              </div>
+              <ScrollArea className="h-48 border rounded-md p-3">
+                <div className="space-y-2">
+                  {displayTags.map((tag) => {
+                    const isTemporary = temporaryTags.includes(tag)
+                    return (
+                      <div key={tag} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`tag-${tag}`}
+                          checked={selectedTags.includes(tag)}
+                          onCheckedChange={(checked: boolean | string) => {
+                            if (checked) {
+                              setSelectedTags([...selectedTags, tag])
+                            } else {
+                              setSelectedTags(selectedTags.filter((t: string) => t !== tag))
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`tag-${tag}`}
+                          className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer ${
+                            isTemporary ? "text-primary italic" : ""
+                          }`}
+                        >
+                          {tag}
+                          {isTemporary && <span className="ml-1 text-xs text-muted-foreground">(new)</span>}
+                        </label>
+                      </div>
+                    )
+                  })}
                 </div>
               </ScrollArea>
             </div>
@@ -149,10 +350,7 @@ export const SetTagsDialog = memo(function SetTagsDialog({
                 onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                   if (e.key === "Enter" && newTag.trim()) {
                     e.preventDefault()
-                    if (!selectedTags.includes(newTag.trim())) {
-                      setSelectedTags([...selectedTags, newTag.trim()])
-                      setNewTag("")
-                    }
+                    addNewTag(newTag)
                   }
                 }}
               />
@@ -160,13 +358,8 @@ export const SetTagsDialog = memo(function SetTagsDialog({
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => {
-                  if (newTag.trim() && !selectedTags.includes(newTag.trim())) {
-                    setSelectedTags([...selectedTags, newTag.trim()])
-                    setNewTag("")
-                  }
-                }}
-                disabled={!newTag.trim() || selectedTags.includes(newTag.trim())}
+                onClick={() => addNewTag(newTag)}
+                disabled={!newTag.trim() || displayTags.includes(newTag.trim())}
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -186,7 +379,7 @@ export const SetTagsDialog = memo(function SetTagsDialog({
             onClick={handleConfirm}
             disabled={isPending}
           >
-            Update Tags
+            Replace Tags
           </Button>
         </DialogFooter>
       </DialogContent>
