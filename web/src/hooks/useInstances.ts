@@ -24,7 +24,7 @@ export function useInstances() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { 
+    mutationFn: ({ id, data }: {
       id: number
       data: Partial<InstanceFormData>
     }) => api.updateInstance(id, data),
