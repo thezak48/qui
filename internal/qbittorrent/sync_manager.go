@@ -73,27 +73,32 @@ func NewSyncManager(clientPool *ClientPool) *SyncManager {
 
 // GetTorrentsWithFilters gets torrents with filters, search and sorting
 // Always fetches fresh data from sync manager for real-time updates
-func (sm *SyncManager) GetTorrentsWithFilters(ctx context.Context, instanceID int, sort, order, search string, filters FilterOptions) (*TorrentResponse, error) {
-	// Always get fresh data from sync manager for real-time updates
-	var filteredTorrents []qbt.Torrent
-	var err error
+func (sm *SyncManager) GetTorrentsWithFilters(ctx context.Context, instanceID int, sort, order, search string, filters qbt.TorrentFilterOptions) (*TorrentResponse, error) {
+	// Set sorting in the filter options
+	filters.Sort = sort
+	filters.Reverse = (order == "desc")
 
-	// Always get fresh data from sync manager for real-time updates
-	allTorrents, err := sm.getAllTorrentsForStats(ctx, instanceID, "")
+	// Get client
+	client, err := sm.clientPool.GetClient(ctx, instanceID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get torrents: %w", err)
+		return nil, fmt.Errorf("failed to get client: %w", err)
 	}
+
+	// Get sync manager
+	syncManager := client.GetSyncManager()
+	if syncManager == nil {
+		return nil, fmt.Errorf("sync manager not initialized")
+	}
+
+	// Use library filtering and sorting
+	filteredTorrents := syncManager.GetTorrents(filters)
 
 	log.Debug().
 		Int("instanceID", instanceID).
-		Int("totalCount", len(allTorrents)).
-		Msg("Using fresh data from sync manager")
+		Int("totalCount", len(filteredTorrents)).
+		Msg("Using library filtering and sorting")
 
-	// Now we always have all torrents from getAllTorrentsForStats
-	// Just apply filters in-memory (this is fast and uses the smart cached data)
-	filteredTorrents = sm.applyFilters(allTorrents, filters)
-
-	// Apply search filter if provided
+	// Apply search filter if provided (library doesn't support search)
 	if search != "" {
 		filteredTorrents = sm.filterTorrentsBySearch(filteredTorrents, search)
 	}
@@ -101,16 +106,14 @@ func (sm *SyncManager) GetTorrentsWithFilters(ctx context.Context, instanceID in
 	log.Debug().
 		Int("instanceID", instanceID).
 		Int("filtered", len(filteredTorrents)).
-		Msg("Applied in-memory filtering")
+		Msg("Applied search filtering")
 
 	// Calculate stats from filtered torrents
 	stats := sm.calculateStats(filteredTorrents)
 
-	// Sort torrents
-	sm.sortTorrents(filteredTorrents, sort, order)
-
-	// Calculate counts from ALL torrents (not filtered) for sidebar
-	// This uses the same cached data, so it's very fast
+	// Manual sorting is applied as fallback above
+	// Get all torrents for sidebar counts (without filters)
+	allTorrents := syncManager.GetTorrents(qbt.TorrentFilterOptions{})
 	counts := sm.calculateCountsFromTorrents(allTorrents)
 
 	// Fetch categories and tags (cached separately for 60s)
@@ -218,13 +221,13 @@ func (sm *SyncManager) BulkAction(ctx context.Context, instanceID int, hashes []
 	}
 
 	// Validate that torrents exist before proceeding
-	torrentMap := syncManager.GetTorrentHashes(hashes)
+	torrentMap := syncManager.GetTorrentMap(qbt.TorrentFilterOptions{Hashes: hashes})
 	if len(torrentMap) == 0 {
 		return fmt.Errorf("no sync data available")
 	}
 
-	existingTorrents := make([]*qbt.Torrent, 0, len(hashes))
-	missingHashes := make([]string, 0, len(hashes))
+	existingTorrents := make([]*qbt.Torrent, 0, len(torrentMap))
+	missingHashes := make([]string, 0, len(hashes)-len(torrentMap))
 	for _, hash := range hashes {
 		if torrent, exists := torrentMap[hash]; exists {
 			existingTorrents = append(existingTorrents, &torrent)
@@ -731,10 +734,12 @@ func (sm *SyncManager) getAllTorrentsForStats(ctx context.Context, instanceID in
 	}
 
 	// Get all torrents from sync manager
-	torrentMap := syncManager.GetTorrents()
-	torrents := make([]qbt.Torrent, 0, len(torrentMap))
-	for _, torrent := range torrentMap {
-		torrents = append(torrents, torrent)
+	torrents := syncManager.GetTorrents(qbt.TorrentFilterOptions{})
+
+	// Build a map for O(1) lookups during optimistic updates
+	torrentMap := make(map[string]*qbt.Torrent, len(torrents))
+	for i := range torrents {
+		torrentMap[torrents[i].Hash] = &torrents[i]
 	}
 
 	// Apply optimistic updates using the torrent map for O(1) lookups
@@ -748,7 +753,7 @@ func (sm *SyncManager) getAllTorrentsForStats(ctx context.Context, instanceID in
 
 		for hash, optimisticUpdate := range instanceUpdates {
 			// Use O(1) map lookup instead of iterating through all torrents
-			if torrent, exists := client.getTorrentByHash(hash); exists {
+			if torrent, exists := torrentMap[hash]; exists {
 				shouldClear := false
 				timeSinceUpdate := time.Since(optimisticUpdate.UpdatedAt)
 
@@ -790,21 +795,15 @@ func (sm *SyncManager) getAllTorrentsForStats(ctx context.Context, instanceID in
 					removedCount++
 				} else {
 					// Apply the optimistic state change to the torrent in our slice
-					// Find the torrent in the slice and update it
-					for i := range torrents {
-						if torrents[i].Hash == hash {
-							log.Debug().
-								Str("hash", hash).
-								Str("oldState", string(torrents[i].State)).
-								Str("newState", string(optimisticUpdate.State)).
-								Str("action", optimisticUpdate.Action).
-								Msg("Applying optimistic update")
+					log.Debug().
+						Str("hash", hash).
+						Str("oldState", string(torrent.State)).
+						Str("newState", string(optimisticUpdate.State)).
+						Str("action", optimisticUpdate.Action).
+						Msg("Applying optimistic update")
 
-							torrents[i].State = optimisticUpdate.State
-							optimisticCount++
-							break
-						}
-					}
+					torrent.State = optimisticUpdate.State
+					optimisticCount++
 				}
 			} else {
 				// Torrent no longer exists - clear the optimistic update
@@ -1046,108 +1045,6 @@ func (sm *SyncManager) filterTorrentsByGlob(torrents []qbt.Torrent, pattern stri
 	return filtered
 }
 
-// applyFilters applies multiple filters to torrents
-func (sm *SyncManager) applyFilters(torrents []qbt.Torrent, filters FilterOptions) []qbt.Torrent {
-	// If no filters are applied, return all torrents
-	if len(filters.Status) == 0 && len(filters.Categories) == 0 && len(filters.Tags) == 0 && len(filters.Trackers) == 0 {
-		return torrents
-	}
-
-	// Log filter application
-	log.Debug().
-		Interface("filters", filters).
-		Int("totalTorrents", len(torrents)).
-		Msg("Applying filters to torrents")
-
-	// Pre-compute filter sets for O(1) lookup
-	categorySet := make(map[string]bool, len(filters.Categories))
-	for _, cat := range filters.Categories {
-		categorySet[cat] = true
-	}
-
-	tagSet := make(map[string]bool, len(filters.Tags))
-	for _, tag := range filters.Tags {
-		tagSet[tag] = true
-	}
-
-	trackerSet := make(map[string]bool, len(filters.Trackers))
-	for _, tracker := range filters.Trackers {
-		trackerSet[tracker] = true
-	}
-
-	var filtered []qbt.Torrent
-	for _, torrent := range torrents {
-		// Check status filter
-		if len(filters.Status) > 0 {
-			statusMatch := false
-			for _, status := range filters.Status {
-				if sm.matchTorrentStatus(torrent, status) {
-					statusMatch = true
-					break
-				}
-			}
-			if !statusMatch {
-				continue
-			}
-		}
-
-		// Check category filter
-		if len(filters.Categories) > 0 {
-			if !categorySet[torrent.Category] {
-				continue
-			}
-		}
-
-		// Check tags filter
-		if len(filters.Tags) > 0 {
-			tagMatch := false
-			if len(filters.Tags) == 1 && filters.Tags[0] == "" && torrent.Tags == "" {
-				// Handle "Untagged" filter
-				tagMatch = true
-			} else {
-				torrentTags := strings.SplitSeq(torrent.Tags, ", ")
-				for torrentTag := range torrentTags {
-					if tagSet[torrentTag] {
-						tagMatch = true
-						break
-					}
-				}
-			}
-			if !tagMatch {
-				continue
-			}
-		}
-
-		// Check tracker filter
-		if len(filters.Trackers) > 0 {
-			trackerMatch := false
-			if len(filters.Trackers) == 1 && filters.Trackers[0] == "" && torrent.Tracker == "" {
-				// Handle "No tracker" filter
-				trackerMatch = true
-			} else if torrent.Tracker != "" {
-				// Extract hostname from tracker URL for comparison
-				if trackerURL, err := url.Parse(torrent.Tracker); err == nil {
-					if trackerSet[trackerURL.Hostname()] {
-						trackerMatch = true
-					}
-				}
-			}
-			if !trackerMatch {
-				continue
-			}
-		}
-
-		filtered = append(filtered, torrent)
-	}
-
-	log.Debug().
-		Int("filteredCount", len(filtered)).
-		Interface("appliedFilters", filters).
-		Msg("Filters applied, returning filtered torrents")
-
-	return filtered
-}
-
 // Torrent state categories for fast lookup
 var torrentStateCategories = map[string][]qbt.TorrentState{
 	"downloading": {qbt.TorrentStateDownloading, qbt.TorrentStateStalledDl, qbt.TorrentStateMetaDl, qbt.TorrentStateQueuedDl, qbt.TorrentStateAllocating, qbt.TorrentStateCheckingDl, qbt.TorrentStateForcedDl},
@@ -1259,76 +1156,6 @@ func (sm *SyncManager) calculateStats(torrents []qbt.Torrent) *TorrentStats {
 	return stats
 }
 
-// sortTorrents sorts torrents in-place based on the given field and order
-func (sm *SyncManager) sortTorrents(torrents []qbt.Torrent, sortField, order string) {
-	// Default to descending order if not specified
-	if order != "asc" && order != "desc" {
-		order = "desc"
-	}
-
-	log.Trace().
-		Str("sortField", sortField).
-		Str("order", order).
-		Int("torrentCount", len(torrents)).
-		Msg("Sorting torrents")
-
-	sort.Slice(torrents, func(i, j int) bool {
-		var less bool
-		var equal bool
-
-		switch sortField {
-		case "name":
-			less = strings.ToLower(torrents[i].Name) < strings.ToLower(torrents[j].Name)
-			equal = strings.EqualFold(torrents[i].Name, torrents[j].Name)
-		case "size":
-			less = torrents[i].Size < torrents[j].Size
-			equal = torrents[i].Size == torrents[j].Size
-		case "progress":
-			less = torrents[i].Progress < torrents[j].Progress
-			equal = torrents[i].Progress == torrents[j].Progress
-		case "dlspeed":
-			less = torrents[i].DlSpeed < torrents[j].DlSpeed
-			equal = torrents[i].DlSpeed == torrents[j].DlSpeed
-		case "upspeed":
-			less = torrents[i].UpSpeed < torrents[j].UpSpeed
-			equal = torrents[i].UpSpeed == torrents[j].UpSpeed
-		case "eta":
-			less = torrents[i].ETA < torrents[j].ETA
-			equal = torrents[i].ETA == torrents[j].ETA
-		case "ratio":
-			less = torrents[i].Ratio < torrents[j].Ratio
-			equal = torrents[i].Ratio == torrents[j].Ratio
-		case "category":
-			less = strings.ToLower(torrents[i].Category) < strings.ToLower(torrents[j].Category)
-			equal = strings.EqualFold(torrents[i].Category, torrents[j].Category)
-		case "tags":
-			less = strings.ToLower(torrents[i].Tags) < strings.ToLower(torrents[j].Tags)
-			equal = strings.EqualFold(torrents[i].Tags, torrents[j].Tags)
-		case "added_on", "addedOn":
-			less = torrents[i].AddedOn < torrents[j].AddedOn
-			equal = torrents[i].AddedOn == torrents[j].AddedOn
-		case "state":
-			less = torrents[i].State < torrents[j].State
-			equal = torrents[i].State == torrents[j].State
-		default:
-			// Default to sorting by added date (newest first)
-			less = torrents[i].AddedOn < torrents[j].AddedOn
-			equal = torrents[i].AddedOn == torrents[j].AddedOn
-		}
-
-		// Use hash as tiebreaker for stable sorting when primary values are equal
-		if equal {
-			less = torrents[i].Hash < torrents[j].Hash
-		}
-
-		// Reverse for descending order
-		if order == "desc" {
-			return !less
-		}
-		return less
-	})
-}
-
 // AddTags adds tags to the specified torrents (keeps existing tags)
 func (sm *SyncManager) AddTags(ctx context.Context, instanceID int, hashes []string, tags string) error {
 	client, err := sm.clientPool.GetClient(ctx, instanceID)
@@ -1343,7 +1170,13 @@ func (sm *SyncManager) AddTags(ctx context.Context, instanceID int, hashes []str
 	}
 
 	// Validate that torrents exist
-	torrentMap := syncManager.GetTorrentHashes(hashes)
+	torrentList := syncManager.GetTorrents(qbt.TorrentFilterOptions{Hashes: hashes})
+
+	torrentMap := make(map[string]qbt.Torrent, len(torrentList))
+	for _, torrent := range torrentList {
+		torrentMap[torrent.Hash] = torrent
+	}
+
 	if len(torrentMap) == 0 {
 		return fmt.Errorf("no sync data available")
 	}
