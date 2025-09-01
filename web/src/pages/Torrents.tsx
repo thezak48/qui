@@ -102,14 +102,9 @@ export function Torrents({ instanceId, search, onSearchChange }: TorrentsProps) 
       setTorrentCounts(transformedCounts)
     }
 
-    // Store categories and tags
-    if (categoriesData) {
-      setCategories(categoriesData)
-    }
-
-    if (tagsData) {
-      setTags(tagsData)
-    }
+    // Store categories and tags - always set them even if empty to indicate data has been received
+    setCategories(categoriesData || {})
+    setTags(tagsData || [])
   }, [instanceId])
 
   // Calculate total active filters for badge
