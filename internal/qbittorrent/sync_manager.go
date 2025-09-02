@@ -1461,16 +1461,16 @@ func (sm *SyncManager) applyManualFilters(torrents []qbt.Torrent, filters Filter
 
 // Torrent state categories for fast lookup
 var torrentStateCategories = map[string][]qbt.TorrentState{
-	"downloading":          {qbt.TorrentStateDownloading, qbt.TorrentStateStalledDl, qbt.TorrentStateMetaDl, qbt.TorrentStateQueuedDl, qbt.TorrentStateAllocating, qbt.TorrentStateCheckingDl, qbt.TorrentStateForcedDl},
-	"seeding":              {qbt.TorrentStateUploading, qbt.TorrentStateStalledUp, qbt.TorrentStateQueuedUp, qbt.TorrentStateCheckingUp, qbt.TorrentStateForcedUp},
-	"paused":               {qbt.TorrentStatePausedDl, qbt.TorrentStatePausedUp, qbt.TorrentStateStoppedDl, qbt.TorrentStateStoppedUp},
-	"active":               {qbt.TorrentStateDownloading, qbt.TorrentStateUploading, qbt.TorrentStateForcedDl, qbt.TorrentStateForcedUp},
-	"stalled":              {qbt.TorrentStateStalledDl, qbt.TorrentStateStalledUp},
-	"checking":             {qbt.TorrentStateCheckingDl, qbt.TorrentStateCheckingUp, qbt.TorrentStateCheckingResumeData},
-	"errored":              {qbt.TorrentStateError, qbt.TorrentStateMissingFiles},
-	"moving":               {qbt.TorrentStateMoving},
-	"stalled_uploading":    {qbt.TorrentStateStalledUp},
-	"stalled_downloading":  {qbt.TorrentStateStalledDl},
+	"downloading":         {qbt.TorrentStateDownloading, qbt.TorrentStateStalledDl, qbt.TorrentStateMetaDl, qbt.TorrentStateQueuedDl, qbt.TorrentStateAllocating, qbt.TorrentStateCheckingDl, qbt.TorrentStateForcedDl},
+	"seeding":             {qbt.TorrentStateUploading, qbt.TorrentStateStalledUp, qbt.TorrentStateQueuedUp, qbt.TorrentStateCheckingUp, qbt.TorrentStateForcedUp},
+	"paused":              {qbt.TorrentStatePausedDl, qbt.TorrentStatePausedUp, qbt.TorrentStateStoppedDl, qbt.TorrentStateStoppedUp},
+	"active":              {qbt.TorrentStateDownloading, qbt.TorrentStateUploading, qbt.TorrentStateForcedDl, qbt.TorrentStateForcedUp},
+	"stalled":             {qbt.TorrentStateStalledDl, qbt.TorrentStateStalledUp},
+	"checking":            {qbt.TorrentStateCheckingDl, qbt.TorrentStateCheckingUp, qbt.TorrentStateCheckingResumeData},
+	"errored":             {qbt.TorrentStateError, qbt.TorrentStateMissingFiles},
+	"moving":              {qbt.TorrentStateMoving},
+	"stalled_uploading":   {qbt.TorrentStateStalledUp},
+	"stalled_downloading": {qbt.TorrentStateStalledDl},
 }
 
 // Action state categories for optimistic update clearing
@@ -1963,4 +1963,99 @@ func (sm *SyncManager) SetTorrentDownloadLimit(ctx context.Context, instanceID i
 	}
 
 	return nil
+}
+
+// Add these new methods to the existing SyncManager
+
+func (sm *SyncManager) GetServerState(ctx context.Context, instanceID int) (*ServerState, error) {
+	client, err := sm.clientPool.GetClient(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get server state from qBittorrent API
+	syncData, err := client.SyncMainData(ctx, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	if syncData.ServerState == nil {
+		return nil, nil
+	}
+
+	return &ServerState{
+		ConnectionStatus:     syncData.ServerState.ConnectionStatus,
+		DHTNodes:             syncData.ServerState.DHTNodes,
+		TotalPeerConnections: syncData.ServerState.TotalPeerConnections,
+		DlInfoData:           syncData.ServerState.DlInfoData,
+		UpInfoData:           syncData.ServerState.UpInfoData,
+		AlltimeDl:            syncData.ServerState.AlltimeDl,
+		AlltimeUl:            syncData.ServerState.AlltimeUl,
+	}, nil
+}
+
+func (sm *SyncManager) GetTorrentCountsByCategory(ctx context.Context, instanceID int) (map[string]map[string]int, error) {
+	client, err := sm.clientPool.GetClient(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all torrents
+	torrents, err := client.GetTorrents(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get categories
+	categories, err := client.GetCategories(ctx)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to get categories, using 'Uncategorized' for empty categories")
+		categories = make(map[string]*qbittorrentgo.Category)
+	}
+
+	// Count torrents by category and status
+	counts := make(map[string]map[string]int)
+
+	// Initialize with known categories
+	for categoryName := range categories {
+		counts[categoryName] = make(map[string]int)
+	}
+	// Add "Uncategorized" for torrents without category
+	counts["Uncategorized"] = make(map[string]int)
+
+	for _, torrent := range torrents {
+		category := torrent.Category
+		if category == "" {
+			category = "Uncategorized"
+		}
+
+		if counts[category] == nil {
+			counts[category] = make(map[string]int)
+		}
+
+		status := normalizeStatus(torrent.State)
+		counts[category][status]++
+	}
+
+	return counts, nil
+}
+
+// normalizeStatus converts qBittorrent status to standard status names
+func normalizeStatus(state string) string {
+	switch state {
+	case "downloading", "stalledDL", "metaDL", "forcedDL", "allocating":
+		return "downloading"
+	case "uploading", "stalledUP", "forcedUP":
+		return "seeding"
+	case "pausedDL", "pausedUP":
+		return "paused"
+	case "error", "missingFiles":
+		return "errored"
+	case "checkingDL", "checkingUP", "checkingResumeData", "moving":
+		return "checking"
+	case "queuedDL", "queuedUP":
+		return "queued"
+	default:
+		return "unknown"
+	}
 }

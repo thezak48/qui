@@ -127,7 +127,8 @@ printf "password" | ./qui change-password --username admin
 ```
 
 **Notes:**
-- Only one user account is allowed in the system  
+
+- Only one user account is allowed in the system
 - Passwords must be at least 8 characters long
 - Interactive prompts use secure input (passwords are masked)
 - Supports piped input for automation and scripting
@@ -135,6 +136,7 @@ printf "password" | ./qui change-password --username admin
 - No password confirmation required - perfect for automation
 
 **Default locations:**
+
 - Linux/macOS: `~/.config/qui/config.toml`
 - Windows: `%APPDATA%\qui\config.toml`
 
@@ -166,6 +168,7 @@ curl -H "X-API-Key: YOUR_API_KEY_HERE" \
 ```
 
 **Security Notes:**
+
 - API keys are shown only once when created - save them securely
 - Each key can be individually revoked without affecting others
 - Keys have the same permissions as the main user account
@@ -179,19 +182,59 @@ Prometheus metrics can be enabled to monitor your qBittorrent instances. When en
 Metrics are **disabled by default**. Enable them via configuration file or environment variable:
 
 **Config file (`config.toml`):**
+
 ```toml
 metricsEnabled = true
+# Optional: Enable per-torrent metrics (WARNING: High cardinality)
+# metricsExportByTorrent = false
 ```
 
 **Environment variable:**
+
 ```bash
 QUI__METRICS_ENABLED=true
+QUI__METRICS_EXPORT_BY_TORRENT=false
 ```
 
 ### Available Metrics
-- **Torrent counts** by status (downloading, seeding, paused, error)
-- **Transfer speeds** (upload/download bytes per second)  
-- **Instance connection status**
+
+**Instance Status:**
+
+- `qbittorrent_up` - Whether the qBittorrent server is answering requests (includes version label)
+- `qbittorrent_connected` - Whether connected to BitTorrent network
+- `qbittorrent_firewalled` - Whether connected but behind firewall
+- `qbittorrent_instance_connection_status` - Connection status (1=connected, 0=disconnected)
+
+**Network & DHT:**
+
+- `qbittorrent_dht_nodes` - Number of DHT nodes connected
+- `qbittorrent_total_peer_connections` - Total peer connections
+
+**Transfer Rates:**
+
+- `qbittorrent_download_speed_bytes_per_second` - Current download speed
+- `qbittorrent_upload_speed_bytes_per_second` - Current upload speed
+
+**Session Data (Counters):**
+
+- `qbittorrent_dl_info_data_total` - Data downloaded since server started
+- `qbittorrent_up_info_data_total` - Data uploaded since server started
+- `qbittorrent_alltime_dl_total` - Total historical data downloaded
+- `qbittorrent_alltime_ul_total` - Total historical data uploaded
+
+**Torrent Counts:**
+
+- `qbittorrent_torrents_downloading` - Number of downloading torrents
+- `qbittorrent_torrents_seeding` - Number of seeding torrents
+- `qbittorrent_torrents_paused` - Number of paused torrents
+- `qbittorrent_torrents_error` - Number of errored torrents
+- `qbittorrent_torrents_checking` - Number of checking torrents
+- `qbittorrent_torrents_count` - Torrent counts by category and status
+
+**Per-Torrent Metrics (Optional):**
+
+- `qbittorrent_torrent_size` - Individual torrent sizes
+- `qbittorrent_torrent_downloaded` - Downloaded data per torrent
 
 ### Prometheus Configuration
 
@@ -199,17 +242,19 @@ First, create an API key in Settings → API Keys, then configure Prometheus:
 
 ```yaml
 scrape_configs:
-  - job_name: 'qui'
+  - job_name: "qui"
     static_configs:
-      - targets: ['localhost:7476']
+      - targets: ["localhost:7476"]
     metrics_path: /metrics
     scrape_interval: 30s
     http_headers:
       X-API-Key:
-        values: ['YOUR_API_KEY_HERE']
+        values: ["YOUR_API_KEY_HERE"]
 ```
 
 All metrics are labeled with `instance_id` and `instance_name` for multi-instance monitoring.
+
+**Note:** Per-torrent metrics are disabled by default due to high cardinality. Enable only if needed and you have a manageable number of torrents.
 
 ## Reverse Proxy for External Applications
 
@@ -218,8 +263,9 @@ qui includes a built-in reverse proxy that allows external applications like aut
 ### How It Works
 
 The reverse proxy feature:
+
 - **Handles authentication automatically** - qui manages the qBittorrent login using your configured credentials
-- **Isolates clients** - Each client gets its own API key for security and monitoring  
+- **Isolates clients** - Each client gets its own API key for security and monitoring
 - **Works with any qBittorrent security setting** - Even with "bypass authentication for clients on localhost" disabled
 - **Provides transparent access** - Clients see qui as if it were qBittorrent directly
 
@@ -229,7 +275,7 @@ The reverse proxy feature:
 
 1. Open qui in your browser
 2. Go to **Settings → Client API Keys**
-3. Click **"Generate New Key"** 
+3. Click **"Generate New Key"**
 4. Choose the qBittorrent instance you want to proxy
 5. Enter a name (e.g., "Sonarr")
 6. **Copy the generated key immediately** - it's only shown once
@@ -239,13 +285,15 @@ The reverse proxy feature:
 Use qui as the qBittorrent host with the special proxy URL format:
 
 **Example for Sonarr or autobrr:**
+
 - **Host**: `your-qui-server` (e.g., `localhost` or `192.168.1.100`)
 - **Port**: `7476` (or your qui port)
-- **Username**: *Leave empty*
-- **Password**: *Leave empty*  
+- **Username**: _Leave empty_
+- **Password**: _Leave empty_
 - **URL Base**: `/proxy/YOUR_CLIENT_API_KEY_HERE`
 
 **Complete URL example:**
+
 ```
 http://localhost:7476/proxy/abc123def456ghi789jkl012mno345pqr678stu901vwx234yz
 ```
@@ -253,6 +301,7 @@ http://localhost:7476/proxy/abc123def456ghi789jkl012mno345pqr678stu901vwx234yz
 #### 3. Test the Connection
 
 Your external application should now be able to:
+
 - Connect successfully to qBittorrent through qui
 - Add torrents, check status, and manage downloads
 - Work without any qBittorrent credentials
@@ -260,9 +309,10 @@ Your external application should now be able to:
 ### Supported Applications
 
 This reverse proxy works with any application that supports qBittorrent's Web API:
+
 - **autobrr** - Automatic torrent downloading
 - **Sonarr** - Automatic TV show downloads
-- **Radarr** - Automatic movie downloads  
+- **Radarr** - Automatic movie downloads
 - **Lidarr** - Automatic music downloads
 - **Prowlarr** - Indexer management
 - **Custom scripts** - Any application using qBittorrent's API
@@ -278,14 +328,17 @@ This reverse proxy works with any application that supports qBittorrent's Web AP
 ### Troubleshooting
 
 **Connection Refused Error:**
+
 - Ensure qui is listening on all interfaces: `QUI__HOST=0.0.0.0 ./qui serve`
 - Check that the port is accessible from your external application
 
-**Authentication Errors:**  
+**Authentication Errors:**
+
 - Verify the Client API Key is correct and hasn't been deleted
 - Ensure the key is mapped to the correct qBittorrent instance
 
 **Version String Errors:**
+
 - This was a common issue that's now resolved with the new proxy implementation
 - Try regenerating the Client API Key if you still see version parsing errors
 
@@ -307,17 +360,21 @@ docker run -d \
 If you need to serve qui from a subdirectory (e.g., `https://example.com/qui/`), you can configure the base URL:
 
 ### Using Environment Variable
+
 ```bash
 QUI__BASE_URL=/qui/ ./qui
 ```
 
 ### Using Configuration File
+
 Edit your `config.toml`:
+
 ```toml
 baseUrl = "/qui/"
 ```
 
 ### With Nginx Reverse Proxy
+
 ```nginx
 # Redirect /qui to /qui/ for proper SPA routing
 location = /qui {
@@ -346,24 +403,27 @@ make dev
 # Run backend only (with hot reload)
 make dev-backend
 
-# Run frontend only  
+# Run frontend only
 make dev-frontend
 ```
 
 ## Features in Detail
 
 ### Instance Management
+
 - Add unlimited qBittorrent instances
 - Health monitoring and auto-reconnection
 - Secure credential storage
 
 ### Torrent Management
+
 - Bulk operations (pause, resume, delete)
 - Advanced filtering and search
 - Category and tag management
 - Real-time progress tracking
 
 ### Performance
+
 - Efficient data sync for large collections
 - Minimal memory footprint
 - Fast search and filtering

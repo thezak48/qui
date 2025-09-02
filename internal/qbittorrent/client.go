@@ -6,9 +6,9 @@ package qbittorrent
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"reflect"
-	"maps"
 	"sync"
 	"time"
 	"unsafe"
@@ -218,7 +218,6 @@ func (c *Client) GetWebAPIVersion() string {
 	return c.webAPIVersion
 }
 
-
 // GetHTTPClient allows you to receive the implemented *http.Client with cookie jar
 // This method uses reflection to access the private http field from the embedded qbt.Client
 //
@@ -378,4 +377,17 @@ func getTargetState(action string, progress float64) qbt.TorrentState {
 	default:
 		return ""
 	}
+}
+
+func (c *Client) GetVersion(ctx context.Context) (string, error) {
+	if c.client == nil {
+		return "", ErrClientNotConnected
+	}
+
+	version, err := c.client.Application.GetVersion(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return version, nil
 }

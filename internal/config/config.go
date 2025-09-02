@@ -83,6 +83,7 @@ func (c *AppConfig) defaults() {
 	c.viper.SetDefault("dataDir", "") // Empty means auto-detect (next to config file)
 	c.viper.SetDefault("pprofEnabled", false)
 	c.viper.SetDefault("metricsEnabled", false)
+	c.viper.SetDefault("metricsExportByTorrent", false)
 
 	// HTTP timeout defaults - increased for large qBittorrent instances
 	c.viper.SetDefault("httpTimeouts.readTimeout", 60)   // 60 seconds
@@ -208,7 +209,7 @@ func (c *AppConfig) writeDefaultConfig(path string) error {
 	log.Debug().Msgf("Created config directory: %s", dir)
 
 	// Create config template
-	configTemplate := `# config.toml - Auto-generated on first run
+	const configTemplate = `# qui Configuration File
 
 # Hostname / IP
 # Default: "localhost" (or "0.0.0.0" in containers)
@@ -248,6 +249,12 @@ logLevel = "{{ .logLevel }}"
 # Enable Prometheus metrics endpoint at /metrics
 # Default: false
 #metricsEnabled = false
+
+# Export individual torrent metrics (WARNING: High cardinality)
+# This creates metrics for each individual torrent which can be very memory intensive
+# Only enable if you have a small number of torrents or need detailed per-torrent monitoring
+# Default: false
+#metricsExportByTorrent = false
 
 # HTTP Timeouts (for large qBittorrent instances)
 # Increase these values if you experience timeouts with 10k+ torrents

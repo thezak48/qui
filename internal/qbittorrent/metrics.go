@@ -19,6 +19,16 @@ func (i *InstanceInfo) IDString() string {
 	return strconv.Itoa(i.ID)
 }
 
+type ServerState struct {
+	ConnectionStatus     string `json:"connection_status"`
+	DHTNodes             int64  `json:"dht_nodes"`
+	TotalPeerConnections int64  `json:"total_peer_connections"`
+	DlInfoData           int64  `json:"dl_info_data"`
+	UpInfoData           int64  `json:"up_info_data"`
+	AlltimeDl            int64  `json:"alltime_dl"`
+	AlltimeUl            int64  `json:"alltime_ul"`
+}
+
 func (cp *ClientPool) GetAllInstances(ctx context.Context) []*InstanceInfo {
 	instances, err := cp.instanceStore.List(ctx, false)
 	if err != nil {
